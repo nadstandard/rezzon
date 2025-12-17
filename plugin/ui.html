@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+    
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12px;
+      color: #1a1a1a;
+      background: #ffffff;
+      line-height: 1.5;
+    }
+    
+    /* Header */
+    .header {
+      padding: 16px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+    }
+    
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .header p {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e5e5;
+      background: #fafafa;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      color: #666;
+    }
+    
+    .tab:hover { 
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .tab.active { 
+      border-bottom-color: #6366f1; 
+      color: #6366f1;
+      background: #fff;
+    }
+    
+    .tab-icon {
+      margin-right: 6px;
+    }
+    
+    /* Panels */
+    .panel {
+      display: none;
+      padding: 20px;
+    }
+    
+    .panel.active { 
+      display: block; 
+    }
+    
+    /* Section */
+    .section {
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .section-desc {
+      color: #666;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    
+    /* Buttons */
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    button.primary {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      width: 100%;
+    }
+    
+    button.primary:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    
+    button.primary:disabled { 
+      background: #ccc; 
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    button.secondary {
+      background: #fff;
+      color: #333;
+      border: 1px solid #ddd;
+      width: 100%;
+    }
+    
+    button.secondary:hover { 
+      background: #f5f5f5;
+      border-color: #ccc;
+    }
+    
+    button.small {
+      padding: 6px 12px;
+      font-size: 11px;
+      width: auto;
+    }
+    
+    /* Textarea */
+    textarea {
+      width: 100%;
+      height: 280px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 10px;
+      resize: vertical;
+      background: #fafafa;
+      transition: all 0.15s ease;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: #fff;
+    }
+    
+    textarea.valid {
+      border-color: #10b981;
+    }
+    
+    textarea.invalid {
+      border-color: #ef4444;
+    }
+    
+    /* File input */
+    .file-drop {
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #fafafa;
+      margin-bottom: 12px;
+    }
+    
+    .file-drop:hover {
+      border-color: #6366f1;
+      background: #f5f3ff;
+    }
+    
+    .file-drop.dragover {
+      border-color: #6366f1;
+      background: #f5f3ff;
+    }
+    
+    .file-drop input {
+      display: none;
+    }
+    
+    .file-drop-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .file-drop-text {
+      color: #666;
+    }
+    
+    .file-drop-text strong {
+      color: #6366f1;
+    }
+    
+    /* Radio options */
+    .options {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+    
+    .option:first-child {
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .option input[type="radio"] {
+      margin-top: 2px;
+      accent-color: #6366f1;
+    }
+    
+    .option-content {
+      flex: 1;
+    }
+    
+    .option-title {
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .option-desc {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    /* Status */
+    .status {
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+      font-size: 12px;
+    }
+    
+    .status.show {
+      display: block;
+    }
+    
+    .status.success {
+      background: #ecfdf5;
+      border: 1px solid #10b981;
+      color: #065f46;
+    }
+    
+    .status.error {
+      background: #fef2f2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+    }
+    
+    .status.loading {
+      background: #f5f3ff;
+      border: 1px solid #6366f1;
+      color: #4338ca;
+    }
+    
+    .status-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .stat-icon {
+      width: 16px;
+      text-align: center;
+    }
+    
+    /* Export output */
+    .export-output {
+      display: none;
+      margin-top: 16px;
+    }
+    
+    .export-output.show {
+      display: block;
+    }
+    
+    .export-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    /* Button group */
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    /* JSON preview info */
+    .json-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>REZZON Portal</h1>
+    <p>Import & Export zmiennych Figma</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="export">
+      <span class="tab-icon">📤</span>Eksport
+    </div>
+    <div class="tab" data-tab="import">
+      <span class="tab-icon">📥</span>Import
+    </div>
+  </div>
+
+  <!-- EXPORT PANEL -->
+  <div class="panel active" id="export-panel">
+    <div class="section">
+      <div class="section-title">Eksportuj zmienne</div>
+      <div class="section-desc">
+        Eksportuje wszystkie kolekcje zmiennych z tego pliku do formatu JSON. 
+        Zachowuje ID, aliasy między kolekcjami, opisy, scopes i code syntax.
+      </div>
+      
+      <button class="primary" id="export-btn">
+        <span>📤</span> Eksportuj wszystkie zmienne
+      </button>
+    </div>
+    
+    <div class="export-output" id="export-output">
+      <div class="json-info">
+        <span id="json-stats">-</span>
+        <span id="json-size">-</span>
+      </div>
+      
+      <div class="export-actions">
+        <button class="secondary small" id="copy-btn">
+          <span>📋</span> Kopiuj
+        </button>
+        <button class="secondary small" id="download-btn">
+          <span>💾</span> Pobierz JSON
+        </button>
+      </div>
+      
+      <textarea id="export-json" readonly></textarea>
+    </div>
+    
+    <div class="status" id="export-status"></div>
+  </div>
+
+  <!-- IMPORT PANEL -->
+  <div class="panel" id="import-panel">
+    <div class="section">
+      <div class="section-title">Importuj zmienne</div>
+      <div class="section-desc">
+        Wczytaj plik JSON wyeksportowany z REZZON Portal. 
+        Plugin rozwiąże aliasy między kolekcjami.
+      </div>
+      
+      <div class="file-drop" id="file-drop">
+        <input type="file" id="file-input" accept=".json">
+        <div class="file-drop-icon">📁</div>
+        <div class="file-drop-text">
+          <strong>Kliknij</strong> lub przeciągnij plik JSON
+        </div>
+      </div>
+      
+      <textarea id="import-json" placeholder="...lub wklej JSON tutaj"></textarea>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Tryb importu</div>
+      
+      <div class="options">
+        <label class="option">
+          <input type="radio" name="importMode" value="create" checked>
+          <div class="option-content">
+            <div class="option-title">Utwórz nowe</div>
+            <div class="option-desc">Tworzy nowe kolekcje i zmienne. Może powodować duplikaty.</div>
+          </div>
+        </label>
+        
+        <label class="option">
+          <input type="radio" name="importMode" value="update">
+          <div class="option-content">
+            <div class="option-title">Aktualizuj istniejące</div>
+            <div class="option-desc">Szuka po ID i nazwie. Aktualizuje wartości, dodaje brakujące.</div>
+          </div>
+        </label>
+      </div>
+      
+      <div class="button-group">
+        <button class="primary" id="import-btn">
+          <span>📥</span> Importuj zmienne
+        </button>
+        <button class="secondary" id="cancel-btn">
+          Zamknij
+        </button>
+      </div>
+    </div>
+    
+    <div class="status" id="import-status"></div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + '-panel').classList.add('active');
+      });
+    });
+
+    // === EXPORT ===
+    const exportBtn = document.getElementById('export-btn');
+    const exportOutput = document.getElementById('export-output');
+    const exportJson = document.getElementById('export-json');
+    const exportStatus = document.getElementById('export-status');
+    const copyBtn = document.getElementById('copy-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const jsonStats = document.getElementById('json-stats');
+    const jsonSize = document.getElementById('json-size');
+
+    exportBtn.addEventListener('click', () => {
+      showStatus(exportStatus, '⏳ Eksportuję zmienne...', 'loading');
+      exportBtn.disabled = true;
+      parent.postMessage({ pluginMessage: { type: 'export' } }, '*');
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(exportJson.value);
+        copyBtn.innerHTML = '<span>✅</span> Skopiowano!';
+        setTimeout(() => { 
+          copyBtn.innerHTML = '<span>📋</span> Kopiuj'; 
+        }, 2000);
+      } catch (e) {
+        exportJson.select();
+        document.execCommand('copy');
+        copyBtn.innerHTML = '<span>✅</span> Skopiowano!';
+        setTimeout(() => { 
+          copyBtn.innerHTML = '<span>📋</span> Kopiuj'; 
+        }, 2000);
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const data = JSON.parse(exportJson.value);
+      const fileName = (data.fileName || 'design-tokens').replace(/[^a-zA-Z0-9-_]/g, '-');
+      const date = new Date().toISOString().slice(0, 10);
+      
+      const blob = new Blob([exportJson.value], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileName}_${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // === IMPORT ===
+    const importJson = document.getElementById('import-json');
+    const fileInput = document.getElementById('file-input');
+    const fileDrop = document.getElementById('file-drop');
+    const importBtn = document.getElementById('import-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const importStatus = document.getElementById('import-status');
+
+    // File drop zone
+    fileDrop.addEventListener('click', () => fileInput.click());
+    
+    fileDrop.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileDrop.classList.add('dragover');
+    });
+    
+    fileDrop.addEventListener('dragleave', () => {
+      fileDrop.classList.remove('dragover');
+    });
+    
+    fileDrop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileDrop.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) loadFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) loadFile(file);
+    });
+    
+    function loadFile(file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => { 
+        importJson.value = ev.target.result;
+        validateJson();
+      };
+      reader.readAsText(file);
+    }
+
+    importJson.addEventListener('input', validateJson);
+    
+    function validateJson() {
+      const value = importJson.value.trim();
+      if (!value) {
+        importJson.classList.remove('valid', 'invalid');
+        return;
+      }
+      
+      try {
+        const data = JSON.parse(value);
+        if (data.collections && Array.isArray(data.collections)) {
+          importJson.classList.remove('invalid');
+          importJson.classList.add('valid');
+        } else {
+          throw new Error('Brak tablicy collections');
+        }
+      } catch {
+        importJson.classList.remove('valid');
+        importJson.classList.add('invalid');
+      }
+    }
+
+    importBtn.addEventListener('click', () => {
+      const json = importJson.value.trim();
+      
+      if (!json) {
+        showStatus(importStatus, '❌ Wklej JSON lub wybierz plik', 'error');
+        return;
+      }
+      
+      try {
+        JSON.parse(json);
+      } catch (e) {
+        showStatus(importStatus, '❌ Nieprawidłowy JSON: ' + e.message, 'error');
+        return;
+      }
+      
+      const updateExisting = document.querySelector('input[name="importMode"]:checked').value === 'update';
+      
+      showStatus(importStatus, '⏳ Importuję zmienne...', 'loading');
+      importBtn.disabled = true;
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'import', 
+          json: json, 
+          updateExisting: updateExisting 
+        } 
+      }, '*');
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    });
+
+    // === MESSAGES FROM PLUGIN ===
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'exportResult') {
+        exportBtn.disabled = false;
+        
+        if (msg.success) {
+          const jsonStr = JSON.stringify(msg.data, null, 2);
+          exportJson.value = jsonStr;
+          exportOutput.classList.add('show');
+          
+          // Stats
+          let varCount = 0;
+          msg.data.collections.forEach(c => varCount += c.variables.length);
+          jsonStats.textContent = `${msg.data.collections.length} kolekcji, ${varCount} zmiennych`;
+          
+          const size = new Blob([jsonStr]).size;
+          jsonSize.textContent = size > 1024 ? `${(size/1024).toFixed(1)} KB` : `${size} B`;
+          
+          showStatus(exportStatus, `✅ Wyeksportowano ${msg.data.collections.length} kolekcji`, 'success');
+        } else {
+          showStatus(exportStatus, '❌ ' + msg.error, 'error');
+        }
+      }
+
+      if (msg.type === 'importResult') {
+        importBtn.disabled = false;
+        
+        if (msg.success) {
+          const s = msg.stats;
+          let html = '<div class="status-title">✅ Import zakończony</div>';
+          html += '<div class="stats-grid">';
+          
+          if (s.collectionsCreated > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">📁</span> Kolekcje utworzone: ${s.collectionsCreated}</div>`;
+          }
+          if (s.collectionsUpdated > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">📁</span> Kolekcje zaktualizowane: ${s.collectionsUpdated}</div>`;
+          }
+          if (s.variablesCreated > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">➕</span> Zmienne utworzone: ${s.variablesCreated}</div>`;
+          }
+          if (s.variablesUpdated > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">✏️</span> Zmienne zaktualizowane: ${s.variablesUpdated}</div>`;
+          }
+          if (s.variablesRenamed > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">🏷️</span> Zmienne przemianowane: ${s.variablesRenamed}</div>`;
+          }
+          if (s.aliasesResolved > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">🔗</span> Aliasy rozwiązane: ${s.aliasesResolved}</div>`;
+          }
+          if (s.aliasesFailed > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">⚠️</span> Aliasy nierozwiązane: ${s.aliasesFailed}</div>`;
+          }
+          if (s.skipped > 0) {
+            html += `<div class="stat-item"><span class="stat-icon">⏭️</span> Pominięte: ${s.skipped}</div>`;
+          }
+          
+          html += '</div>';
+          
+          if (s.errors.length > 0) {
+            html += `<div style="margin-top: 10px; font-size: 11px; color: #666;">Błędy: ${s.errors.slice(0, 3).join(', ')}${s.errors.length > 3 ? '...' : ''}</div>`;
+          }
+          
+          showStatus(importStatus, html, 'success');
+        } else {
+          showStatus(importStatus, '❌ ' + msg.error, 'error');
+        }
+      }
+    };
+
+    function showStatus(el, message, type) {
+      el.innerHTML = message;
+      el.className = 'status show ' + type;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale Editor — Makieta</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    /* Dark scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #1e1e1e;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #424242;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    
+    ::-webkit-scrollbar-corner {
+      background: #1e1e1e;
+    }
+    
+    /* Layout */
+    .app {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      background: #252526;
+      border-right: 1px solid #3c3c3c;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #3c3c3c;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .sidebar-header button {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    .sidebar-header button:hover {
+      color: #fff;
+    }
+    
+    .sidebar-section {
+      padding: 8px 0;
+      border-bottom: 1px solid #3c3c3c;
+    }
+    
+    .sidebar-section-title {
+      padding: 4px 16px;
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .sidebar-item {
+      padding: 6px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .sidebar-item:hover {
+      background: #2a2d2e;
+    }
+    
+    .sidebar-item.active {
+      background: #37373d;
+      color: #fff;
+    }
+    
+    .sidebar-item .count {
+      color: #666;
+      font-size: 11px;
+    }
+    
+    .sidebar-item.active .count {
+      color: #888;
+    }
+    
+    .sidebar-item.indent {
+      padding-left: 32px;
+    }
+    
+    /* Main content */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* Toolbar */
+    .toolbar {
+      padding: 8px 16px;
+      border-bottom: 1px solid #3c3c3c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #252526;
+    }
+    
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .toolbar-title {
+      font-weight: 600;
+      color: #fff;
+    }
+    
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .btn-secondary {
+      background: #3c3c3c;
+      color: #e0e0e0;
+    }
+    
+    .btn-secondary:hover {
+      background: #4c4c4c;
+    }
+    
+    .btn-primary {
+      background: #0d99ff;
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      background: #0b87e0;
+    }
+    
+    /* Table */
+    .table-container {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #3c3c3c;
+      min-width: 100px;
+      white-space: nowrap;
+    }
+    
+    th {
+      background: #2d2d2d;
+      font-weight: 500;
+      color: #888;
+      position: sticky;
+      top: 0;
+      font-size: 12px;
+      z-index: 2;
+    }
+    
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: #1e1e1e;
+      min-width: 200px;
+    }
+    
+    th:first-child {
+      z-index: 3;
+      background: #2d2d2d;
+    }
+    
+    tr:hover td:first-child {
+      background: #2a2d2e;
+    }
+    
+    td {
+      font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+      font-size: 12px;
+    }
+    
+    tr:hover {
+      background: #2a2d2e;
+    }
+    
+    .cell-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .cell-icon {
+      width: 16px;
+      height: 16px;
+      background: #3c3c3c;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #888;
+    }
+    
+    .cell-value {
+      color: #e0e0e0;
+    }
+    
+    .cell-value.computed {
+      color: #8bc34a;
+    }
+    
+    .cell-value.editable {
+      color: #fff;
+      cursor: text;
+    }
+    
+    .cell-value.editable:hover {
+      background: #3c3c3c;
+      border-radius: 2px;
+    }
+    
+    /* Group header */
+    .group-header td {
+      background: #252526 !important;
+      border-bottom: 1px solid #3c3c3c;
+      padding: 12px;
+    }
+    
+    .group-header .group-label {
+      color: #888;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #252526 !important;
+    }
+    
+    /* Footer */
+    .table-footer {
+      padding: 8px 12px;
+      border-top: 1px solid #3c3c3c;
+      background: #252526;
+    }
+    
+    .add-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .add-row:hover {
+      color: #888;
+    }
+    
+    /* Tabs for collections */
+    .tabs {
+      display: flex;
+      background: #1e1e1e;
+      border-bottom: 1px solid #3c3c3c;
+      padding: 0 16px;
+    }
+    
+    .tab {
+      padding: 10px 16px;
+      cursor: pointer;
+      color: #888;
+      font-size: 12px;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    
+    .tab:hover {
+      color: #e0e0e0;
+    }
+    
+    .tab.active {
+      color: #fff;
+      border-bottom-color: #0d99ff;
+    }
+    
+    /* Search */
+    .search {
+      padding: 8px 16px;
+      border-bottom: 1px solid #3c3c3c;
+    }
+    
+    .search input {
+      width: 100%;
+      padding: 6px 10px;
+      background: #3c3c3c;
+      border: none;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 12px;
+    }
+    
+    .search input::placeholder {
+      color: #666;
+    }
+    
+    .search input:focus {
+      outline: 1px solid #0d99ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        Collections
+        <button>+</button>
+      </div>
+      
+      <div class="sidebar-section">
+        <div class="sidebar-item active">
+          <span>Typography</span>
+          <span class="count">562</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Spacing</span>
+          <span class="count">772</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Grid</span>
+          <span class="count">5966</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Radius</span>
+          <span class="count">75</span>
+        </div>
+      </div>
+      
+      <div class="sidebar-header">
+        Groups
+      </div>
+      
+      <div class="sidebar-section">
+        <div class="sidebar-item active">
+          <span>All</span>
+          <span class="count">562</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Base</span>
+          <span class="count">21</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Scale</span>
+          <span class="count">8</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Size</span>
+          <span class="count">168</span>
+        </div>
+        <div class="sidebar-item indent">
+          <span>Desktop</span>
+          <span class="count">42</span>
+        </div>
+        <div class="sidebar-item indent">
+          <span>Laptop</span>
+          <span class="count">42</span>
+        </div>
+        <div class="sidebar-item indent">
+          <span>Tablet</span>
+          <span class="count">42</span>
+        </div>
+        <div class="sidebar-item indent">
+          <span>Mobile</span>
+          <span class="count">42</span>
+        </div>
+        <div class="sidebar-item">
+          <span>Line Height</span>
+          <span class="count">365</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main -->
+    <div class="main">
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active">Typography Scale</div>
+        <div class="tab">Spacing Scale</div>
+        <div class="tab">Grid</div>
+        <div class="tab">Radius</div>
+      </div>
+      
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">Typography / Size</span>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-secondary">Import</button>
+          <button class="btn btn-primary">Export JSON</button>
+        </div>
+      </div>
+      
+      <!-- Search -->
+      <div class="search">
+        <input type="text" placeholder="Search variables...">
+      </div>
+      
+      <!-- Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Legacy</th>
+              <th>Minimal</th>
+              <th>Balanced</th>
+              <th>Contrast</th>
+              <th>Hero-Friendly</th>
+              <th>Premium</th>
+              <th>UX First</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Base group -->
+            <tr class="group-header">
+              <td class="group-label">Base</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">#</span> ref-10</span></td>
+              <td><span class="cell-value editable">10</span></td>
+              <td><span class="cell-value">10</span></td>
+              <td><span class="cell-value">10</span></td>
+              <td><span class="cell-value">10</span></td>
+              <td><span class="cell-value">10</span></td>
+              <td><span class="cell-value">10</span></td>
+              <td><span class="cell-value">10</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">#</span> ref-12</span></td>
+              <td><span class="cell-value editable">12</span></td>
+              <td><span class="cell-value">12</span></td>
+              <td><span class="cell-value">12</span></td>
+              <td><span class="cell-value">12</span></td>
+              <td><span class="cell-value">12</span></td>
+              <td><span class="cell-value">12</span></td>
+              <td><span class="cell-value">12</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">#</span> ref-14</span></td>
+              <td><span class="cell-value editable">14</span></td>
+              <td><span class="cell-value">14</span></td>
+              <td><span class="cell-value">14</span></td>
+              <td><span class="cell-value">14</span></td>
+              <td><span class="cell-value">14</span></td>
+              <td><span class="cell-value">14</span></td>
+              <td><span class="cell-value">14</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">#</span> ref-16</span></td>
+              <td><span class="cell-value editable">16</span></td>
+              <td><span class="cell-value">16</span></td>
+              <td><span class="cell-value">16</span></td>
+              <td><span class="cell-value">16</span></td>
+              <td><span class="cell-value">16</span></td>
+              <td><span class="cell-value">16</span></td>
+              <td><span class="cell-value">16</span></td>
+            </tr>
+            
+            <!-- Scale group -->
+            <tr class="group-header">
+              <td class="group-label">Scale</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">ƒ</span> Desktop</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+              <td><span class="cell-value editable">1</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">ƒ</span> Laptop</span></td>
+              <td><span class="cell-value editable">0.9</span></td>
+              <td><span class="cell-value editable">0.94</span></td>
+              <td><span class="cell-value editable">0.9</span></td>
+              <td><span class="cell-value editable">0.88</span></td>
+              <td><span class="cell-value editable">0.92</span></td>
+              <td><span class="cell-value editable">0.95</span></td>
+              <td><span class="cell-value editable">0.92</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">ƒ</span> Tablet</span></td>
+              <td><span class="cell-value editable">0.82</span></td>
+              <td><span class="cell-value editable">0.85</span></td>
+              <td><span class="cell-value editable">0.75</span></td>
+              <td><span class="cell-value editable">0.7</span></td>
+              <td><span class="cell-value editable">0.78</span></td>
+              <td><span class="cell-value editable">0.78</span></td>
+              <td><span class="cell-value editable">0.82</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">ƒ</span> Mobile</span></td>
+              <td><span class="cell-value editable">0.72</span></td>
+              <td><span class="cell-value editable">0.7</span></td>
+              <td><span class="cell-value editable">0.6</span></td>
+              <td><span class="cell-value editable">0.55</span></td>
+              <td><span class="cell-value editable">0.62</span></td>
+              <td><span class="cell-value editable">0.62</span></td>
+              <td><span class="cell-value editable">0.72</span></td>
+            </tr>
+            
+            <!-- Size / Desktop group -->
+            <tr class="group-header">
+              <td class="group-label">Size / Desktop</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">12</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+              <td><span class="cell-value computed">14</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+              <td><span class="cell-value computed">16</span></td>
+            </tr>
+            
+            <!-- Size / Mobile group -->
+            <tr class="group-header">
+              <td class="group-label">Size / Mobile</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-10</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">6</span></td>
+              <td><span class="cell-value computed">6</span></td>
+              <td><span class="cell-value computed">6</span></td>
+              <td><span class="cell-value computed">6</span></td>
+              <td><span class="cell-value computed">7</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-12</span></td>
+              <td><span class="cell-value computed">9</span></td>
+              <td><span class="cell-value computed">8</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">7</span></td>
+              <td><span class="cell-value computed">9</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-14</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">8</span></td>
+              <td><span class="cell-value computed">8</span></td>
+              <td><span class="cell-value computed">9</span></td>
+              <td><span class="cell-value computed">9</span></td>
+              <td><span class="cell-value computed">10</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-name"><span class="cell-icon">=</span> ref-16</span></td>
+              <td><span class="cell-value computed">12</span></td>
+              <td><span class="cell-value computed">11</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">9</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">10</span></td>
+              <td><span class="cell-value computed">12</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Footer -->
+      <div class="table-footer">
+        <div class="add-row">
+          <span>+</span> Add variable
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
