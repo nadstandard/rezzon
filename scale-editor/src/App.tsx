@@ -4,7 +4,7 @@ import { Tabs } from './components/Tabs';
 import { RadiusEditor } from './components/RadiusEditor';
 import { SpacingEditor } from './components/SpacingEditor';
 import { useRadiusStore } from './stores/radiusStore';
-import { useSpacingStore } from './stores/spacingStore';
+import { useSpacingStore, buildSidebarGroups } from './stores/spacingStore';
 import type { CollectionType } from './types';
 
 const TABS = [
@@ -20,12 +20,18 @@ function App() {
   
   const radiusStore = useRadiusStore();
   const spacingStore = useSpacingStore();
+  const activeSpacingCollection = spacingStore.collections[spacingStore.activeCollectionIndex];
   
   const radiusRefCount = radiusStore.refScale.length;
   const radiusVarCount = 4 * (radiusRefCount + 1) + 5;
-  
-  const spacingRefCount = spacingStore.refScale.length;
-  const spacingVarCount = spacingRefCount * 8 + 8; // refs * (4 viewports * 2 types) + 8 scale params
+
+  // Calculate spacing var count from active collection
+  const spacingRefCount = activeSpacingCollection?.refScale.length ?? 0;
+  const spacingTypes = Object.keys(activeSpacingCollection?.scales ?? {});
+  const spacingViewports = spacingTypes.length > 0 
+    ? Object.keys(activeSpacingCollection?.scales[spacingTypes[0]] ?? {}) 
+    : [];
+  const spacingVarCount = spacingRefCount * spacingTypes.length * spacingViewports.length;
 
   const collections = [
     { type: 'typography' as const, name: 'Typography', count: null },
@@ -38,22 +44,36 @@ function App() {
     if (activeTab === 'radius') {
       const perViewport = radiusRefCount + 1;
       return [
-        { name: 'All', count: 4 * perViewport + 5 },
-        { name: 'Desktop', count: perViewport, indent: 0 },
-        { name: 'Laptop', count: perViewport, indent: 0 },
-        { name: 'Tablet', count: perViewport, indent: 0 },
-        { name: 'Mobile', count: perViewport, indent: 0 },
+        { name: 'All', path: 'All', count: 4 * perViewport + 5, indent: 0 },
+        { name: 'Desktop', path: 'Desktop', count: perViewport, indent: 0 },
+        { name: 'Laptop', path: 'Laptop', count: perViewport, indent: 0 },
+        { name: 'Tablet', path: 'Tablet', count: perViewport, indent: 0 },
+        { name: 'Mobile', path: 'Mobile', count: perViewport, indent: 0 },
       ];
     }
-    if (activeTab === 'spacing') {
-      const perTypeViewport = spacingRefCount * 4; // 4 viewports
+    if (activeTab === 'spacing' && activeSpacingCollection) {
+      // Dynamic groups from JSON
+      const dynamicGroups = buildSidebarGroups(activeSpacingCollection.groups, spacingRefCount);
       return [
-        { name: 'All', count: spacingVarCount },
-        { name: 'Padding', count: perTypeViewport, indent: 0 },
-        { name: 'Spacing', count: perTypeViewport, indent: 0 },
+        { name: 'All', path: 'All', count: spacingVarCount, indent: 0 },
+        ...dynamicGroups,
       ];
     }
-    return [{ name: 'All', count: 0 }];
+    return [{ name: 'All', path: 'All', count: 0, indent: 0 }];
+  };
+
+  // Get spacing collections for sidebar
+  const getSpacingCollections = () => {
+    return spacingStore.collections.map((coll, idx) => ({
+      name: coll.name,
+      count: coll.refScale.length * Object.keys(coll.scales).length * 
+        (Object.keys(coll.scales[Object.keys(coll.scales)[0]] || {}).length || 1),
+      active: idx === spacingStore.activeCollectionIndex,
+      onClick: () => {
+        spacingStore.setActiveCollection(idx);
+        setActiveGroup('All');
+      },
+    }));
   };
 
   return (
@@ -68,6 +88,7 @@ function App() {
         groups={getSidebarGroups()}
         activeGroup={activeGroup}
         onGroupSelect={setActiveGroup}
+        subCollections={activeTab === 'spacing' ? getSpacingCollections() : undefined}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

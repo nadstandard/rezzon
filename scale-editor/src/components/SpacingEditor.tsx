@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useSpacingStore, calculateSpacing } from '../stores/spacingStore';
+import { useSpacingStore, useActiveCollection, calculateSpacing } from '../stores/spacingStore';
 import { Toolbar } from './Toolbar';
-
-const VIEWPORTS = ['Desktop', 'Laptop', 'Tablet', 'Mobile'] as const;
-const SCALE_TYPES = ['Padding', 'Spacing'] as const;
 
 interface SpacingEditorProps {
   activeGroup: string;
@@ -11,12 +8,18 @@ interface SpacingEditorProps {
 
 export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
   const store = useSpacingStore();
+  const collection = useActiveCollection();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRefValue, setNewRefValue] = useState('');
 
+  if (!collection) return <div>No collection loaded</div>;
+
+  const types = Object.keys(collection.scales);
+  const allViewports = types.length > 0 ? Object.keys(collection.scales[types[0]] || {}) : [];
+
   const handleAddRefValue = () => {
     const num = parseInt(newRefValue, 10);
-    if (!isNaN(num) && !store.refScale.includes(num)) {
+    if (!isNaN(num) && !collection.refScale.includes(num)) {
       store.addRefValue(num);
       setNewRefValue('');
       setShowAddModal(false);
@@ -31,7 +34,7 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `2-R4-Spacing-Scale-${store.collectionName}.json`;
+    a.download = '2-R4-Spacing-Scale.json';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -49,14 +52,32 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
     reader.readAsText(file);
   };
 
+  // Filter based on activeGroup (which is now a path like "Padding/Desktop")
+  const getVisibleTypes = (): string[] => {
+    if (activeGroup === 'All') return types;
+    const groupParts = activeGroup.split('/');
+    const type = groupParts[0];
+    if (types.includes(type)) return [type];
+    return types;
+  };
+
+  const getVisibleViewports = (type: string): string[] => {
+    const typeViewports = Object.keys(collection.scales[type] || {});
+    if (activeGroup === 'All' || activeGroup === type) return typeViewports;
+    const groupParts = activeGroup.split('/');
+    if (groupParts[0] === type && groupParts[1] && typeViewports.includes(groupParts[1])) {
+      return [groupParts[1]];
+    }
+    return typeViewports;
+  };
+
   const showParameters = activeGroup === 'All';
-  const showPadding = activeGroup === 'All' || activeGroup === 'Padding';
-  const showSpacing = activeGroup === 'All' || activeGroup === 'Spacing';
+  const visibleTypes = getVisibleTypes();
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Toolbar
-        title={`Spacing (${store.collectionName})`}
+        title={`Spacing (${collection.name})`}
         formula="round( ref × scale[type][viewport] )"
         onImport={handleImport}
         onExport={handleExport}
@@ -67,46 +88,20 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
           <thead>
             <tr>
               <th>Name</th>
-              {store.modes.map((mode) => (
+              {collection.modes.map((mode) => (
                 <th key={mode.id}>{mode.name}</th>
               ))}
             </tr>
           </thead>
           <tbody>
+            {/* Scale Parameters */}
             {showParameters && (
               <>
                 <tr className="group-header">
-                  <td colSpan={store.modes.length + 1}>Collection</td>
+                  <td colSpan={collection.modes.length + 1}>Scale Parameters</td>
                 </tr>
-                <tr>
-                  <td>
-                    <div className="cell-name">
-                      <span className="cell-icon">#</span>
-                      <span>direction</span>
-                    </div>
-                  </td>
-                  <td colSpan={store.modes.length}>
-                    <select
-                      value={store.collectionName}
-                      onChange={(e) => store.setCollectionName(e.target.value as 'Vertical' | 'Horizontal')}
-                      style={{
-                        background: 'var(--bg-tertiary)',
-                        border: '1px solid var(--border)',
-                        color: '#fff',
-                        padding: '4px 8px',
-                        borderRadius: '3px',
-                      }}
-                    >
-                      <option value="Vertical">Vertical</option>
-                      <option value="Horizontal">Horizontal</option>
-                    </select>
-                  </td>
-                </tr>
-                <tr className="group-header">
-                  <td colSpan={store.modes.length + 1}>Scale Parameters</td>
-                </tr>
-                {SCALE_TYPES.map((type) =>
-                  VIEWPORTS.map((viewport) => (
+                {types.map((type) =>
+                  allViewports.map((viewport) => (
                     <tr key={`scale-${type}-${viewport}`}>
                       <td>
                         <div className="cell-name">
@@ -114,13 +109,13 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
                           <span>scale-{type.toLowerCase()}-{viewport.toLowerCase()}</span>
                         </div>
                       </td>
-                      {store.modes.map((mode) => (
+                      {collection.modes.map((mode) => (
                         <td key={mode.id}>
                           <div className="cell-wrapper">
                             <input
                               type="text"
                               className="cell-input"
-                              value={store.scales[type][viewport][mode.id] ?? 1}
+                              value={collection.scales[type]?.[viewport]?.[mode.id] ?? 1}
                               onChange={(e) => {
                                 const v = parseFloat(e.target.value);
                                 if (!isNaN(v)) store.setScale(type, viewport, mode.id, v);
@@ -135,26 +130,27 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
               </>
             )}
 
-            {showPadding && (
-              <>
+            {/* Computed values by type/viewport */}
+            {visibleTypes.map((type) => (
+              <tbody key={`group-${type}`}>
                 <tr className="group-header">
-                  <td colSpan={store.modes.length + 1}>Padding</td>
+                  <td colSpan={collection.modes.length + 1}>{type}</td>
                 </tr>
-                {VIEWPORTS.map((viewport) => (
-                  <>
-                    <tr key={`padding-header-${viewport}`} className="group-header" style={{ background: 'var(--bg-hover)' }}>
-                      <td colSpan={store.modes.length + 1} style={{ paddingLeft: '24px' }}>{viewport}</td>
+                {getVisibleViewports(type).map((viewport) => (
+                  <tbody key={`group-${type}-${viewport}`}>
+                    <tr className="group-header" style={{ background: 'var(--bg-hover)' }}>
+                      <td colSpan={collection.modes.length + 1} style={{ paddingLeft: '24px' }}>{viewport}</td>
                     </tr>
-                    {store.refScale.map((ref) => (
-                      <tr key={`padding-${viewport}-${ref}`}>
+                    {collection.refScale.map((ref) => (
+                      <tr key={`${type}-${viewport}-${ref}`}>
                         <td>
                           <div className="cell-name" style={{ paddingLeft: '16px' }}>
                             <span className="cell-icon">=</span>
                             <span>ref-{ref}</span>
                           </div>
                         </td>
-                        {store.modes.map((mode) => {
-                          const scale = store.scales.Padding[viewport][mode.id] ?? 1;
+                        {collection.modes.map((mode) => {
+                          const scale = collection.scales[type]?.[viewport]?.[mode.id] ?? 1;
                           const computed = calculateSpacing(ref, scale);
                           return (
                             <td key={mode.id}>
@@ -166,56 +162,22 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
                         })}
                       </tr>
                     ))}
-                  </>
+                  </tbody>
                 ))}
-              </>
-            )}
-
-            {showSpacing && (
-              <>
-                <tr className="group-header">
-                  <td colSpan={store.modes.length + 1}>Spacing</td>
-                </tr>
-                {VIEWPORTS.map((viewport) => (
-                  <>
-                    <tr key={`spacing-header-${viewport}`} className="group-header" style={{ background: 'var(--bg-hover)' }}>
-                      <td colSpan={store.modes.length + 1} style={{ paddingLeft: '24px' }}>{viewport}</td>
-                    </tr>
-                    {store.refScale.map((ref) => (
-                      <tr key={`spacing-${viewport}-${ref}`}>
-                        <td>
-                          <div className="cell-name" style={{ paddingLeft: '16px' }}>
-                            <span className="cell-icon">=</span>
-                            <span>ref-{ref}</span>
-                          </div>
-                        </td>
-                        {store.modes.map((mode) => {
-                          const scale = store.scales.Spacing[viewport][mode.id] ?? 1;
-                          const computed = calculateSpacing(ref, scale);
-                          return (
-                            <td key={mode.id}>
-                              <div className="cell-wrapper">
-                                <span className="cell-value computed">{computed}</span>
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </>
-                ))}
-              </>
-            )}
+              </tbody>
+            ))}
           </tbody>
         </table>
       </div>
 
+      {/* Footer */}
       <div className="table-footer">
         <button onClick={() => setShowAddModal(true)} className="add-row">
           <span>+</span> Add ref value
         </button>
       </div>
 
+      {/* Add Ref Value Modal */}
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">

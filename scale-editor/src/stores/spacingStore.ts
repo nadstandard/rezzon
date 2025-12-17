@@ -5,64 +5,61 @@ interface Mode {
   name: string;
 }
 
-type ViewportType = 'Desktop' | 'Laptop' | 'Tablet' | 'Mobile';
-type ScaleType = 'Padding' | 'Spacing';
+interface Collection {
+  id: string;
+  name: string;
+  modes: Mode[];
+  scales: Record<string, Record<string, Record<string, number>>>; // type -> viewport -> modeId -> value
+  refScale: number[];
+  groups: string[]; // parsed from JSON variable names, e.g. ["Padding", "Padding/Desktop", "Spacing", ...]
+}
 
 interface SpacingState {
-  modes: Mode[];
-  collectionName: 'Vertical' | 'Horizontal';
-  scales: Record<ScaleType, Record<ViewportType, Record<string, number>>>;
-  refScale: number[];
+  collections: Collection[];
+  activeCollectionIndex: number;
   
   loadFromJSON: (data: unknown) => void;
-  setScale: (type: ScaleType, viewport: ViewportType, modeId: string, value: number) => void;
+  setActiveCollection: (index: number) => void;
+  setScale: (type: string, viewport: string, modeId: string, value: number) => void;
   addRefValue: (value: number) => void;
   removeRefValue: (value: number) => void;
-  setCollectionName: (name: 'Vertical' | 'Horizontal') => void;
   exportToJSON: () => object;
 }
 
-const VIEWPORTS: ViewportType[] = ['Desktop', 'Laptop', 'Tablet', 'Mobile'];
-const SCALE_TYPES: ScaleType[] = ['Padding', 'Spacing'];
+// Sort ref scale: positive (asc), 0, negative (desc by abs)
+const sortRefScale = (refs: number[]): number[] => {
+  return [...refs].sort((a, b) => {
+    if (a > 0 && b > 0) return a - b;
+    if (a > 0 && b <= 0) return -1;
+    if (a <= 0 && b > 0) return 1;
+    if (a === 0 && b < 0) return -1;
+    if (a < 0 && b === 0) return 1;
+    return b - a;
+  });
+};
 
-const defaultModes: Mode[] = [
-  { id: 'mode:0', name: 'Legacy' },
-  { id: 'mode:1', name: 'Test' },
-];
 
-const createModeValues = (modes: Mode[], value: number): Record<string, number> =>
-  Object.fromEntries(modes.map((m) => [m.id, value]));
-
-const defaultScales = (modes: Mode[]): SpacingState['scales'] => ({
-  Padding: {
-    Desktop: createModeValues(modes, 1.0),
-    Laptop: createModeValues(modes, 0.9),
-    Tablet: createModeValues(modes, 0.85),
-    Mobile: createModeValues(modes, 0.72),
-  },
-  Spacing: {
-    Desktop: createModeValues(modes, 1.0),
-    Laptop: createModeValues(modes, 0.9),
-    Tablet: createModeValues(modes, 0.85),
-    Mobile: createModeValues(modes, 0.72),
-  },
-});
-
-const defaultRefScale = [
-  -64, -56, -48, -40, -32, -24, -20, -18, -16, -14, -12, -10, -8, -6, -4, -2,
-  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64, 72, 80, 96, 128, 160, 192, 200, 224, 256,
-];
+const createDefaultCollection = (name: string): Collection => {
+  const defaultModes = [{ id: 'mode:0', name: 'Default' }];
+  return {
+    id: `collection:${name.toLowerCase()}`,
+    name,
+    modes: defaultModes,
+    scales: {},
+    refScale: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64],
+    groups: [],
+  };
+};
 
 export const useSpacingStore = create<SpacingState>((set, get) => ({
-  modes: defaultModes,
-  collectionName: 'Vertical',
-  scales: defaultScales(defaultModes),
-  refScale: defaultRefScale,
+  collections: [createDefaultCollection('Vertical'), createDefaultCollection('Horizontal')],
+  activeCollectionIndex: 0,
 
   loadFromJSON: (data) => {
     try {
       const json = data as {
         collections: Array<{
+          id: string;
           name: string;
           modes: Array<{ id: string; name: string }>;
           variables: Array<{
@@ -72,28 +69,45 @@ export const useSpacingStore = create<SpacingState>((set, get) => ({
         }>;
       };
 
-      const collection = json.collections[0];
-      if (!collection) return;
+      const collections: Collection[] = json.collections.map((coll) => {
+        const modes = coll.modes.map((m) => ({ id: m.id, name: m.name }));
+        const refSet = new Set<number>();
+        const groupSet = new Set<string>();
+        const scales: Collection['scales'] = {};
 
-      const collectionName = collection.name as 'Vertical' | 'Horizontal';
-      const modes = collection.modes.map((m) => ({ id: m.id, name: m.name }));
-
-      const refSet = new Set<number>();
-      const scales: SpacingState['scales'] = defaultScales(modes);
-
-      collection.variables.forEach((v) => {
-        const parts = v.name.split('/');
-
-        if (parts[0] === 'Base' && parts[1]?.startsWith('ref-')) {
-          const refStr = parts[1].replace('ref-', '');
-          const refNum = parseInt(refStr, 10);
-          if (!isNaN(refNum)) {
-            refSet.add(refNum);
+        coll.variables.forEach((v) => {
+          const parts = v.name.split('/');
+          
+          // Build group paths from variable name (excluding last part which is ref-X)
+          // e.g. "Vertical/Padding/Desktop/ref-2" -> groups: ["Vertical", "Vertical/Padding", "Vertical/Padding/Desktop"]
+          // But we skip the collection name itself since it's redundant
+          const pathParts = parts.slice(0, -1); // remove ref-X
+          
+          for (let i = 1; i <= pathParts.length; i++) {
+            // Skip if first part equals collection name
+            const startIdx = pathParts[0] === coll.name ? 1 : 0;
+            if (i > startIdx) {
+              const groupPath = pathParts.slice(startIdx, i).join('/');
+              if (groupPath) groupSet.add(groupPath);
+            }
           }
-        } else if (parts[0] === 'Scale' && parts.length === 3) {
-          const type = parts[1] as ScaleType;
-          const viewport = parts[2] as ViewportType;
-          if (SCALE_TYPES.includes(type) && VIEWPORTS.includes(viewport)) {
+
+          // Parse ref from last part
+          const lastPart = parts[parts.length - 1];
+          if (lastPart?.startsWith('ref-')) {
+            const refStr = lastPart.replace('ref-', '');
+            const refNum = parseInt(refStr, 10);
+            if (!isNaN(refNum)) {
+              refSet.add(refNum);
+            }
+          }
+
+          // Parse scale parameters: Scale/Type/Viewport
+          if (parts[0] === 'Scale' && parts.length === 3) {
+            const type = parts[1];
+            const viewport = parts[2];
+            if (!scales[type]) scales[type] = {};
+            if (!scales[type][viewport]) scales[type][viewport] = {};
             modes.forEach((m) => {
               const val = v.valuesByMode[m.id]?.value;
               if (val !== undefined) {
@@ -101,141 +115,190 @@ export const useSpacingStore = create<SpacingState>((set, get) => ({
               }
             });
           }
+        });
+
+        // If no scales found from Scale/ variables, try to infer from group structure
+        if (Object.keys(scales).length === 0) {
+          // Get types and viewports from groups
+          const groupArray = Array.from(groupSet);
+          const types = new Set<string>();
+          const viewportsPerType: Record<string, Set<string>> = {};
+          
+          groupArray.forEach(g => {
+            const parts = g.split('/');
+            if (parts.length >= 1) {
+              types.add(parts[0]);
+              if (!viewportsPerType[parts[0]]) viewportsPerType[parts[0]] = new Set();
+              if (parts.length >= 2) {
+                viewportsPerType[parts[0]].add(parts[1]);
+              }
+            }
+          });
+          
+          // Create default scales
+          types.forEach(type => {
+            scales[type] = {};
+            const viewports = viewportsPerType[type] || new Set(['Desktop', 'Laptop', 'Tablet', 'Mobile']);
+            let i = 0;
+            viewports.forEach(vp => {
+              scales[type][vp] = {};
+              const defaultVal = [1, 0.9, 0.85, 0.72][i % 4];
+              modes.forEach(m => {
+                scales[type][vp][m.id] = defaultVal;
+              });
+              i++;
+            });
+          });
         }
+
+        const refScale = sortRefScale(Array.from(refSet));
+        const groups = Array.from(groupSet).sort();
+
+        return {
+          id: coll.id,
+          name: coll.name,
+          modes,
+          scales,
+          refScale: refScale.length > 0 ? refScale : [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64],
+          groups,
+        };
       });
 
-      const refScale = Array.from(refSet).sort((a, b) => a - b);
-
-      set({
-        modes,
-        collectionName,
-        scales,
-        refScale: refScale.length > 0 ? refScale : get().refScale,
-      });
+      set({ collections, activeCollectionIndex: 0 });
+      console.log('Loaded collections:', collections.map(c => ({ name: c.name, groups: c.groups, scales: Object.keys(c.scales) })));
     } catch (err) {
-      console.error('Failed to parse Spacing JSON:', err);
+      console.error('Failed to parse JSON:', err);
     }
   },
 
+  setActiveCollection: (index) => set({ activeCollectionIndex: index }),
+
   setScale: (type, viewport, modeId, value) =>
-    set((state) => ({
-      scales: {
-        ...state.scales,
+    set((state) => {
+      const collections = [...state.collections];
+      const coll = { ...collections[state.activeCollectionIndex] };
+      coll.scales = {
+        ...coll.scales,
         [type]: {
-          ...state.scales[type],
+          ...coll.scales[type],
           [viewport]: {
-            ...state.scales[type][viewport],
+            ...coll.scales[type]?.[viewport],
             [modeId]: value,
           },
         },
-      },
-    })),
+      };
+      collections[state.activeCollectionIndex] = coll;
+      return { collections };
+    }),
 
   addRefValue: (value) =>
-    set((state) => ({
-      refScale: [...state.refScale, value].sort((a, b) => a - b),
-    })),
+    set((state) => {
+      const collections = [...state.collections];
+      const coll = { ...collections[state.activeCollectionIndex] };
+      coll.refScale = sortRefScale([...coll.refScale, value]);
+      collections[state.activeCollectionIndex] = coll;
+      return { collections };
+    }),
 
   removeRefValue: (value) =>
-    set((state) => ({
-      refScale: state.refScale.filter((v) => v !== value),
-    })),
-
-  setCollectionName: (name) => set({ collectionName: name }),
+    set((state) => {
+      const collections = [...state.collections];
+      const coll = { ...collections[state.activeCollectionIndex] };
+      coll.refScale = coll.refScale.filter((v) => v !== value);
+      collections[state.activeCollectionIndex] = coll;
+      return { collections };
+    }),
 
   exportToJSON: () => {
     const state = get();
-    const { modes, collectionName, scales, refScale } = state;
+    
+    const collections = state.collections.map((coll) => {
+      const variables: Array<{
+        id: string;
+        name: string;
+        type: string;
+        description: string;
+        hiddenFromPublishing: boolean;
+        scopes: string[];
+        codeSyntax: Record<string, never>;
+        valuesByMode: Record<string, { type: string; value: number }>;
+      }> = [];
 
-    const variables: Array<{
-      id: string;
-      name: string;
-      type: string;
-      description: string;
-      hiddenFromPublishing: boolean;
-      scopes: string[];
-      codeSyntax: Record<string, never>;
-      valuesByMode: Record<string, { type: string; value: number }>;
-    }> = [];
-
-    let varIdx = 0;
-
-    // Base/ref-X values
-    refScale.forEach((ref) => {
-      variables.push({
-        id: `VariableID:${varIdx++}`,
-        name: `Base/ref-${ref}`,
-        type: 'FLOAT',
-        description: '',
-        hiddenFromPublishing: true,
-        scopes: [],
-        codeSyntax: {},
-        valuesByMode: Object.fromEntries(
-          modes.map((m) => [m.id, { type: 'FLOAT', value: ref }])
-        ),
-      });
-    });
-
-    // Scale values
-    SCALE_TYPES.forEach((type) => {
-      VIEWPORTS.forEach((viewport) => {
-        variables.push({
-          id: `VariableID:${varIdx++}`,
-          name: `Scale/${type}/${viewport}`,
-          type: 'FLOAT',
-          description: '',
-          hiddenFromPublishing: true,
-          scopes: [],
-          codeSyntax: {},
-          valuesByMode: Object.fromEntries(
-            modes.map((m) => [m.id, { type: 'FLOAT', value: scales[type][viewport][m.id] ?? 1 }])
-          ),
-        });
-      });
-    });
-
-    // Computed values
-    SCALE_TYPES.forEach((type) => {
-      VIEWPORTS.forEach((viewport) => {
-        refScale.forEach((ref) => {
-          variables.push({
-            id: `VariableID:${varIdx++}`,
-            name: `${collectionName}/${type}/${viewport}/ref-${ref}`,
-            type: 'FLOAT',
-            description: `{{ Math.round( $Base/ref-${ref} * $Scale/${type}/${viewport}) }}`,
-            hiddenFromPublishing: false,
-            scopes: [],
-            codeSyntax: {},
-            valuesByMode: Object.fromEntries(
-              modes.map((m) => {
-                const scale = scales[type][viewport][m.id] ?? 1;
-                const computed = Math.round(ref * scale);
-                return [m.id, { type: 'FLOAT', value: computed }];
-              })
-            ),
+      let varIdx = 0;
+      const types = Object.keys(coll.scales);
+      
+      types.forEach((type) => {
+        const viewports = Object.keys(coll.scales[type] || {});
+        viewports.forEach((viewport) => {
+          coll.refScale.forEach((ref) => {
+            variables.push({
+              id: `VariableID:${varIdx++}`,
+              name: `${type}/${viewport}/ref-${ref}`,
+              type: 'FLOAT',
+              description: '',
+              hiddenFromPublishing: false,
+              scopes: [],
+              codeSyntax: {},
+              valuesByMode: Object.fromEntries(
+                coll.modes.map((m) => {
+                  const scale = coll.scales[type]?.[viewport]?.[m.id] ?? 1;
+                  const computed = Math.round(ref * scale);
+                  return [m.id, { type: 'FLOAT', value: computed }];
+                })
+              ),
+            });
           });
         });
       });
+
+      return {
+        id: coll.id,
+        name: coll.name,
+        defaultModeId: coll.modes[0]?.id ?? 'mode:0',
+        hiddenFromPublishing: false,
+        modes: coll.modes,
+        variables,
+      };
     });
 
     return {
       version: '1.0',
       exportedAt: new Date().toISOString(),
       fileName: '2-R4-Spacing-Scale',
-      collections: [
-        {
-          id: `VariableCollectionId:spacing`,
-          name: collectionName,
-          defaultModeId: modes[0]?.id ?? 'mode:0',
-          hiddenFromPublishing: false,
-          modes,
-          variables,
-        },
-      ],
+      collections,
     };
   },
 }));
 
+// Helper to get active collection
+export const useActiveCollection = () => {
+  const store = useSpacingStore();
+  return store.collections[store.activeCollectionIndex];
+};
+
 export function calculateSpacing(ref: number, scale: number): number {
   return Math.round(ref * scale);
+}
+
+// Build sidebar groups with hierarchy from collection.groups
+export function buildSidebarGroups(groups: string[], refCount: number): { name: string; path: string; count: number; indent: number }[] {
+  const result: { name: string; path: string; count: number; indent: number }[] = [];
+  
+  groups.forEach(path => {
+    const parts = path.split('/');
+    const depth = parts.length - 1;
+    const name = parts[parts.length - 1];
+    
+    // Count: leaf groups have refCount, parent groups sum of children
+    const childGroups = groups.filter(g => g.startsWith(path + '/'));
+    const isLeaf = childGroups.length === 0;
+    const count = isLeaf ? refCount : childGroups.filter(g => {
+      const remaining = g.slice(path.length + 1);
+      return !remaining.includes('/'); // direct children only
+    }).length * refCount;
+    
+    result.push({ name, path, count, indent: depth });
+  });
+  
+  return result;
 }
