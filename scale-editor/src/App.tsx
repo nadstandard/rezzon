@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Tabs } from './components/Tabs';
 import { RadiusEditor } from './components/RadiusEditor';
+import { SpacingEditor } from './components/SpacingEditor';
 import { useRadiusStore } from './stores/radiusStore';
+import { useSpacingStore } from './stores/spacingStore';
 import type { CollectionType } from './types';
 
 const TABS = [
@@ -17,27 +19,38 @@ function App() {
   const [activeGroup, setActiveGroup] = useState('All');
   
   const radiusStore = useRadiusStore();
-  const refCount = radiusStore.refScale.length;
-  const radiusVarCount = 4 * (refCount + 1) + 5; // 4 viewports * (refs + pill) + params
+  const spacingStore = useSpacingStore();
+  
+  const radiusRefCount = radiusStore.refScale.length;
+  const radiusVarCount = 4 * (radiusRefCount + 1) + 5;
+  
+  const spacingRefCount = spacingStore.refScale.length;
+  const spacingVarCount = spacingRefCount * 8 + 8; // refs * (4 viewports * 2 types) + 8 scale params
 
   const collections = [
     { type: 'typography' as const, name: 'Typography', count: null },
-    { type: 'spacing' as const, name: 'Spacing', count: null },
+    { type: 'spacing' as const, name: 'Spacing', count: spacingVarCount },
     { type: 'grid' as const, name: 'Grid', count: null },
     { type: 'radius' as const, name: 'Radius', count: radiusVarCount },
   ];
 
   const getSidebarGroups = () => {
     if (activeTab === 'radius') {
-      const refCount = radiusStore.refScale.length;
-      const perViewport = refCount + 1; // +1 for pill
-      
+      const perViewport = radiusRefCount + 1;
       return [
-        { name: 'All', count: 4 * perViewport + 5 }, // 4 viewports + params
+        { name: 'All', count: 4 * perViewport + 5 },
         { name: 'Desktop', count: perViewport, indent: 0 },
         { name: 'Laptop', count: perViewport, indent: 0 },
         { name: 'Tablet', count: perViewport, indent: 0 },
         { name: 'Mobile', count: perViewport, indent: 0 },
+      ];
+    }
+    if (activeTab === 'spacing') {
+      const perTypeViewport = spacingRefCount * 4; // 4 viewports
+      return [
+        { name: 'All', count: spacingVarCount },
+        { name: 'Padding', count: perTypeViewport, indent: 0 },
+        { name: 'Spacing', count: perTypeViewport, indent: 0 },
       ];
     }
     return [{ name: 'All', count: 0 }];
@@ -48,7 +61,10 @@ function App() {
       <Sidebar
         collections={collections}
         activeCollection={activeTab}
-        onCollectionSelect={setActiveTab}
+        onCollectionSelect={(type) => {
+          setActiveTab(type);
+          setActiveGroup('All');
+        }}
         groups={getSidebarGroups()}
         activeGroup={activeGroup}
         onGroupSelect={setActiveGroup}
@@ -58,17 +74,18 @@ function App() {
         <Tabs
           tabs={TABS}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(type) => {
+            setActiveTab(type);
+            setActiveGroup('All');
+          }}
         />
 
         {activeTab === 'radius' && <RadiusEditor activeGroup={activeGroup} />}
         
+        {activeTab === 'spacing' && <SpacingEditor activeGroup={activeGroup} />}
+        
         {activeTab === 'typography' && (
           <div className="empty-state">Typography Editor — coming soon</div>
-        )}
-        
-        {activeTab === 'spacing' && (
-          <div className="empty-state">Spacing Editor — coming soon</div>
         )}
         
         {activeTab === 'grid' && (
