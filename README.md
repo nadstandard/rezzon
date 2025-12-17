@@ -70,3 +70,4 @@ Każdy mod może mieć inne wartości dla wszystkich parametrów.
 ## 📝 Licencja
 
 Prywatne repozytorium. Wszelkie prawa zastrzeżone.
+
