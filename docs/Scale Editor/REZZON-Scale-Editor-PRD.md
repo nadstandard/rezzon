@@ -49,7 +49,7 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 ### 4.1 Struktura aplikacji
 
 Cztery główne sekcje (zakładki):
-- **Typography** — Size + Line Height (🔲 planned)
+- **Typography** — Size + Line Height (✅ implemented)
 - **Spacing** — skala Vertical + Horizontal (✅ implemented)
 - **Grid** — siatka, kolumny, kontenery, photo (🔲 planned)
 - **Radius** — promienie zaokrągleń (✅ implemented)
@@ -112,21 +112,19 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 - ✅ Import/Export JSON
 - ✅ Dodawanie/usuwanie ref values
 
-### 4.5 Typography Editor (🔲 Planned)
+### 4.5 Typography Editor (✅ Implemented v0.0.24)
 
-**Wartości bazowe:**
-- Skala referencji: 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 60, 64, 72, 80, 96, 128
+**Sub-collections:** Size, Line Height
 
-**Scale per kontekst × viewport:**
+**Formuła Size:** `Size = round(ref × scale[viewport])`
 
-| Context  | Desktop | Laptop | Tablet | Mobile |
-|----------|---------|--------|--------|--------|
-| on-bg    | 1.0     | 0.9    | 0.8    | 0.7    |
-| on-card  | 1.0     | 0.8    | 0.7    | 0.6    |
+**Formuła Line Height:** `LH = round(Size × (A + B / Size))`
 
-**Formuła Size:** `Size = ref × scale[context][viewport]`
+**Viewports:** Desktop, Laptop, Tablet, Mobile (dynamicznie parsowane z JSON)
 
-**Line Height — nieliniowa krzywa:** `Line Height = Size × (A + B / Size)`
+**Skala ref:** 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 60, 64, 72, 80, 96, 128
+
+**Kategorie Line Height:** xl, l, m, s, xs
 
 **Parametry A/B per kategoria:**
 
@@ -137,6 +135,19 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 | m         | 1.25 | 2 | Średni |
 | s         | 1.02 | 2 | Ciasny |
 | xs        | 1.00 | 0 | Tight (LH = Size) |
+
+**Generowane:**
+- Size: `Size/{Viewport}/ref-{N}`
+- Line Height: `Line Height/{Viewport}/ref-{N}-{category}`
+
+**Funkcje:**
+- ✅ Multi-collection support (Size/Line Height)
+- ✅ Dynamic group parsing z JSON
+- ✅ Scale parameters per viewport (Size)
+- ✅ A/B parameters per category (Line Height)
+- ✅ Import/Export JSON
+- ✅ Dodawanie/usuwanie ref values
+- ✅ Zaokrąglanie do liczb całkowitych
 
 ### 4.6 Grid Editor (🔲 Planned)
 
@@ -186,6 +197,7 @@ scale-editor/
 │   ├── components/
 │   │   ├── RadiusEditor.tsx
 │   │   ├── SpacingEditor.tsx
+│   │   ├── TypographyEditor.tsx
 │   │   ├── Sidebar.tsx
 │   │   ├── Tabs.tsx
 │   │   ├── Toolbar.tsx
@@ -193,7 +205,8 @@ scale-editor/
 │   │   └── Toast.tsx
 │   ├── stores/
 │   │   ├── radiusStore.ts
-│   │   └── spacingStore.ts
+│   │   ├── spacingStore.ts
+│   │   └── typographyStore.ts
 │   ├── hooks/
 │   │   └── useFileHandling.ts
 │   ├── types/
@@ -207,11 +220,11 @@ scale-editor/
 ```json
 {
   "collections": [{
-    "name": "Radius",
-    "modes": [{ "id": "mode:0", "name": "CROSS" }],
+    "name": "Size",
+    "modes": [{ "id": "43:2", "name": "Legacy" }],
     "variables": [{
-      "name": "Desktop/v-2",
-      "valuesByMode": { "mode:0": { "value": 2 } }
+      "name": "Size/Desktop/ref-16",
+      "valuesByMode": { "43:2": { "value": 16 } }
     }]
   }]
 }
@@ -224,18 +237,20 @@ scale-editor/
 ┌─────────────────────────────────────────────────────────────┐
 │  [Typography Scale] [Spacing Scale] [Grid] [Radius]  tabs   │
 ├──────────────┬──────────────────────────────────────────────┤
-│ COLLECTIONS  │  Radius                    [ƒ] [Import] [Export] │
+│ COLLECTIONS  │  Typography (Size)       [ƒ] [Import] [Export] │
 │ Typography   │  ───────────────────────────────────────────  │
-│ Spacing      │  Name          │ CROSS │ CIRCLE │ TRIANGLE │ │
+│ Spacing      │  Name          │ Legacy │ Minimal │ Balanced │
 │ Grid         │  ─────────────────────────────────────────── │
-│ ● Radius     │  PARAMETERS                                  │
-│              │  # base-value  │  2    │   2    │    2     │ │
-│ GROUPS       │  ƒ multiplier  │ 1.0   │  1.0   │   1.0    │ │
+│ ● Radius     │  SCALE PARAMETERS                            │
+│              │  ƒ scale-desktop │ 1.0  │  1.0   │   1.0    │
+│ SUB-COLL     │  ƒ scale-laptop  │ 0.9  │  0.9   │   0.9    │
+│ ● Size       │  ─────────────────────────────────────────── │
+│   Line Height│  DESKTOP                                     │
+│              │  = ref-16       │  16   │   16   │    16    │
+│ GROUPS       │  = ref-32       │  32   │   32   │    32    │
 │ ● All        │  ─────────────────────────────────────────── │
-│   Desktop    │  DESKTOP                                     │
-│   Laptop     │  = v-16        │  16   │   16   │    16    │ │
-│   Tablet     │  = v-32        │  32   │   32   │    32    │ │
-│   Mobile     │  ─────────────────────────────────────────── │
+│   Desktop    │  + Add ref value                             │
+│   Laptop     │                                              │
 └──────────────┴──────────────────────────────────────────────┘
 ```
 
@@ -255,24 +270,25 @@ scale-editor/
 |-------|-------|--------|
 | 1 | Radius Editor | ✅ v0.0.22 |
 | 2 | Spacing Editor | ✅ v0.0.22 |
-| 3 | Typography Editor | 🔲 planned |
+| 3 | Typography Editor | ✅ v0.0.24 |
 | 4 | Grid Editor | 🔲 planned |
 | 5 | Undo/Redo, Persistence | 🔲 planned |
 
 ## 9. Znane limitacje
 
-- Viewports hardcoded w Radius (dynamic w Spacing)
+- Viewports hardcoded w Radius (dynamic w Spacing i Typography)
 - Brak undo/redo
 - Brak localStorage persistence
 - Single user, local only
 
 ---
 
-**Wersja:** 0.5  
+**Wersja:** 0.6  
 **Data:** 2024-12-18  
 **Autor:** Claude + Marcin
 
 **Changelog:**
+- 0.6: Dodano Typography Editor (v0.0.24), zaktualizowano strukturę plików i roadmap
 - 0.5: Zaktualizowano status implementacji (v0.0.22), dodano sekcję Technical Implementation
 - 0.4: Dodano sekcję UI Design
 - 0.3: Dodano szczegółowe formuły i parametry

@@ -1,5 +1,32 @@
 # Scale Editor Changelog
 
+## [0.0.24] - 2024-12-18
+
+### Fixed
+- Modal focus stealing — focus tylko przy otwarciu, nie przy każdym renderze
+- Zaokrąglanie wartości — `Math.round()` do liczb całkowitych
+
+### Changed
+- Typography Editor startuje z pustym stanem (jak Spacing)
+
+---
+
+## [0.0.23] - 2024-12-18
+
+### Added
+- **Typography Editor** — pełna implementacja
+- `typographyStore.ts` — Zustand store z dynamic parsing
+- `TypographyEditor.tsx` — komponent edytora
+- Sub-collections: Size, Line Height
+- Formuła Size: `round(ref × scale[viewport])`
+- Formuła Line Height: `round(Size × (A + B / Size))`
+- Kategorie LH: xl, l, m, s, xs z parametrami A/B
+- Dynamic group parsing z JSON (viewports)
+- Scale parameters per viewport (Size)
+- A/B parameters per category (Line Height)
+
+---
+
 ## [0.0.22] - 2024-12-18
 
 ### Fixed
@@ -115,13 +142,14 @@
 ### Znane limitacje
 - Brak undo/redo
 - Brak localStorage persistence
-- Viewports hardcoded w Radius (ale dynamic w Spacing)
+- Viewports hardcoded w Radius (ale dynamic w Spacing i Typography)
 
-### Jak dodać nowy editor (np. Typography)
-1. Stwórz `typographyStore.ts` w `src/stores/`
-2. Stwórz `TypographyEditor.tsx` w `src/components/`
+### Jak dodać nowy editor (np. Grid)
+1. Stwórz `gridStore.ts` w `src/stores/`
+2. Stwórz `GridEditor.tsx` w `src/components/`
 3. Dodaj do `App.tsx` w renderowaniu tabów
 4. Dodaj grupy do `getSidebarGroups()`
+5. Opcjonalnie: dodaj sub-collections do `getSubCollections()`
 
 ### File Recognition Pattern
 - `*Typography*.json` → Typography tab
