@@ -3,8 +3,10 @@ import { Sidebar } from './components/Sidebar';
 import { Tabs } from './components/Tabs';
 import { RadiusEditor } from './components/RadiusEditor';
 import { SpacingEditor } from './components/SpacingEditor';
+import { TypographyEditor } from './components/TypographyEditor';
 import { useRadiusStore } from './stores/radiusStore';
 import { useSpacingStore, buildSidebarGroups } from './stores/spacingStore';
+import { useTypographyStore, buildTypographySidebarGroups } from './stores/typographyStore';
 import type { CollectionType } from './types';
 
 const TABS = [
@@ -15,12 +17,15 @@ const TABS = [
 ];
 
 function App() {
-  const [activeTab, setActiveTab] = useState<CollectionType>('radius');
+  const [activeTab, setActiveTab] = useState<CollectionType>('typography');
   const [activeGroup, setActiveGroup] = useState('All');
   
   const radiusStore = useRadiusStore();
   const spacingStore = useSpacingStore();
+  const typographyStore = useTypographyStore();
+  
   const activeSpacingCollection = spacingStore.collections[spacingStore.activeCollectionIndex];
+  const activeTypographyCollection = typographyStore.collections[typographyStore.activeCollectionIndex];
   
   const radiusRefCount = radiusStore.refScale.length;
   const radiusVarCount = 4 * (radiusRefCount + 1) + 5;
@@ -33,8 +38,14 @@ function App() {
     : [];
   const spacingVarCount = spacingRefCount * spacingTypes.length * spacingViewports.length;
 
+  // Calculate typography var count
+  const typographyRefCount = activeTypographyCollection?.refScale.length ?? 0;
+  const typographyViewports = activeTypographyCollection?.groups.length ?? 0;
+  const typographyCategories = activeTypographyCollection?.categories?.length ?? 1;
+  const typographyVarCount = typographyRefCount * typographyViewports * typographyCategories;
+
   const collections = [
-    { type: 'typography' as const, name: 'Typography', count: null },
+    { type: 'typography' as const, name: 'Typography', count: typographyVarCount },
     { type: 'spacing' as const, name: 'Spacing', count: spacingVarCount },
     { type: 'grid' as const, name: 'Grid', count: null },
     { type: 'radius' as const, name: 'Radius', count: radiusVarCount },
@@ -52,10 +63,20 @@ function App() {
       ];
     }
     if (activeTab === 'spacing' && activeSpacingCollection) {
-      // Dynamic groups from JSON
       const dynamicGroups = buildSidebarGroups(activeSpacingCollection.groups, spacingRefCount);
       return [
         { name: 'All', path: 'All', count: spacingVarCount, indent: 0 },
+        ...dynamicGroups,
+      ];
+    }
+    if (activeTab === 'typography' && activeTypographyCollection) {
+      const dynamicGroups = buildTypographySidebarGroups(
+        activeTypographyCollection.groups,
+        typographyRefCount,
+        activeTypographyCollection.categories
+      );
+      return [
+        { name: 'All', path: 'All', count: typographyVarCount, indent: 0 },
         ...dynamicGroups,
       ];
     }
@@ -76,6 +97,25 @@ function App() {
     }));
   };
 
+  // Get typography collections for sidebar (Size, Line Height)
+  const getTypographyCollections = () => {
+    return typographyStore.collections.map((coll, idx) => ({
+      name: coll.name,
+      count: coll.refScale.length * coll.groups.length * (coll.categories?.length ?? 1),
+      active: idx === typographyStore.activeCollectionIndex,
+      onClick: () => {
+        typographyStore.setActiveCollection(idx);
+        setActiveGroup('All');
+      },
+    }));
+  };
+
+  const getSubCollections = () => {
+    if (activeTab === 'spacing') return getSpacingCollections();
+    if (activeTab === 'typography') return getTypographyCollections();
+    return undefined;
+  };
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -88,7 +128,7 @@ function App() {
         groups={getSidebarGroups()}
         activeGroup={activeGroup}
         onGroupSelect={setActiveGroup}
-        subCollections={activeTab === 'spacing' ? getSpacingCollections() : undefined}
+        subCollections={getSubCollections()}
       />
 
       <main className="main-content">
@@ -101,13 +141,11 @@ function App() {
           }}
         />
 
-        {activeTab === 'radius' && <RadiusEditor activeGroup={activeGroup} />}
+        {activeTab === 'typography' && <TypographyEditor activeGroup={activeGroup} />}
         
         {activeTab === 'spacing' && <SpacingEditor activeGroup={activeGroup} />}
         
-        {activeTab === 'typography' && (
-          <div className="empty-state">Typography Editor — coming soon</div>
-        )}
+        {activeTab === 'radius' && <RadiusEditor activeGroup={activeGroup} />}
         
         {activeTab === 'grid' && (
           <div className="empty-state">Grid Editor — coming soon</div>
