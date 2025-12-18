@@ -14,11 +14,11 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 
 | Biblioteka | Zmiennych | Wartości bazowych | Wyliczanych |
 |------------|-----------|-------------------|-------------|
-| Grid | ~5,966 | 46 | ~5,920 |
+| Grid | ~3,595 | ~56 | ~3,539 |
 | Spacing (Vertical + Horizontal) | 772 | ~58 | ~714 |
 | Typography (Size + Line Height) | 562 | ~31 | ~531 |
 | Radius | ~75 | ~7 | ~68 |
-| **Razem** | **~7,375** | ~142 | ~7,233 |
+| **Razem** | **~5,004** | ~152 | ~4,852 |
 
 ### Ograniczenie Figma
 - Maksymalnie **10 modów (stylów)** per kolekcja zmiennych
@@ -33,6 +33,7 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 2. **Wyjątki są jawne** — widzisz co jest standardem, a co wyjątkiem
 3. **Zero konsoli** — przyjazny UI, klikasz zamiast pisać komendy
 4. **Output to JSON** — kompatybilny z REZZON Portal do importu do Figmy
+5. **Konfiguracja w Figma Variables** — metadane zapisane w `description`, przetrwają eksport/import
 
 ## 3. Użytkownicy
 
@@ -51,12 +52,12 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 Cztery główne sekcje (zakładki):
 - **Typography** — Size + Line Height (✅ implemented)
 - **Spacing** — skala Vertical + Horizontal (✅ implemented)
-- **Grid** — siatka, kolumny, kontenery, photo (🔲 planned)
+- **Grid** — siatka, kolumny, kontenery, photo (🔲 in design)
 - **Radius** — promienie zaokrągleń (✅ implemented)
 
 ### 4.2 Zarządzanie modami (stylami)
 
-**Mody to warianty systemu** (np. CROSS, CIRCLE, TRIANGLE, SQUARE, N10).
+**Mody to warianty systemu** (np. CROSS, CIRCLE, TRIANGLE, SQUARE).
 Każdy mode może mieć inne wartości dla wszystkich parametrów.
 
 **Funkcje:**
@@ -82,15 +83,6 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 
 **Generowane:** `{Viewport}/v-{ref}`, `{Viewport}/v-pill`
 
-**Funkcje:**
-- ✅ Import JSON (Figma format)
-- ✅ Export JSON (Figma format)
-- ✅ Edycja parametrów (base-value, multipliers, pill)
-- ✅ Dodawanie ref values
-- ✅ Usuwanie ref values (context menu)
-- ✅ Filtrowanie po viewport (sidebar)
-- ✅ Walidacja + error feedback (Toast)
-
 ### 4.4 Spacing Editor (✅ Implemented v0.0.22)
 
 **Formula:** `round(ref × scale[type][viewport])`
@@ -104,13 +96,6 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 **Skala ref:** 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64 (+ negative values)
 
 **Generowane:** `{Type}/{Viewport}/ref-{ref}`
-
-**Funkcje:**
-- ✅ Multi-collection support (Vertical/Horizontal)
-- ✅ Dynamic group parsing z JSON
-- ✅ Scale parameters per type/viewport
-- ✅ Import/Export JSON
-- ✅ Dodawanie/usuwanie ref values
 
 ### 4.5 Typography Editor (✅ Implemented v0.0.24)
 
@@ -126,47 +111,125 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 
 **Kategorie Line Height:** xl, l, m, s, xs
 
-**Parametry A/B per kategoria:**
+### 4.6 Grid Builder (🔲 In Design)
 
-| Kategoria | A    | B | Opis |
-|-----------|------|---|------|
-| xl        | 1.40 | 6 | Najluźniejszy |
-| l         | 1.35 | 4 | Luźny |
-| m         | 1.25 | 2 | Średni |
-| s         | 1.02 | 2 | Ciasny |
-| xs        | 1.00 | 0 | Tight (LH = Size) |
+Grid Builder to narzędzie do **projektowania całego systemu siatki od zera** lub edycji istniejącej biblioteki.
 
-**Generowane:**
-- Size: `Size/{Viewport}/ref-{N}`
-- Line Height: `Line Height/{Viewport}/ref-{N}-{category}`
+#### 4.6.1 Koncepcja
 
-**Funkcje:**
-- ✅ Multi-collection support (Size/Line Height)
-- ✅ Dynamic group parsing z JSON
-- ✅ Scale parameters per viewport (Size)
-- ✅ A/B parameters per category (Line Height)
-- ✅ Import/Export JSON
-- ✅ Dodawanie/usuwanie ref values
-- ✅ Zaokrąglanie do liczb całkowitych
+W przeciwieństwie do innych editorów, Grid Builder nie tylko edytuje wartości, ale pozwala:
+- Tworzyć bibliotekę od zera
+- Definiować własne warianty kolumn (w-half, w-margin, to-edge, 1G, 2G...)
+- Definiować własne warianty responsywne (to-tab-6-col, to-tab-viewport...)
+- Zapisywać konfigurację w Figma Variables (pole `description`)
 
-### 4.6 Grid Editor (🔲 Planned)
+#### 4.6.2 Struktura Grid
 
-**Viewporty:** desktop (1920), laptop (1366), tablet (768), mobile (390)
+**Viewporty (edytowalne per mode):**
+| Viewport | Width | Columns | Gutter | Margin-M | Margin-XS |
+|----------|-------|---------|--------|----------|-----------|
+| Desktop | 1920 | 12 | 24 | 204 | 20 |
+| Laptop | 1366 | 12 | 20 | 45 | 15 |
+| Tablet | 768 | 12 | 20 | 58 | 16 |
+| Mobile | 390 | 4 | 20 | 20 | 10 |
 
-**Wartości bazowe per viewport × mode:**
-- `viewport-edit` — szerokość viewport
-- `number-of-columns-edit` — liczba kolumn
-- `gutter-width-edit` — szerokość guttera
-- `margin-m-edit` — margines główny
-- `margin-xs-edit` — margines mały
+**Proporcje zdjęć (edytowalne):**
+| Ratio | A | B |
+|-------|---|---|
+| horizontal | 4 | 3 |
+| vertical | 3 | 4 |
+| square | 1 | 1 |
+| panoramic-high | 16 | 9 |
+| panoramic-low | 16 | 5 |
 
-**Proporcje:** horizontal (4:3), vertical (3:4), square (1:1), panoramic-high (16:9), panoramic-low (16:5)
+**Wartości wyliczane:**
+- `column-width = (viewport - 2×margin-m - (columns-1)×gutter) / columns`
+- `ingrid = viewport - 2×margin-m`
+- `photo-margin = margin-m - margin-xs`
 
-**Formuła:**
+#### 4.6.3 Uniwersalna formuła kolumn
+
+Każda wartość kolumnowa wyliczana jest według formuły:
 ```
-wartość = (DL_Col × column-width) + (DL_Gutter × gutter-width) 
-        + (Add_Half × gutter/2) + (Add_Margin × margin-m) 
-        + (Add_Edge × margin-xs)
+wartość = (DL_Col × column-width) + (DL_Gutter × gutter) + (Add_Half × column-width/2) + (Add_Margin × photo-margin) + (Add_Edge × margin-m)
+```
+
+Gdzie parametry per wariant:
+
+| Wariant | DL Col | DL Gutter | Add Half | Add Margin | Add Edge |
+|---------|--------|-----------|----------|------------|----------|
+| v-col-6 | 6 | 5 | 0 | 0 | 0 |
+| v-col-6-1G | 6 | 6 | 0 | 0 | 0 |
+| v-col-6-2G | 6 | 7 | 0 | 0 | 0 |
+| v-col-6-w-half | 6 | 5 | 1 | 0 | 0 |
+| v-col-6-w-margin | 6 | 5 | 0 | 1 | 0 |
+| v-col-6-to-edge | 6 | 5 | 0 | 0 | 1 |
+
+#### 4.6.4 Builder wariantów kolumn
+
+UI do definiowania własnych wariantów:
+- Nazwa wariantu (np. "w-half", "to-edge", "1G")
+- Parametry formuły (DL_Col offset, DL_Gutter offset, Add_Half, Add_Margin, Add_Edge)
+- Możliwość dodawania/usuwania wariantów
+
+#### 4.6.5 Builder wariantów responsywnych
+
+Warianty responsywne definiują **skąd brać wartość** per viewport:
+
+| Wariant | Desktop | Laptop | Tablet | Mobile |
+|---------|---------|--------|--------|--------|
+| static | desktop | laptop | tablet | mobile |
+| to-tab-6-col | desktop | laptop | half | mobile |
+| to-tab-12-col | desktop | laptop | full | mobile |
+| to-tab-viewport | desktop | laptop | viewport | viewport |
+| to-mobile-6-col | desktop | laptop | tablet | half |
+| heading | desktop | laptop | tablet | mobile |
+
+Gdzie źródła mogą być:
+- `desktop` / `laptop` / `tablet` / `mobile` — użyj gridu tego viewportu
+- `half` — połowa ingridu danego viewportu
+- `full` — pełny ingrid danego viewportu
+- `viewport` — pełna szerokość ekranu (bez marginesów)
+- `0` — zeruj wartość (dla wariantów DL/TM)
+
+#### 4.6.6 Warianty marginesów
+
+**Rozmiary:** xs, m, l, xl, xxl, xxxl, ingrid-l, ingrid-xl, ingrid-xxl, ingrid-xxxl
+
+**Sufiksy:**
+- bez sufiksu — widoczne wszędzie
+- `-DL` — tylko Desktop/Laptop (Tablet/Mobile = 0)
+- `-TM` — tylko Tablet/Mobile (Desktop/Laptop = 0)
+
+#### 4.6.7 Generowane zmienne (~3,595)
+
+```
+base/ratio/{ratio}-a, base/ratio/{ratio}-b
+base/{viewport}/viewport-edit, column-width, ingrid, ...
+column/{viewport}/v-col-{N}, v-col-{N}-w-half, v-col-{N}-w-margin, ...
+container/{viewport}/v-col-{N}
+container/{viewport}/{responsive-variant}/v-col-{N}
+photo/{viewport}/width/{responsive-variant}/w-col-{N}
+photo/{viewport}/height/{responsive-variant}/{ratio}/h-col-{N}
+margin/{viewport}/v-{size}, v-{size}-DL, v-{size}-TM
+```
+
+#### 4.6.8 Persystencja konfiguracji
+
+Konfiguracja buildera zapisywana w polu `description` zmiennych Figma:
+- Przetrwa eksport/import z Figmy
+- Nie wymaga osobnego pliku konfiguracyjnego
+- Edytowalna z poziomu Scale Editor
+
+Propozycja struktury:
+```
+Variable: base/_config
+Value: 0
+Description: {
+  "columnVariants": [...],
+  "responsiveVariants": [...],
+  "marginSizes": [...]
+}
 ```
 
 ## 5. UI Components (✅ Implemented)
@@ -176,7 +239,7 @@ wartość = (DL_Col × column-width) + (DL_Gutter × gutter-width)
 | Sidebar | ✅ | Collections, sub-collections, groups |
 | Tabs | ✅ | Przełączanie editorów |
 | Toolbar | ✅ | Import/Export, formula tooltip |
-| Modal | ✅ | Add ref value, keyboard support (Escape, Enter, focus trap) |
+| Modal | ✅ | Add ref value, keyboard support |
 | Toast | ✅ | Error/success notifications |
 | Context Menu | ✅ | Delete ref value (right-click) |
 | Data Table | ✅ | Editable parameters, computed display |
@@ -198,6 +261,7 @@ scale-editor/
 │   │   ├── RadiusEditor.tsx
 │   │   ├── SpacingEditor.tsx
 │   │   ├── TypographyEditor.tsx
+│   │   ├── GridBuilder.tsx (planned)
 │   │   ├── Sidebar.tsx
 │   │   ├── Tabs.tsx
 │   │   ├── Toolbar.tsx
@@ -206,7 +270,8 @@ scale-editor/
 │   ├── stores/
 │   │   ├── radiusStore.ts
 │   │   ├── spacingStore.ts
-│   │   └── typographyStore.ts
+│   │   ├── typographyStore.ts
+│   │   └── gridStore.ts (planned)
 │   ├── hooks/
 │   │   └── useFileHandling.ts
 │   ├── types/
@@ -220,76 +285,45 @@ scale-editor/
 ```json
 {
   "collections": [{
-    "name": "Size",
-    "modes": [{ "id": "43:2", "name": "Legacy" }],
+    "name": "Grid",
+    "modes": [{ "id": "46:3", "name": "CROSS" }],
     "variables": [{
-      "name": "Size/Desktop/ref-16",
-      "valuesByMode": { "43:2": { "value": 16 } }
+      "name": "base/desktop/viewport-edit",
+      "description": "",
+      "valuesByMode": { "46:3": { "value": 1920 } }
     }]
   }]
 }
 ```
 
-## 7. UI Design
-
-### Layout
-```
-┌─────────────────────────────────────────────────────────────┐
-│  [Typography Scale] [Spacing Scale] [Grid] [Radius]  tabs   │
-├──────────────┬──────────────────────────────────────────────┤
-│ COLLECTIONS  │  Typography (Size)       [ƒ] [Import] [Export] │
-│ Typography   │  ───────────────────────────────────────────  │
-│ Spacing      │  Name          │ Legacy │ Minimal │ Balanced │
-│ Grid         │  ─────────────────────────────────────────── │
-│ ● Radius     │  SCALE PARAMETERS                            │
-│              │  ƒ scale-desktop │ 1.0  │  1.0   │   1.0    │
-│ SUB-COLL     │  ƒ scale-laptop  │ 0.9  │  0.9   │   0.9    │
-│ ● Size       │  ─────────────────────────────────────────── │
-│   Line Height│  DESKTOP                                     │
-│              │  = ref-16       │  16   │   16   │    16    │
-│ GROUPS       │  = ref-32       │  32   │   32   │    32    │
-│ ● All        │  ─────────────────────────────────────────── │
-│   Desktop    │  + Add ref value                             │
-│   Laptop     │                                              │
-└──────────────┴──────────────────────────────────────────────┘
-```
-
-### Visual Language
-- `#` icon = base value (editable)
-- `ƒ` icon = parameter/multiplier (editable)
-- `=` icon = computed value (green, read-only)
-
-### Keyboard Shortcuts
-- `Escape` — zamyka modal
-- `Enter` — potwierdza w modal
-- `Right-click` — context menu (delete)
-
-## 8. Roadmap
+## 7. Roadmap
 
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 | Radius Editor | ✅ v0.0.22 |
 | 2 | Spacing Editor | ✅ v0.0.22 |
 | 3 | Typography Editor | ✅ v0.0.24 |
-| 4 | Grid Editor | 🔲 planned |
-| 5 | Undo/Redo, Persistence | 🔲 planned |
+| 4 | Grid Builder — analiza i design | 🔄 in progress |
+| 5 | Grid Builder — implementacja | 🔲 planned |
+| 6 | Undo/Redo | 🔲 planned |
 
-## 9. Znane limitacje
+## 8. Znane limitacje
 
 - Viewports hardcoded w Radius (dynamic w Spacing i Typography)
 - Brak undo/redo
-- Brak localStorage persistence
+- Brak localStorage persistence (celowe — dane w Figma Variables)
 - Single user, local only
 
 ---
 
-**Wersja:** 0.6  
-**Data:** 2024-12-18  
+**Wersja:** 0.7  
+**Data:** 2025-12-18  
 **Autor:** Claude + Marcin
 
 **Changelog:**
-- 0.6: Dodano Typography Editor (v0.0.24), zaktualizowano strukturę plików i roadmap
-- 0.5: Zaktualizowano status implementacji (v0.0.22), dodano sekcję Technical Implementation
+- 0.7: Dodano szczegółową koncepcję Grid Builder (warianty kolumn, warianty responsywne, persystencja w description)
+- 0.6: Dodano Typography Editor (v0.0.24)
+- 0.5: Zaktualizowano status implementacji (v0.0.22)
 - 0.4: Dodano sekcję UI Design
 - 0.3: Dodano szczegółowe formuły i parametry
 - 0.2: Dodano zarządzanie modami, strukturą

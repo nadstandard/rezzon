@@ -132,6 +132,46 @@
 
 ---
 
+## Grid Builder Design Notes (2025-12-18)
+
+### Kluczowe ustalenia z analizy JSON
+
+**Uniwersalna formuła kolumn:**
+```
+wartość = (DL_Col × column-width) + (DL_Gutter × gutter) + (Add_Half × col-width/2) + (Add_Margin × photo-margin) + (Add_Edge × margin-m)
+```
+
+**Warianty kolumn:**
+- `v-col-N` — N kolumn + (N-1) gutterów
+- `v-col-N-1G` — dodaj 1 gutter
+- `v-col-N-2G` — dodaj 2 guttery
+- `v-col-N-w-half` — dodaj pół kolumny (nie pół guttera!)
+- `v-col-N-w-margin` — dodaj photo-margin
+- `v-col-N-to-edge` — dodaj margin-m
+
+**Warianty responsywne:**
+- `static` — użyj gridu danego viewportu
+- `to-tab-6-col` — od tabletu użyj połowy ingridu
+- `to-tab-viewport` — od tabletu użyj pełnego viewportu
+- `heading` — placeholder na przyszłość (obecnie = static)
+- `margin-to-tab-margin` — dodaj photo-margin (= margin-m - margin-xs)
+
+**Marginesy z sufiksami:**
+- `-DL` — widoczne tylko na Desktop/Laptop (Tablet/Mobile = 0)
+- `-TM` — widoczne tylko na Tablet/Mobile (Desktop/Laptop = 0)
+
+**Viewporty w REZZON:**
+- Desktop: 1920px, 12 kolumn
+- Laptop: 1366px, 12 kolumn
+- Tablet: 768px, 12 kolumn
+- Mobile: 390px, 4 kolumny
+
+**Persystencja:**
+- Konfiguracja buildera w polu `description` zmiennych Figma
+- Przetrwa eksport/import
+
+---
+
 ## Notes dla Claude AI
 
 ### Architektura
@@ -141,12 +181,12 @@
 
 ### Znane limitacje
 - Brak undo/redo
-- Brak localStorage persistence
+- Brak localStorage persistence (celowe)
 - Viewports hardcoded w Radius (ale dynamic w Spacing i Typography)
 
 ### Jak dodać nowy editor (np. Grid)
 1. Stwórz `gridStore.ts` w `src/stores/`
-2. Stwórz `GridEditor.tsx` w `src/components/`
+2. Stwórz `GridBuilder.tsx` w `src/components/`
 3. Dodaj do `App.tsx` w renderowaniu tabów
 4. Dodaj grupy do `getSidebarGroups()`
 5. Opcjonalnie: dodaj sub-collections do `getSubCollections()`
