@@ -11,15 +11,27 @@ interface ModalProps {
 export function Modal({ title, isOpen, onClose, children, actions }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (isOpen) {
-      // Store previously focused element
+    if (isOpen && !wasOpen.current) {
+      // Only store and focus on initial open, not on re-renders
       previousActiveElement.current = document.activeElement as HTMLElement;
       
-      // Focus the modal
-      modalRef.current?.focus();
-      
+      // Focus first input if available, otherwise modal
+      setTimeout(() => {
+        const firstInput = modalRef.current?.querySelector('input, select, textarea') as HTMLElement;
+        if (firstInput) {
+          firstInput.focus();
+        } else {
+          modalRef.current?.focus();
+        }
+      }, 0);
+    }
+    
+    wasOpen.current = isOpen;
+    
+    if (isOpen) {
       // Handle escape key
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
@@ -51,11 +63,16 @@ export function Modal({ title, isOpen, onClose, children, actions }: ModalProps)
       
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
-        // Restore focus when modal closes
-        previousActiveElement.current?.focus();
       };
     }
   }, [isOpen, onClose]);
+
+  // Restore focus when modal closes
+  useEffect(() => {
+    if (!isOpen && wasOpen.current) {
+      previousActiveElement.current?.focus();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

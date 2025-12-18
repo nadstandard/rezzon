@@ -37,47 +37,29 @@ const sortRefScale = (refs: number[]): number[] => {
   return [...refs].sort((a, b) => a - b);
 };
 
-const createDefaultCollection = (name: string, isLineHeight = false): Collection => {
+const createEmptyCollection = (name: string, isLineHeight = false): Collection => {
   const defaultModes = [{ id: 'mode:0', name: 'Default' }];
-  const defaultScales: Record<string, Record<string, number>> = {
-    Desktop: { 'mode:0': 1 },
-    Laptop: { 'mode:0': 0.9 },
-    Tablet: { 'mode:0': 0.8 },
-    Mobile: { 'mode:0': 0.7 },
-  };
   
   const base: Collection = {
     id: `collection:${name.toLowerCase().replace(/\s+/g, '-')}`,
     name,
     modes: defaultModes,
-    scales: isLineHeight ? {} : defaultScales,
-    refScale: [10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 60, 64, 72, 80, 96, 128],
-    groups: ['Desktop', 'Laptop', 'Tablet', 'Mobile'],
+    scales: {},
+    refScale: [],
+    groups: [],
   };
 
   if (isLineHeight) {
-    base.scalesA = {
-      xl: { 'mode:0': 1.4 },
-      l: { 'mode:0': 1.35 },
-      m: { 'mode:0': 1.25 },
-      s: { 'mode:0': 1.02 },
-      xs: { 'mode:0': 1.0 },
-    };
-    base.scalesB = {
-      xl: { 'mode:0': 6 },
-      l: { 'mode:0': 4 },
-      m: { 'mode:0': 2 },
-      s: { 'mode:0': 2 },
-      xs: { 'mode:0': 0 },
-    };
-    base.categories = ['xl', 'l', 'm', 's', 'xs'];
+    base.scalesA = {};
+    base.scalesB = {};
+    base.categories = [];
   }
 
   return base;
 };
 
 export const useTypographyStore = create<TypographyState>((set, get) => ({
-  collections: [createDefaultCollection('Size'), createDefaultCollection('Line Height', true)],
+  collections: [createEmptyCollection('Size'), createEmptyCollection('Line Height', true)],
   activeCollectionIndex: 0,
 
   loadFromJSON: (data) => {
@@ -355,7 +337,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
                     // Line Height = ref × (A + B / ref)
                     // But we need Size first, which depends on viewport scale
                     // For now, assume Size = ref (scale = 1)
-                    const computed = Math.round(ref * (a + b / ref) * 100) / 100;
+                    const computed = Math.round(ref * (a + b / ref));
                     return [m.id, { type: 'FLOAT', value: computed }];
                   })
                 ),
@@ -378,7 +360,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
               valuesByMode: Object.fromEntries(
                 coll.modes.map((m) => {
                   const scale = coll.scales[viewport]?.[m.id] ?? 1;
-                  const computed = Math.round(ref * scale * 100) / 100;
+                  const computed = Math.round(ref * scale);
                   return [m.id, { type: 'FLOAT', value: computed }];
                 })
               ),
@@ -412,14 +394,14 @@ export const useActiveTypographyCollection = () => {
   return store.collections[store.activeCollectionIndex];
 };
 
-// Calculate Size
+// Calculate Size - round to integer
 export function calculateSize(ref: number, scale: number): number {
-  return Math.round(ref * scale * 100) / 100;
+  return Math.round(ref * scale);
 }
 
-// Calculate Line Height
+// Calculate Line Height - round to integer
 export function calculateLineHeight(size: number, a: number, b: number): number {
-  return Math.round(size * (a + b / size) * 100) / 100;
+  return Math.round(size * (a + b / size));
 }
 
 // Build sidebar groups - flat list of viewports (no nesting needed)

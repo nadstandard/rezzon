@@ -335,7 +335,6 @@ export function TypographyEditor({ activeGroup }: TypographyEditorProps) {
             setValidationError(null);
           }}
           placeholder="Enter value (e.g. 72)"
-          autoFocus
           onKeyDown={(e) => e.key === 'Enter' && handleAddRefValue()}
           aria-describedby={validationError ? 'add-ref-error' : undefined}
         />
