@@ -48,11 +48,11 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 
 ### 4.1 Struktura aplikacji
 
-Trzy główne sekcje (zakładki):
-- **Grid** — siatka, kolumny, kontenery, photo
-- **Spacing** — skala Vertical + Horizontal
-- **Typography** — Size + Line Height
-- **Radius** — promienie zaokrągleń
+Cztery główne sekcje (zakładki):
+- **Typography** — Size + Line Height (🔲 planned)
+- **Spacing** — skala Vertical + Horizontal (✅ implemented)
+- **Grid** — siatka, kolumny, kontenery, photo (🔲 planned)
+- **Radius** — promienie zaokrągleń (✅ implemented)
 
 ### 4.2 Zarządzanie modami (stylami)
 
@@ -60,131 +60,62 @@ Trzy główne sekcje (zakładki):
 Każdy mode może mieć inne wartości dla wszystkich parametrów.
 
 **Funkcje:**
-- Dodawanie nowego modu (np. "N10" z 10 kolumnami)
-- Usuwanie modu
-- Zmiana nazwy modu
-- Zmiana kolejności modów
+- ✅ Automatyczne wykrywanie modów z JSON
+- 🔲 Dodawanie nowego modu
+- 🔲 Usuwanie modu
+- 🔲 Zmiana nazwy modu
+- 🔲 Zmiana kolejności modów
 - Limit: max 10 modów (ograniczenie Figma)
 
-**Każdy mode definiuje osobno:**
-- Parametry per viewport (columns, gutter, margin)
-- Proporcje (mogą się różnić między modami!)
-- Wartości bazowe dla wszystkich skal
+### 4.3 Radius Editor (✅ Implemented v0.0.22)
 
-### 4.3 Grid Editor
+**Formula:** `(ref / 2) × base-value × multiplier[viewport]`
 
-**Viewporty:**
-- desktop (1920)
-- laptop (1366)
-- tablet (768)
-- mobile (390)
+**Viewports:** Desktop, Laptop, Tablet, Mobile
 
-**Wartości bazowe (edytowalne, suffix `-edit`):**
-Per viewport × per mode:
-- `viewport-edit` — szerokość viewport
-- `number-of-columns-edit` — liczba kolumn (może być różna per mode!)
-- `gutter-width-edit` — szerokość guttera
-- `margin-m-edit` — margines główny
-- `margin-xs-edit` — margines mały
+**Wartości bazowe (edytowalne):**
+- `base-value` = 2 (jednostka bazowa)
+- `multiplier-{viewport}` — mnożnik per viewport
+- `pill-{viewport}` = 999 (dla pill buttons)
 
-**Proporcje (per mode, mogą się różnić!):**
-- horizontal-a/b (domyślnie 4:3)
-- vertical-a/b (domyślnie 3:4)
-- square-a/b (domyślnie 1:1)
-- panoramic-high-a/b (domyślnie 16:9)
-- panoramic-low-a/b (domyślnie 16:5)
-- Możliwość dodawania własnych proporcji
+**Skala ref:** 2, 4, 6, 8, 10, 12, 16, 20, 24, 28, 32, 48, 64, 96
 
-**Wartości wyliczane automatycznie:**
-- `number-of-gutters` = columns - 1
-- `column-width` = (viewport - 2×margin - gutters×gutter) / columns
-- `ingrid` = szerokość siatki bez marginesów
-- `photo-margin` = margin-m - margin-xs
+**Generowane:** `{Viewport}/v-{ref}`, `{Viewport}/v-pill`
 
-**Generowane zmienne:**
-- `column/*` — szerokości kolumn (1-N, viewport, warianty -w-half, -w-margin, -to-edge)
-- `container/*` — szerokości kontenerów + warianty responsywne
-- `margin/*` — marginesy
-- `photo/*` — width + height dla wszystkich proporcji i kolumn
+**Funkcje:**
+- ✅ Import JSON (Figma format)
+- ✅ Export JSON (Figma format)
+- ✅ Edycja parametrów (base-value, multipliers, pill)
+- ✅ Dodawanie ref values
+- ✅ Usuwanie ref values (context menu)
+- ✅ Filtrowanie po viewport (sidebar)
+- ✅ Walidacja + error feedback (Toast)
 
-**Formuła obliczeniowa:**
-```
-wartość = (DL_Col × column-width) + (DL_Gutter × gutter-width) 
-        + (Add_Half × gutter/2) + (Add_Margin × margin-m) 
-        + (Add_Edge × margin-xs)
-```
+### 4.4 Spacing Editor (✅ Implemented v0.0.22)
 
-### 4.4 Wyjątki i reguły responsywne
+**Formula:** `round(ref × scale[type][viewport])`
 
-**Istniejące wzorce:**
-- `to-tab-6-col` — na tablet/mobile zwija do 6 kolumn
-- `to-tab-12-col` — na tablet/mobile zwija do pełnego ingrid
-- `to-mobile-6-col` — na mobile zwija do połowy (2 kolumny przy 4-kolumnowym mobile)
-- `margin-to-tab-*` — jak wyżej ale z marginesem
+**Sub-collections:** Vertical, Horizontal
 
-**Responsywne proporcje (nowe):**
-- Możliwość definiowania proporcji per viewport w ramach jednego tagu
-- Np. `panoramic-to-horizontal`: 16:9 na desktop → 4:3 na mobile
+**Types:** Padding, Spacing (dynamicznie parsowane z JSON)
 
-**Funkcje zarządzania wyjątkami:**
-- Dodawanie nowych wyjątków
-- Edycja parametrów wyjątku (które viewporty, jakie wartości)
-- Usuwanie wyjątków
-- Podgląd gdzie wyjątek jest zastosowany
+**Viewports:** Desktop, Laptop, Tablet, Mobile
 
-### 4.5 Zarządzanie strukturą
+**Skala ref:** 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64 (+ negative values)
 
-**Zmiana kolejności:**
-- Przestawianie zmiennych
-- Przestawianie grup (column przed container)
-- Przestawianie modów
+**Generowane:** `{Type}/{Viewport}/ref-{ref}`
 
-**Nazewnictwo:**
-- Zmiana nazwy tagu (np. `to-tab-6-col` → `collapse-tablet-half`)
-- Zmiana nazwy proporcji
-- Zmiana prefiksów/struktury ścieżek
+**Funkcje:**
+- ✅ Multi-collection support (Vertical/Horizontal)
+- ✅ Dynamic group parsing z JSON
+- ✅ Scale parameters per type/viewport
+- ✅ Import/Export JSON
+- ✅ Dodawanie/usuwanie ref values
 
-**Tworzenie nowych tagów:**
-- UI do definiowania nowych kombinacji
-- Automatyczne generowanie wszystkich wariantów
-
-### 4.6 Spacing Editor
-
-**Skala referencji (edytowalna):**
-- Dodatnie: 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64, 72, 80, 96, 128, 160, 192, 224, 256
-- Zero: 0
-- Ujemne: -2, -4, -6, -8, -10, -12, -14, -16, -18, -20, -24, -32, -40, -48, -56, -64
-
-**Scale per kierunek × typ × viewport:**
-
-| Direction  | Type    | Desktop | Laptop | Tablet | Mobile |
-|------------|---------|---------|--------|--------|--------|
-| Vertical   | Spacing | 1.0     | 0.9    | 0.82   | 0.72   |
-| Vertical   | Padding | 1.0     | 0.9    | 0.82   | 0.72   |
-| Horizontal | Spacing | 1.0     | 0.84   | 0.84   | 0.70   |
-| Horizontal | Padding | 1.0     | 0.84   | 0.84   | 0.70   |
-
-**Formuła:**
-```
-Spacing = ref × scale[direction][type][viewport]
-```
-
-**Przykład:** ref-16, Vertical/Spacing, Tablet = 16 × 0.82 = 13.12
-
-**Generowane kategorie:**
-- `space/spacing/v-spacing-X` — główny spacing (vertical)
-- `space/padding-x/v-padding-x-aaX` — padding horizontal
-- `space/padding-x-dl/` — padding x dla desktop/laptop
-- `space/padding-x-tm/` — padding x dla tablet/mobile
-- `space/padding-y/v-padding-y-X` — padding vertical
-- `space/padding-y-dl/` — padding y dla desktop/laptop
-- `space/padding-y-tm/` — padding y dla tablet/mobile
-- `space/break/` — break spacing
-
-### 4.7 Typography Editor
+### 4.5 Typography Editor (🔲 Planned)
 
 **Wartości bazowe:**
-- Skala referencji (edytowalna): 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 60, 64, 72, 80, 96, 128
+- Skala referencji: 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 60, 64, 72, 80, 96, 128
 
 **Scale per kontekst × viewport:**
 
@@ -193,20 +124,9 @@ Spacing = ref × scale[direction][type][viewport]
 | on-bg    | 1.0     | 0.9    | 0.8    | 0.7    |
 | on-card  | 1.0     | 0.8    | 0.7    | 0.6    |
 
-**Formuła Size:**
-```
-Size = ref × scale[context][viewport]
-```
+**Formuła Size:** `Size = ref × scale[context][viewport]`
 
-**Przykład:** ref-16, on-bg, Tablet = 16 × 0.8 = 12.8
-
----
-
-**Line Height — nieliniowa krzywa:**
-
-```
-Line Height = Size × (A + B / Size)
-```
+**Line Height — nieliniowa krzywa:** `Line Height = Size × (A + B / Size)`
 
 **Parametry A/B per kategoria:**
 
@@ -218,128 +138,88 @@ Line Height = Size × (A + B / Size)
 | s         | 1.02 | 2 | Ciasny |
 | xs        | 1.00 | 0 | Tight (LH = Size) |
 
-**Przykład:** Size=10, kategoria xl = 10 × (1.4 + 6/10) = 10 × 2.0 = 20
+### 4.6 Grid Editor (🔲 Planned)
 
-**Generowane:**
-- `typography/base/ref-X` — wartości bazowe
-- `typography/base/scale/on-bg/size-parameter` — parametry scale
-- `typography/on-bg/v-size-X` — wyliczone size per kontekst/viewport
-- `typography/on-card/v-size-X`
-- `typography/on-bg/v-lineH-X-{xl|l|m|s|xs}` — line height per size i kategoria
+**Viewporty:** desktop (1920), laptop (1366), tablet (768), mobile (390)
 
-### 4.8 Radius Editor
+**Wartości bazowe per viewport × mode:**
+- `viewport-edit` — szerokość viewport
+- `number-of-columns-edit` — liczba kolumn
+- `gutter-width-edit` — szerokość guttera
+- `margin-m-edit` — margines główny
+- `margin-xs-edit` — margines mały
 
-**Wartości bazowe:**
-- `base-value` = 2 (jednostka bazowa)
-- `base-pill` = 999 (dla pill buttons)
-- `base-multiplier` per viewport:
-
-| Viewport | Multiplier |
-|----------|------------|
-| Desktop  | 1.0        |
-| Laptop   | 0.9        |
-| Tablet   | 0.85       |
-| Mobile   | 0.8        |
-
-**Skala ref (edytowalna):**
-0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40, 48, 56, 64, pill
+**Proporcje:** horizontal (4:3), vertical (3:4), square (1:1), panoramic-high (16:9), panoramic-low (16:5)
 
 **Formuła:**
 ```
-Radius = (ref / 2) × base-value × base-multiplier[viewport]
+wartość = (DL_Col × column-width) + (DL_Gutter × gutter-width) 
+        + (Add_Half × gutter/2) + (Add_Margin × margin-m) 
+        + (Add_Edge × margin-xs)
 ```
 
-**Przykład:** ref-16 na Laptop = (16/2) × 2 × 0.9 = 14.4
+## 5. UI Components (✅ Implemented)
 
-**Generowane:**
-- `radius/v-0`, `radius/v-2`, ... `radius/v-64`, `radius/v-pill`
-- `radius/base-value`, `radius/base-pill`, `radius/base-multiplier`
+| Component | Status | Description |
+|-----------|--------|-------------|
+| Sidebar | ✅ | Collections, sub-collections, groups |
+| Tabs | ✅ | Przełączanie editorów |
+| Toolbar | ✅ | Import/Export, formula tooltip |
+| Modal | ✅ | Add ref value, keyboard support (Escape, Enter, focus trap) |
+| Toast | ✅ | Error/success notifications |
+| Context Menu | ✅ | Delete ref value (right-click) |
+| Data Table | ✅ | Editable parameters, computed display |
 
-### 4.10 Zarządzanie skalą bazową (Base Scale)
+## 6. Technical Implementation
 
-Każda biblioteka ma skalę referencji (ref-X). Scale Editor pozwala:
+### Stack
+- **Frontend:** React 19 + TypeScript
+- **UI:** Tailwind CSS
+- **State:** Zustand
+- **Build:** Vite
+- **Bez backendu** — wszystko działa lokalnie
 
-**Operacje:**
-- Dodać nowy stopień (np. ref-288)
-- Usunąć istniejący stopień
-- Zmienić wartość stopnia (np. ref-96 → ref-100)
-- Zmienić kolejność
-
-**Po zmianie skali bazowej:**
-- Wszystkie zależne wartości przeliczają się automatycznie
-- JSON output zawiera nowe/zmienione zmienne
-
-**Uwaga:** Usunięcie stopnia może złamać istniejące referencje w Figma. Scale Editor powinien ostrzegać przed destrukcyjnymi zmianami.
-
-### 4.11 Eksport
-
-- Przycisk "Eksportuj" per sekcja lub wszystko razem
-- Format JSON kompatybilny z REZZON Portal
-- Możliwość pobrania pliku lub kopiowania do schowka
-- Walidacja przed eksportem
-
-## 5. User Flow
-
+### Struktura plików
 ```
-1. Otwierasz aplikację
-2. Wybierasz sekcję (Grid / Spacing / Typography)
-3. Widzisz wartości bazowe — edytujesz co trzeba
-4. Widzisz podgląd wygenerowanych wartości
-5. Definiujesz reguły/wyjątki jeśli potrzeba
-6. Klikasz "Eksportuj"
-7. Pobierasz JSON
-8. Importujesz przez REZZON Portal do Figmy
+scale-editor/
+├── src/
+│   ├── components/
+│   │   ├── RadiusEditor.tsx
+│   │   ├── SpacingEditor.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── Tabs.tsx
+│   │   ├── Toolbar.tsx
+│   │   ├── Modal.tsx
+│   │   └── Toast.tsx
+│   ├── stores/
+│   │   ├── radiusStore.ts
+│   │   └── spacingStore.ts
+│   ├── hooks/
+│   │   └── useFileHandling.ts
+│   ├── types/
+│   │   └── index.ts
+│   └── App.tsx
+├── README.md
+└── package.json
 ```
 
-## 6. Wymagania techniczne
-
-### Stack (propozycja)
-- **Frontend:** React + TypeScript
-- **UI:** Tailwind CSS + shadcn/ui
-- **State:** Zustand lub React Context
-- **Bez backendu** — wszystko działa lokalnie w przeglądarce
-- **Persystencja:** localStorage lub eksport/import configu
-
-### Format danych
-
-Input (config):
+### JSON Format (Figma compatible)
 ```json
 {
-  "grid": {
-    "viewports": {
-      "1920": { "columns": 12, "gutter": 24, "margin_m": 204 },
-      "1366": { "columns": 12, "gutter": 20, "margin_m": 45 }
-    },
-    "modes": {
-      "CROSS": { ... },
-      "CIRCLE": { ... }
-    },
-    "rules": { ... }
-  }
-}
-```
-
-Output (JSON dla Figma):
-```json
-{
-  "version": "1.0",
-  "collections": [
-    {
-      "name": "Grid",
-      "modes": ["CROSS", "CIRCLE", "TRIANGLE", "SQUARE"],
-      "variables": [...]
-    }
-  ]
+  "collections": [{
+    "name": "Radius",
+    "modes": [{ "id": "mode:0", "name": "CROSS" }],
+    "variables": [{
+      "name": "Desktop/v-2",
+      "valuesByMode": { "mode:0": { "value": 2 } }
+    }]
+  }]
 }
 ```
 
 ## 7. UI Design
 
-### 7.1 Referencja
-UI wzorowany na **Figma Variables panel** — sprawdzony wzorzec, znajomy dla projektantów.
-
-### 7.2 Layout
-
+### Layout
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  [Typography Scale] [Spacing Scale] [Grid] [Radius]  tabs   │
@@ -348,103 +228,53 @@ UI wzorowany na **Figma Variables panel** — sprawdzony wzorzec, znajomy dla pr
 │ Typography   │  ───────────────────────────────────────────  │
 │ Spacing      │  Name          │ CROSS │ CIRCLE │ TRIANGLE │ │
 │ Grid         │  ─────────────────────────────────────────── │
-│ ● Radius     │  BASE                                        │
+│ ● Radius     │  PARAMETERS                                  │
 │              │  # base-value  │  2    │   2    │    2     │ │
-│ GROUPS       │  # base-pill   │ 999   │  999   │   999    │ │
+│ GROUPS       │  ƒ multiplier  │ 1.0   │  1.0   │   1.0    │ │
 │ ● All        │  ─────────────────────────────────────────── │
-│   Base       │  MULTIPLIER                                  │
-│   Multiplier │  ƒ Desktop     │ 1.0   │  1.0   │   1.0    │ │
-│   Ref Scale  │  ƒ Laptop      │ 0.9   │  0.9   │   0.9    │ │
-│   Values     │  ─────────────────────────────────────────── │
-│     Desktop  │  VALUES / DESKTOP                            │
-│     Laptop   │  = v-16        │  16   │   16   │    16    │ │
-│     Tablet   │  = v-32        │  32   │   32   │    32    │ │
-│     Mobile   │  ─────────────────────────────────────────── │
-│              │  + Add ref value                             │
+│   Desktop    │  DESKTOP                                     │
+│   Laptop     │  = v-16        │  16   │   16   │    16    │ │
+│   Tablet     │  = v-32        │  32   │   32   │    32    │ │
+│   Mobile     │  ─────────────────────────────────────────── │
 └──────────────┴──────────────────────────────────────────────┘
 ```
 
-### 7.3 Elementy UI
+### Visual Language
+- `#` icon = base value (editable)
+- `ƒ` icon = parameter/multiplier (editable)
+- `=` icon = computed value (green, read-only)
 
-**Sidebar (lewy):**
-- Collections — lista bibliotek (Typography, Spacing, Grid, Radius)
-- Groups — hierarchia grup w wybranej kolekcji
-- Countery pokazujące liczbę zmiennych
+### Keyboard Shortcuts
+- `Escape` — zamyka modal
+- `Enter` — potwierdza w modal
+- `Right-click` — context menu (delete)
 
-**Main area (prawy):**
-- Tabs — przełączanie między kolekcjami
-- Toolbar — tytuł + formuła (tooltip) + Import/Export
-- Tabela — mody jako kolumny, zmienne jako wiersze
+## 8. Roadmap
 
-**Ikony typów wartości:**
-- `#` — wartość bazowa (edytowalna)
-- `ƒ` — parametr/mnożnik (edytowalny)
-- `=` — wartość wyliczona (zielona, read-only)
+| Phase | Scope | Status |
+|-------|-------|--------|
+| 1 | Radius Editor | ✅ v0.0.22 |
+| 2 | Spacing Editor | ✅ v0.0.22 |
+| 3 | Typography Editor | 🔲 planned |
+| 4 | Grid Editor | 🔲 planned |
+| 5 | Undo/Redo, Persistence | 🔲 planned |
 
-### 7.4 Zachowania scrollowania
+## 9. Znane limitacje
 
-- **Kolumna Name** — sticky horizontal (przyklejona do lewej przy scrollu poziomym)
-- **Nagłówki grup** (Base, Scale, Values/Desktop) — sticky horizontal
-- **Nagłówek tabeli** (Name, CROSS, CIRCLE...) — sticky vertical (przyklejony do góry)
-- **Scrollbar** — ciemny, dopasowany do dark theme
-
-### 7.5 Import plików
-
-**Drag & drop** wielu plików jednocześnie.
-
-**Rozpoznawanie typu po nazwie pliku:**
-- `R4-Typography*.json` → zakładka Typography
-- `R4-Spacing*.json` → zakładka Spacing
-- `R4-Grid*.json` → zakładka Grid
-- `R4-Radius*.json` → zakładka Radius
-
-**Automatyczne wykrywanie modów** z JSON — ile kolumn w pliku, tyle kolumn w tabeli (max 10).
-
-### 7.6 Makiety
-
-Statyczne makiety HTML dostępne w:
-- `docs/mockups/typography-mockup.html`
-- `docs/mockups/radius-mockup.html`
-
-## 8. Czego NIE robimy w MVP
-
-- Edycja biblioteki głównej (REZZON) — tylko biblioteki towarzyszące
-- Edycja kolorów — to inna kategoria (wybór, nie obliczenia)
-- Sync z Figma w czasie rzeczywistym — eksport ręczny przez JSON
-- Multi-user / collaboration
-- Historia zmian / undo (poza standardowym browser undo)
-
-## 9. Metryki sukcesu
-
-- Czas dodania nowego tagu: z godzin → minuty
-- Czas zmiany wartości bazowej: z godzin → sekundy
-- Błędy przy przeliczeniach: z "zdarza się" → zero (automatyczne)
-- Frustracja użytkownika: z wysokiej → niska
-
-## 10. Otwarte pytania
-
-1. **Persystencja:** localStorage wystarczy, czy potrzebny eksport/import configu?
-2. **Walidacja:** Jakie błędy pokazywać? (np. kolumna > viewport)
-3. **Tworzenie nowych tagów:** Dokładny UX do zaprojektowania w trakcie budowy
-4. **Import z Figma:** Czy Scale Editor ma umieć wczytać istniejący JSON z REZZON Portal?
-5. **Historia zmian:** Czy potrzebny undo/redo wykraczający poza browser?
-
-## 11. Kolejność implementacji
-
-1. **Faza 1:** Radius (najprostszy, ~75 zmiennych) — walidacja podejścia
-2. **Faza 2:** Typography (średni, 562 zmienne, 2 formuły)
-3. **Faza 3:** Spacing (772 zmienne, prosta formuła)
-4. **Faza 4:** Grid (najtrudniejszy, ~6000 zmiennych, wyjątki, photo)
-5. **Faza 5:** Integracja w jeden UI + zarządzanie modami
+- Viewports hardcoded w Radius (dynamic w Spacing)
+- Brak undo/redo
+- Brak localStorage persistence
+- Single user, local only
 
 ---
 
-**Wersja:** 0.4
-**Data:** 2025-12-17
+**Wersja:** 0.5  
+**Data:** 2024-12-18  
 **Autor:** Claude + Marcin
 
 **Changelog:**
-- 0.4: Dodano sekcję 7 (UI Design) — layout, elementy, scrollowanie, import plików, makiety
-- 0.3: Dodano szczegółowe formuły i parametry na podstawie analizy xlsx (Radius, Typography, Spacing)
-- 0.2: Dodano zarządzanie modami, strukturą, responsywnymi proporcjami
+- 0.5: Zaktualizowano status implementacji (v0.0.22), dodano sekcję Technical Implementation
+- 0.4: Dodano sekcję UI Design
+- 0.3: Dodano szczegółowe formuły i parametry
+- 0.2: Dodano zarządzanie modami, strukturą
 - 0.1: Wersja inicjalna

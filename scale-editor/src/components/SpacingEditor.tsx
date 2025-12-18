@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSpacingStore, useActiveCollection, calculateSpacing } from '../stores/spacingStore';
+import { useFileHandling } from '../hooks/useFileHandling';
 import { Toolbar } from './Toolbar';
+import { Modal } from './Modal';
+import { Toast } from './Toast';
 
 interface SpacingEditorProps {
   activeGroup: string;
@@ -11,46 +14,71 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
   const collection = useActiveCollection();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRefValue, setNewRefValue] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; refValue: number } | null>(null);
 
-  if (!collection) return <div>No collection loaded</div>;
+  const { importError, clearError, handleImport, handleExport } = useFileHandling({
+    onImport: store.loadFromJSON,
+    exportData: store.exportToJSON,
+    exportFilename: '2-R4-Spacing-Scale.json',
+  });
+
+  if (!collection) {
+    return (
+      <div className="empty-state">
+        No collection loaded. Import a JSON file to get started.
+      </div>
+    );
+  }
 
   const types = Object.keys(collection.scales);
   const allViewports = types.length > 0 ? Object.keys(collection.scales[types[0]] || {}) : [];
 
   const handleAddRefValue = () => {
     const num = parseInt(newRefValue, 10);
-    if (!isNaN(num) && !collection.refScale.includes(num)) {
-      store.addRefValue(num);
-      setNewRefValue('');
-      setShowAddModal(false);
+    
+    if (isNaN(num)) {
+      setValidationError('Please enter a valid number');
+      return;
+    }
+    
+    if (collection.refScale.includes(num)) {
+      setValidationError(`Value ${num} already exists`);
+      return;
+    }
+    
+    store.addRefValue(num);
+    setNewRefValue('');
+    setShowAddModal(false);
+    setValidationError(null);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setNewRefValue('');
+    setValidationError(null);
+  };
+
+  const handleRowContextMenu = (e: React.MouseEvent, refValue: number) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, refValue });
+  };
+
+  const handleDeleteRef = () => {
+    if (contextMenu) {
+      store.removeRefValue(contextMenu.refValue);
+      setContextMenu(null);
     }
   };
 
-  const handleExport = () => {
-    const output = store.exportToJSON();
-    const blob = new Blob([JSON.stringify(output, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '2-R4-Spacing-Scale.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        store.loadFromJSON(data);
-      } catch (err) {
-        console.error('Failed to parse JSON:', err);
-      }
-    };
-    reader.readAsText(file);
-  };
+  // Close context menu on click outside
+  React.useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
 
   // Filter based on activeGroup (which is now a path like "Padding/Desktop")
   const getVisibleTypes = (): string[] => {
@@ -75,13 +103,17 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
   const visibleTypes = getVisibleTypes();
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="editor-container">
       <Toolbar
         title={`Spacing (${collection.name})`}
         formula="round( ref × scale[type][viewport] )"
         onImport={handleImport}
         onExport={handleExport}
       />
+
+      {importError && (
+        <Toast message={importError} type="error" onClose={clearError} />
+      )}
 
       <div className="table-container">
         <table className="data-table">
@@ -120,6 +152,7 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
                                 const v = parseFloat(e.target.value);
                                 if (!isNaN(v)) store.setScale(type, viewport, mode.id, v);
                               }}
+                              aria-label={`Scale ${type} ${viewport} for ${mode.name}`}
                             />
                           </div>
                         </td>
@@ -132,19 +165,23 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
 
             {/* Computed values by type/viewport */}
             {visibleTypes.map((type) => (
-              <tbody key={`group-${type}`}>
+              <React.Fragment key={`group-${type}`}>
                 <tr className="group-header">
                   <td colSpan={collection.modes.length + 1}>{type}</td>
                 </tr>
                 {getVisibleViewports(type).map((viewport) => (
-                  <tbody key={`group-${type}-${viewport}`}>
-                    <tr className="group-header" style={{ background: 'var(--bg-hover)' }}>
-                      <td colSpan={collection.modes.length + 1} style={{ paddingLeft: '24px' }}>{viewport}</td>
+                  <React.Fragment key={`group-${type}-${viewport}`}>
+                    <tr className="group-header subgroup-header">
+                      <td colSpan={collection.modes.length + 1}>{viewport}</td>
                     </tr>
                     {collection.refScale.map((ref) => (
-                      <tr key={`${type}-${viewport}-${ref}`}>
+                      <tr 
+                        key={`${type}-${viewport}-${ref}`}
+                        onContextMenu={(e) => handleRowContextMenu(e, ref)}
+                        className="data-row"
+                      >
                         <td>
-                          <div className="cell-name" style={{ paddingLeft: '16px' }}>
+                          <div className="cell-name cell-name-indented">
                             <span className="cell-icon">=</span>
                             <span>ref-{ref}</span>
                           </div>
@@ -162,9 +199,9 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
                         })}
                       </tr>
                     ))}
-                  </tbody>
+                  </React.Fragment>
                 ))}
-              </tbody>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -172,35 +209,59 @@ export function SpacingEditor({ activeGroup }: SpacingEditorProps) {
 
       {/* Footer */}
       <div className="table-footer">
-        <button onClick={() => setShowAddModal(true)} className="add-row">
+        <button 
+          onClick={() => setShowAddModal(true)} 
+          className="add-row"
+          aria-label="Add new reference value"
+        >
           <span>+</span> Add ref value
         </button>
       </div>
 
-      {/* Add Ref Value Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Add Ref Value</h3>
-            <input
-              type="number"
-              value={newRefValue}
-              onChange={(e) => setNewRefValue(e.target.value)}
-              placeholder="Enter value (e.g. 72 or -8)"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleAddRefValue()}
-            />
-            <div className="modal-actions">
-              <button onClick={() => setShowAddModal(false)} className="btn btn-secondary">
-                Cancel
-              </button>
-              <button onClick={handleAddRefValue} className="btn btn-primary">
-                Add
-              </button>
-            </div>
-          </div>
+      {/* Context Menu */}
+      {contextMenu && (
+        <div 
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button onClick={handleDeleteRef} className="context-menu-item danger">
+            Delete ref-{contextMenu.refValue}
+          </button>
         </div>
       )}
+
+      {/* Add Ref Value Modal */}
+      <Modal
+        title="Add Ref Value"
+        isOpen={showAddModal}
+        onClose={handleCloseAddModal}
+        actions={
+          <>
+            <button onClick={handleCloseAddModal} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleAddRefValue} className="btn btn-primary">
+              Add
+            </button>
+          </>
+        }
+      >
+        <input
+          type="number"
+          value={newRefValue}
+          onChange={(e) => {
+            setNewRefValue(e.target.value);
+            setValidationError(null);
+          }}
+          placeholder="Enter value (e.g. 72 or -8)"
+          autoFocus
+          onKeyDown={(e) => e.key === 'Enter' && handleAddRefValue()}
+          aria-describedby={validationError ? 'add-ref-error' : undefined}
+        />
+        {validationError && (
+          <p id="add-ref-error" className="input-error">{validationError}</p>
+        )}
+      </Modal>
     </div>
   );
 }

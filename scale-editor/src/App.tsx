@@ -91,7 +91,7 @@ function App() {
         subCollections={activeTab === 'spacing' ? getSpacingCollections() : undefined}
       />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main className="main-content">
         <Tabs
           tabs={TABS}
           activeTab={activeTab}
@@ -112,7 +112,7 @@ function App() {
         {activeTab === 'grid' && (
           <div className="empty-state">Grid Editor — coming soon</div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,73 +1,87 @@
-# React + TypeScript + Vite
+# Rezzon Scale Editor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Editor do zarządzania design tokens (Figma Variables) - radius, spacing, typography, grid.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19 + TypeScript
+- Zustand (state management)
+- Vite
+- Tailwind CSS
 
-## React Compiler
+## Struktura projektu
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── components/
+│   ├── RadiusEditor.tsx    # Editor dla Radius collection
+│   ├── SpacingEditor.tsx   # Editor dla Spacing collection  
+│   ├── Sidebar.tsx         # Nawigacja: collections, sub-collections, groups
+│   ├── Tabs.tsx            # Przełączanie między editorami
+│   ├── Toolbar.tsx         # Import/Export JSON, formula tooltip
+│   ├── Modal.tsx           # Reusable modal z keyboard support
+│   └── Toast.tsx           # Powiadomienia (error/success)
+├── stores/
+│   ├── radiusStore.ts      # Zustand store dla Radius
+│   └── spacingStore.ts     # Zustand store dla Spacing (multi-collection)
+├── hooks/
+│   └── useFileHandling.ts  # Hook do import/export JSON z walidacją
+├── types/
+│   └── index.ts            # TypeScript types
+└── App.tsx                 # Main layout
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Kluczowe koncepcje
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Collections & Modes
+- **Collection** = zbiór zmiennych (np. Radius, Spacing)
+- **Mode** = wariant wartości (np. CROSS, CIRCLE, TRIANGLE, SQUARE)
+- Każda zmienna ma wartość per mode
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Radius Editor
+- Formula: `(ref / 2) × base-value × multiplier[viewport]`
+- Parametry: base-value, multiplier per viewport, pill per viewport
+- Viewports: Desktop, Laptop, Tablet, Mobile
+- Computed: v-2, v-4, ..., v-pill
+
+### Spacing Editor
+- Formula: `round(ref × scale[type][viewport])`
+- Multi-collection: Vertical, Horizontal
+- Dynamic groups parsowane z JSON (np. Padding/Desktop)
+- Scale parameters per type/viewport
+
+## Figma JSON Format
+
+Import/export zgodny z Figma Variables JSON:
+
+```json
+{
+  "collections": [{
+    "name": "Radius",
+    "modes": [{ "id": "mode:0", "name": "CROSS" }],
+    "variables": [{
+      "name": "Desktop/v-2",
+      "valuesByMode": { "mode:0": { "value": 2 } }
+    }]
+  }]
+}
 ```
+
+## Keyboard shortcuts
+
+- `Escape` — zamyka modal
+- `Enter` — potwierdza w modal
+- `Right-click` na wierszu — context menu (delete)
+
+## Development
+
+```bash
+npm install
+npm run dev     # http://localhost:5173
+npm run build   # produkcja
+```
+
+## Pliki wyjściowe
+
+- `5-R4-Radii.json` — export Radius
+- `2-R4-Spacing-Scale.json` — export Spacing
