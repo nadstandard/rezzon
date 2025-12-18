@@ -1,0 +1,1285 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-12-18T09:09:32.891Z",
+  "fileName": "5-R4-Radii",
+  "collections": [
+    {
+      "id": "VariableCollectionId:2:69",
+      "name": "Radius",
+      "defaultModeId": "2:1",
+      "hiddenFromPublishing": false,
+      "modes": [
+        {
+          "id": "2:1",
+          "name": "Legacy"
+        },
+        {
+          "id": "14:0",
+          "name": "Null"
+        }
+      ],
+      "variables": [
+        {
+          "id": "VariableID:2:76",
+          "name": "Desktop/v-2",
+          "type": "FLOAT",
+          "description": "{{ (2 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 2
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:77",
+          "name": "Desktop/v-4",
+          "type": "FLOAT",
+          "description": "{{ (4 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 4
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:78",
+          "name": "Desktop/v-6",
+          "type": "FLOAT",
+          "description": "{{ (6 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 6
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:79",
+          "name": "Desktop/v-8",
+          "type": "FLOAT",
+          "description": "{{ (8 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 8
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:80",
+          "name": "Desktop/v-10",
+          "type": "FLOAT",
+          "description": "{{ (10 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 10
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:81",
+          "name": "Desktop/v-12",
+          "type": "FLOAT",
+          "description": "{{ (12 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 12
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:82",
+          "name": "Desktop/v-16",
+          "type": "FLOAT",
+          "description": "{{ (16 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 16
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:83",
+          "name": "Desktop/v-20",
+          "type": "FLOAT",
+          "description": "{{ (20 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 20
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:84",
+          "name": "Desktop/v-24",
+          "type": "FLOAT",
+          "description": "{{ (24 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 24
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:85",
+          "name": "Desktop/v-28",
+          "type": "FLOAT",
+          "description": "{{ (28 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 28
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:86",
+          "name": "Desktop/v-32",
+          "type": "FLOAT",
+          "description": "{{ (32 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 32
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:87",
+          "name": "Desktop/v-48",
+          "type": "FLOAT",
+          "description": "{{ (48 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 48
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:88",
+          "name": "Desktop/v-64",
+          "type": "FLOAT",
+          "description": "{{ (64 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 64
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:89",
+          "name": "Desktop/v-96",
+          "type": "FLOAT",
+          "description": "{{ (96 / 2) * $Base/value * $Base/desktop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 96
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:90",
+          "name": "Desktop/v-pill",
+          "type": "FLOAT",
+          "description": "{{ $Base/pill }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 999
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:91",
+          "name": "Laptop/v-2",
+          "type": "FLOAT",
+          "description": "{{ (2 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 1.7999999523162842
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:92",
+          "name": "Laptop/v-4",
+          "type": "FLOAT",
+          "description": "{{ (4 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 3.5999999046325684
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:93",
+          "name": "Laptop/v-6",
+          "type": "FLOAT",
+          "description": "{{ (6 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 5.399999618530273
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:94",
+          "name": "Laptop/v-8",
+          "type": "FLOAT",
+          "description": "{{ (8 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 7.199999809265137
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:95",
+          "name": "Laptop/v-10",
+          "type": "FLOAT",
+          "description": "{{ (10 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 9
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:96",
+          "name": "Laptop/v-12",
+          "type": "FLOAT",
+          "description": "{{ (12 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 10.799999237060547
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:97",
+          "name": "Laptop/v-16",
+          "type": "FLOAT",
+          "description": "{{ (16 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 14.399999618530273
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:98",
+          "name": "Laptop/v-20",
+          "type": "FLOAT",
+          "description": "{{ (20 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 18
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:99",
+          "name": "Laptop/v-24",
+          "type": "FLOAT",
+          "description": "{{ (24 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 21.599998474121094
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:100",
+          "name": "Laptop/v-28",
+          "type": "FLOAT",
+          "description": "{{ (28 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 25.19999885559082
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:101",
+          "name": "Laptop/v-32",
+          "type": "FLOAT",
+          "description": "{{ (32 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 28.799999237060547
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:102",
+          "name": "Laptop/v-48",
+          "type": "FLOAT",
+          "description": "{{ (48 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 43.19999694824219
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:103",
+          "name": "Laptop/v-64",
+          "type": "FLOAT",
+          "description": "{{ (64 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 57.599998474121094
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:104",
+          "name": "Laptop/v-96",
+          "type": "FLOAT",
+          "description": "{{ (96 / 2) * $Base/value * $Base/laptop }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 86.39999389648438
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:105",
+          "name": "Laptop/v-pill",
+          "type": "FLOAT",
+          "description": "{{ $Base/pill }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 999
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:106",
+          "name": "Tablet/v-2",
+          "type": "FLOAT",
+          "description": "{{ (2 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 1.7000000476837158
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:107",
+          "name": "Tablet/v-4",
+          "type": "FLOAT",
+          "description": "{{ (4 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 3.4000000953674316
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:108",
+          "name": "Tablet/v-6",
+          "type": "FLOAT",
+          "description": "{{ (6 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 5.100000381469727
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:109",
+          "name": "Tablet/v-8",
+          "type": "FLOAT",
+          "description": "{{ (8 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 6.800000190734863
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:110",
+          "name": "Tablet/v-10",
+          "type": "FLOAT",
+          "description": "{{ (10 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 8.5
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:111",
+          "name": "Tablet/v-12",
+          "type": "FLOAT",
+          "description": "{{ (12 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 10.200000762939453
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:112",
+          "name": "Tablet/v-16",
+          "type": "FLOAT",
+          "description": "{{ (16 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 13.600000381469727
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:113",
+          "name": "Tablet/v-20",
+          "type": "FLOAT",
+          "description": "{{ (20 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 17
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:114",
+          "name": "Tablet/v-24",
+          "type": "FLOAT",
+          "description": "{{ (24 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 20.400001525878906
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:115",
+          "name": "Tablet/v-28",
+          "type": "FLOAT",
+          "description": "{{ (28 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 23.80000114440918
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:116",
+          "name": "Tablet/v-32",
+          "type": "FLOAT",
+          "description": "{{ (32 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 27.200000762939453
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:117",
+          "name": "Tablet/v-48",
+          "type": "FLOAT",
+          "description": "{{ (48 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 40.80000305175781
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:118",
+          "name": "Tablet/v-64",
+          "type": "FLOAT",
+          "description": "{{ (64 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 54.400001525878906
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:119",
+          "name": "Tablet/v-96",
+          "type": "FLOAT",
+          "description": "{{ (96 / 2) * $Base/value * $Base/tablet }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 81.60000610351562
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:120",
+          "name": "Tablet/v-pill",
+          "type": "FLOAT",
+          "description": "{{ $Base/pill }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 999
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:121",
+          "name": "Mobile/v-2",
+          "type": "FLOAT",
+          "description": "{{ (2 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 1.600000023841858
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:122",
+          "name": "Mobile/v-4",
+          "type": "FLOAT",
+          "description": "{{ (4 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 3.200000047683716
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:123",
+          "name": "Mobile/v-6",
+          "type": "FLOAT",
+          "description": "{{ (6 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 4.800000190734863
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:124",
+          "name": "Mobile/v-8",
+          "type": "FLOAT",
+          "description": "{{ (8 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 6.400000095367432
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:125",
+          "name": "Mobile/v-10",
+          "type": "FLOAT",
+          "description": "{{ (10 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 8
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:126",
+          "name": "Mobile/v-12",
+          "type": "FLOAT",
+          "description": "{{ (12 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 9.600000381469727
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:127",
+          "name": "Mobile/v-16",
+          "type": "FLOAT",
+          "description": "{{ (16 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 12.800000190734863
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:128",
+          "name": "Mobile/v-20",
+          "type": "FLOAT",
+          "description": "{{ (20 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 16
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:129",
+          "name": "Mobile/v-24",
+          "type": "FLOAT",
+          "description": "{{ (24 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 19.200000762939453
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:130",
+          "name": "Mobile/v-28",
+          "type": "FLOAT",
+          "description": "{{ (28 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 22.399999618530273
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:131",
+          "name": "Mobile/v-32",
+          "type": "FLOAT",
+          "description": "{{ (32 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 25.600000381469727
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:132",
+          "name": "Mobile/v-48",
+          "type": "FLOAT",
+          "description": "{{ (48 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 38.400001525878906
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:133",
+          "name": "Mobile/v-64",
+          "type": "FLOAT",
+          "description": "{{ (64 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 51.20000076293945
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:134",
+          "name": "Mobile/v-96",
+          "type": "FLOAT",
+          "description": "{{ (96 / 2) * $Base/value * $Base/mobile }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 76.80000305175781
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        },
+        {
+          "id": "VariableID:2:135",
+          "name": "Mobile/v-pill",
+          "type": "FLOAT",
+          "description": "{{ $Base/pill }}",
+          "hiddenFromPublishing": false,
+          "scopes": [
+            "ALL_SCOPES"
+          ],
+          "codeSyntax": {},
+          "valuesByMode": {
+            "2:1": {
+              "type": "FLOAT",
+              "value": 999
+            },
+            "14:0": {
+              "type": "FLOAT",
+              "value": 0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

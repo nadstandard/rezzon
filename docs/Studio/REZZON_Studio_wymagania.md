@@ -1,5 +1,7 @@
 # REZZON Studio – wymagania aplikacji
 
+Ten dokument będzie na bieżąco uzupełniany na podstawie Twoich luźnych notatek.
+
 **Nazwa aplikacji:** REZZON Studio
 
 ## Zasady agregacji
