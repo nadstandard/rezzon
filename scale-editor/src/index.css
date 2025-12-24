@@ -715,3 +715,578 @@ input:focus-visible,
   white-space: nowrap;
   border: 0;
 }
+
+/* ============================================
+   GRID EDITOR SPECIFIC
+   ============================================ */
+
+/* Tree item for Grid sidebar */
+.tree-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+
+.tree-item:hover {
+  background: var(--bg-hover);
+}
+
+.tree-item.active {
+  background: var(--bg-active);
+  color: #fff;
+}
+
+.tree-arrow {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.tree-label {
+  flex: 1;
+}
+
+.tree-badge {
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: var(--border);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 8px;
+}
+
+/* Folder config panel */
+.folder-config {
+  padding: 24px;
+  max-width: 800px;
+}
+
+.folder-config h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.folder-config .subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.config-section {
+  margin-bottom: 32px;
+}
+
+.config-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 100px 80px 140px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.config-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.config-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+}
+
+.config-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.config-select:hover {
+  border-color: #5c5c5c;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.config-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 100%;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.config-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-checkbox-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.config-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.config-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Modal field styling for Grid */
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-field:last-child {
+  margin-bottom: 0;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.modal-field input,
+.modal-field select {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Danger button */
+.btn-danger {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+/* ============================================
+   GRID EDITOR - WŁASNY LAYOUT
+   ============================================ */
+
+.app-layout-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout-grid .tabs {
+  flex-shrink: 0;
+}
+
+.grid-editor {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Grid Sidebar */
+.grid-sidebar {
+  background: #252526;
+  border-right: 1px solid #3c3c3c;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.grid-sidebar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #3c3c3c;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.grid-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* Tree items */
+.grid-sidebar .tree-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+
+.grid-sidebar .tree-item:hover {
+  background: #2a2d2e;
+}
+
+.grid-sidebar .tree-item.active {
+  background: #37373d;
+  color: #fff;
+}
+
+.grid-sidebar .tree-item.folder {
+  font-weight: 500;
+}
+
+.grid-sidebar .tree-item.indent-1 {
+  padding-left: 32px;
+}
+
+.grid-sidebar .tree-arrow {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 8px;
+  margin-right: 4px;
+  transition: transform 0.15s;
+}
+
+.grid-sidebar .tree-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.grid-sidebar .tree-arrow.hidden {
+  visibility: hidden;
+}
+
+.grid-sidebar .tree-icon {
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.grid-sidebar .tree-label {
+  flex: 1;
+}
+
+.grid-sidebar .tree-badge {
+  font-size: 10px;
+  color: #888;
+  background: #3c3c3c;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 8px;
+}
+
+/* Grid Main Area */
+.grid-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Grid Toolbar */
+.grid-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid #3c3c3c;
+  background: #252526;
+  flex-shrink: 0;
+}
+
+.grid-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.grid-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* View Tabs (Table/Configuration) */
+.view-tabs {
+  display: flex;
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.view-tab {
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #888;
+  background: none;
+  border: none;
+  transition: all 0.15s;
+}
+
+.view-tab:hover {
+  color: #e0e0e0;
+}
+
+.view-tab.active {
+  background: #3c3c3c;
+  color: #fff;
+}
+
+/* Grid Content */
+.grid-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Folder Config */
+.folder-config {
+  max-width: 800px;
+}
+
+.folder-config h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.config-subtitle {
+  color: #888;
+  margin-bottom: 24px;
+}
+
+.config-section {
+  margin-bottom: 32px;
+}
+
+.config-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.config-grid {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+}
+
+.config-grid.four-cols {
+  grid-template-columns: 100px 140px 80px 80px;
+}
+
+.config-label {
+  color: #888;
+  font-size: 13px;
+}
+
+.config-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  padding-bottom: 4px;
+}
+
+.config-select {
+  background: #3c3c3c;
+  border: 1px solid #4c4c4c;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.config-select:hover {
+  border-color: #5c5c5c;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: #0d99ff;
+}
+
+.config-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-input {
+  background: #3c3c3c;
+  border: 1px solid #4c4c4c;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  width: 100%;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: #0d99ff;
+}
+
+.config-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-checkbox-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.config-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #e0e0e0;
+}
+
+.config-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0d99ff;
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: #666;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-text {
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* Folder List */
+.folder-list {
+  padding: 24px;
+}
+
+.folder-list h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.folder-list p {
+  color: #888;
+}
+
+/* Cell name indent for variants */
+.cell-name-indent {
+  padding-left: 16px;
+}
+
+/* Computed icon color */
+.cell-icon.computed {
+  color: #8bc34a;
+}

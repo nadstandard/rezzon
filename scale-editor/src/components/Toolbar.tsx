@@ -5,9 +5,10 @@ interface ToolbarProps {
   formula?: string;
   onImport: (file: File) => void;
   onExport: () => void;
+  extraButtons?: React.ReactNode;
 }
 
-export function Toolbar({ title, formula, onImport, onExport }: ToolbarProps) {
+export function Toolbar({ title, formula, onImport, onExport, extraButtons }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +32,7 @@ export function Toolbar({ title, formula, onImport, onExport }: ToolbarProps) {
         )}
       </div>
       <div className="toolbar-right">
+        {extraButtons}
         <input
           ref={fileInputRef}
           type="file"

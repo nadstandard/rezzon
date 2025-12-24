@@ -4,9 +4,11 @@ import { Tabs } from './components/Tabs';
 import { RadiusEditor } from './components/RadiusEditor';
 import { SpacingEditor } from './components/SpacingEditor';
 import { TypographyEditor } from './components/TypographyEditor';
+import { GridEditor } from './components/GridEditor';
 import { useRadiusStore } from './stores/radiusStore';
 import { useSpacingStore, buildSidebarGroups } from './stores/spacingStore';
 import { useTypographyStore, buildTypographySidebarGroups } from './stores/typographyStore';
+import { useGridStore } from './stores/gridStore';
 import type { CollectionType } from './types';
 
 const TABS = [
@@ -23,6 +25,7 @@ function App() {
   const radiusStore = useRadiusStore();
   const spacingStore = useSpacingStore();
   const typographyStore = useTypographyStore();
+  const gridStore = useGridStore();
   
   const activeSpacingCollection = spacingStore.collections[spacingStore.activeCollectionIndex];
   const activeTypographyCollection = typographyStore.collections[typographyStore.activeCollectionIndex];
@@ -44,10 +47,13 @@ function App() {
   const typographyCategories = activeTypographyCollection?.categories?.length ?? 1;
   const typographyVarCount = typographyRefCount * typographyViewports * typographyCategories;
 
+  // Calculate grid var count
+  const gridVarCount = 4 * (5 + 8 + 80 + 40) + gridStore.folders.length * 48;
+
   const collections = [
     { type: 'typography' as const, name: 'Typography', count: typographyVarCount },
     { type: 'spacing' as const, name: 'Spacing', count: spacingVarCount },
-    { type: 'grid' as const, name: 'Grid', count: null },
+    { type: 'grid' as const, name: 'Grid', count: gridVarCount },
     { type: 'radius' as const, name: 'Radius', count: radiusVarCount },
   ];
 
@@ -80,6 +86,7 @@ function App() {
         ...dynamicGroups,
       ];
     }
+    // Grid has its own sidebar, return empty
     return [{ name: 'All', path: 'All', count: 0, indent: 0 }];
   };
 
@@ -116,6 +123,23 @@ function App() {
     return undefined;
   };
 
+  // Grid has its own layout with integrated sidebar
+  if (activeTab === 'grid') {
+    return (
+      <div className="app-layout app-layout-grid">
+        <Tabs
+          tabs={TABS}
+          activeTab={activeTab}
+          onTabChange={(type) => {
+            setActiveTab(type);
+            setActiveGroup('All');
+          }}
+        />
+        <GridEditor />
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -146,10 +170,6 @@ function App() {
         {activeTab === 'spacing' && <SpacingEditor activeGroup={activeGroup} />}
         
         {activeTab === 'radius' && <RadiusEditor activeGroup={activeGroup} />}
-        
-        {activeTab === 'grid' && (
-          <div className="empty-state">Grid Editor — coming soon</div>
-        )}
       </main>
     </div>
   );

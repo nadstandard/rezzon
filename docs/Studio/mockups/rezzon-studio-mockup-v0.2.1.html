@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Studio v0.2.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #1a1a1a;
+      --bg-surface: #242424;
+      --bg-elevated: #2e2e2e;
+      --bg-hover: #333333;
+      --bg-selected: rgba(99, 102, 241, 0.15);
+      --border: #3a3a3a;
+      --border-subtle: #2e2e2e;
+      --text: #f5f5f5;
+      --text-secondary: #a1a1a1;
+      --text-muted: #666666;
+      --accent: #6366f1;
+      --accent-hover: #5558e3;
+      --green: #22c55e;
+      --green-dim: #1a7f42;
+      --green-bg: rgba(34, 197, 94, 0.12);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-app);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    svg.icon {
+      width: 16px; height: 16px;
+      fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    svg.icon.sm { width: 14px; height: 14px; }
+    svg.icon.xs { width: 12px; height: 12px; }
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr 280px;
+      grid-template-rows: 44px 1fr 32px;
+      height: 100vh;
+    }
+    /* HEADER */
+    .header {
+      grid-column: 1 / -1;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-right: 16px;
+      border-right: 1px solid var(--border);
+      margin-right: 8px;
+    }
+    .logo-icon {
+      width: 24px; height: 24px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .logo-text { font-weight: 600; font-size: 13px; }
+    .nav { display: flex; gap: 4px; }
+    .nav-item {
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-item:hover { color: var(--text); background: var(--bg-hover); }
+    .nav-item.active { color: var(--text); background: var(--bg-elevated); }
+    .header-spacer { flex: 1; }
+    .search-box { width: 220px; position: relative; }
+    .search-box input {
+      width: 100%;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px 6px 32px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box .icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    .header-actions { display: flex; gap: 8px; margin-left: 8px; }
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text); }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-scroll { flex: 1; overflow-y: auto; }
+    .sidebar-section { border-bottom: 1px solid var(--border); }
+    .sidebar-section:last-child { border-bottom: none; }
+    .sidebar-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .sidebar-header:hover { background: var(--bg-hover); }
+    .sidebar-chevron { color: var(--text-muted); }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+    .sidebar-content { padding: 0 8px 8px; }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      color: var(--text-secondary);
+    }
+    .sidebar-item:hover { background: var(--bg-hover); color: var(--text); }
+    .sidebar-item.active { background: var(--bg-selected); color: var(--text); }
+    .sidebar-item.active .icon { color: var(--accent); }
+    .sidebar-item-name { flex: 1; font-size: 12px; }
+    .sidebar-item-count { font-size: 11px; color: var(--text-muted); }
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 1px;
+    }
+    .tree-item:hover { background: var(--bg-hover); color: var(--text); }
+    .tree-item.active { background: var(--bg-selected); color: var(--text); }
+    .tree-item.active .icon { color: var(--accent); }
+    .tree-chevron { width: 16px; display: flex; align-items: center; justify-content: center; }
+    .tree-item.expanded .tree-chevron .icon { transform: rotate(90deg); }
+    .tree-children { padding-left: 22px; }
+    .checkbox {
+      width: 14px; height: 14px;
+      border: 2px solid var(--text-muted);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+    .checkbox.checked .icon { color: white; }
+    .checkbox.indeterminate { border-color: var(--accent); }
+    .checkbox.indeterminate::after {
+      content: '';
+      width: 8px; height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+    }
+    /* MAIN */
+    .main {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-app);
+      overflow: hidden;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+    .toolbar-group { display: flex; gap: 2px; }
+    .toolbar-sep { width: 1px; height: 18px; background: var(--border); margin: 0 8px; }
+    .tool-btn {
+      width: 28px; height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .tool-btn:hover { background: var(--bg-hover); color: var(--text); }
+    .tool-btn.active { background: var(--bg-selected); color: var(--accent); }
+    .tool-btn:disabled { opacity: 0.3; }
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      position: relative;
+    }
+    .filter-btn:hover { background: var(--bg-hover); color: var(--text); }
+    .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+    .filter-btn .filter-badge {
+      background: var(--accent);
+      color: white;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    /* Filter dropdown */
+    .filter-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 0;
+      min-width: 220px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+    .filter-section {
+      padding: 8px 12px;
+    }
+    .filter-section:not(:last-child) {
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+    .filter-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+    .filter-option:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+    .filter-option.selected {
+      background: var(--bg-selected);
+      color: var(--text);
+    }
+    .filter-option .filter-check {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--text-muted);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .filter-option.selected .filter-check {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .filter-option.selected .filter-check .icon {
+      color: white;
+    }
+    .filter-option-label { flex: 1; }
+    .filter-option-count {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .filter-actions {
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+    }
+    .filter-actions button {
+      flex: 1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    .filter-clear {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border) !important;
+    }
+    .filter-clear:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+    .filter-apply {
+      background: var(--accent);
+      color: white;
+    }
+    .filter-apply:hover {
+      background: var(--accent-hover);
+    }
+    /* Type indicator dots */
+    .type-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .type-dot.number { background: var(--text-secondary); }
+    .type-dot.boolean { background: var(--text-secondary); }
+    .type-dot.string { background: var(--text-secondary); }
+    .type-dot.color { background: linear-gradient(135deg, #ef4444, #f59e0b, #22c55e, #3b82f6); }
+    /* Alias status dots */
+    .alias-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .alias-dot.none { border: 2px solid var(--text-muted); background: transparent; }
+    .alias-dot.internal { background: var(--green); }
+    .alias-dot.external { background: var(--orange); }
+    .alias-dot.broken { background: var(--red); }
+    .toolbar-spacer { flex: 1; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .breadcrumb-item { color: var(--text-secondary); cursor: pointer; }
+    .breadcrumb-item:hover { color: var(--text); }
+    .breadcrumb-sep { font-size: 10px; }
+    .breadcrumb-current { color: var(--text); font-weight: 500; }
+    /* TABLE */
+    .table-wrap { flex: 1; overflow: auto; }
+    .var-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 900px;
+    }
+    .var-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      z-index: 10;
+    }
+    .var-table th.col-check { width: 40px; }
+    .var-table th.col-name { width: 35%; }
+    .var-table th.col-mode { width: 16.25%; min-width: 120px; }
+    .mode-header { display: flex; align-items: center; gap: 6px; }
+    .mode-header .mode-label { font-weight: 600; }
+    .mode-header .mode-size { font-weight: 400; color: var(--text-muted); font-size: 10px; }
+    .row-folder { background: var(--bg-surface); cursor: pointer; }
+    .row-folder:hover { background: var(--bg-hover); }
+    .row-folder td { padding: 0; border-bottom: 1px solid var(--border-subtle); }
+    .folder-cell { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+    .folder-chevron { color: var(--text-muted); transition: transform 0.15s; }
+    .row-folder.expanded .folder-chevron { transform: rotate(90deg); }
+    .folder-cell .icon.folder { color: var(--text-secondary); }
+    .folder-name { font-size: 12px; font-weight: 500; color: var(--text); flex: 1; }
+    .folder-count { font-size: 11px; color: var(--text-muted); }
+    .row-var { cursor: pointer; }
+    .row-var:hover { background: var(--bg-hover); }
+    .row-var.selected { background: var(--bg-selected); }
+    .row-var td { padding: 0; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .var-cell { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 48px; }
+    .check-cell { padding: 8px 12px; display: flex; align-items: center; justify-content: center; }
+    .type-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 5px;
+      flex-shrink: 0;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+    .type-badge.color { border: 2px solid var(--border); background: none; }
+    .var-name { font-size: 12px; color: var(--text); flex: 1; }
+    .val-cell { padding: 6px 10px; }
+    .val-text { font-size: 12px; color: var(--text); }
+    .val-alias {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      border: 1px solid transparent;
+    }
+    .val-alias.internal { background: var(--green-bg); border-color: var(--green-dim); color: var(--green); }
+    .val-alias.external { background: var(--orange-bg); border-color: rgba(245, 158, 11, 0.3); color: var(--orange); }
+    .val-alias.broken { background: var(--red-bg); border-color: rgba(239, 68, 68, 0.3); color: var(--red); }
+    .val-alias-path { opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* PANEL */
+    .panel {
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title { font-size: 12px; font-weight: 600; }
+    .panel-close {
+      width: 24px; height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .panel-close:hover { background: var(--bg-hover); color: var(--text); }
+    .panel-body { flex: 1; overflow-y: auto; padding: 14px; }
+    .detail-group { margin-bottom: 18px; }
+    .detail-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .detail-value { font-size: 12px; color: var(--text); }
+    .detail-mono {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-app);
+      padding: 8px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+    .modes-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+    .mode-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--bg-app);
+      border-radius: 6px;
+    }
+    .mode-name { font-size: 11px; color: var(--text-muted); }
+    .mode-val { font-size: 12px; color: var(--text); font-weight: 500; }
+    /* STATUSBAR */
+    .statusbar {
+      grid-column: 1 / -1;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      gap: 20px;
+    }
+    .status-item { display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-dot.ok { background: var(--green); }
+    .status-dot.warn { background: var(--orange); }
+    .status-dot.err { background: var(--red); }
+    .statusbar-spacer { flex: 1; }
+    .shortcut { display: flex; align-items: center; gap: 4px; }
+    .shortcut kbd {
+      padding: 2px 5px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <svg style="display:none">
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+      <symbol id="i-pkg" viewBox="0 0 24 24"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></symbol>
+      <symbol id="i-cube" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+      <symbol id="i-hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-ul" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+      <symbol id="i-exp" viewBox="0 0 24 24"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8M3 16.2V21m0 0h4.8M3 21l6-6M21 7.8V3m0 0h-4.8M21 3l-6 6M3 7.8V3m0 0h4.8M3 3l6 6"/></symbol>
+      <symbol id="i-col" viewBox="0 0 24 24"><path d="m15 15 6 6m-6-6v4.8m0-4.8h4.8M9 19.8V15m0 0H4.2M9 15l-6 6M15 4.2V9m0 0h4.8M15 9l6-6M9 4.2V9m0 0H4.2M9 9 3 3"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></symbol>
+      <symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></symbol>
+      <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol>
+      <symbol id="i-arr" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    </svg>
+
+    <header class="header">
+      <div class="logo"><div class="logo-icon">R</div><span class="logo-text">REZZON Studio</span></div>
+      <nav class="nav">
+        <div class="nav-item active"><svg class="icon"><use href="#i-grid"/></svg>Variables</div>
+        <div class="nav-item"><svg class="icon"><use href="#i-link"/></svg>Aliases</div>
+        <div class="nav-item"><svg class="icon"><use href="#i-hist"/></svg>Snapshots</div>
+      </nav>
+      <div class="header-spacer"></div>
+      <div class="search-box">
+        <svg class="icon sm"><use href="#i-search"/></svg>
+        <input type="text" placeholder="Search variables...">
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost"><svg class="icon sm"><use href="#i-dl"/></svg>Import</button>
+        <button class="btn btn-primary"><svg class="icon sm"><use href="#i-ul"/></svg>Export</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="sidebar-scroll">
+        <div class="sidebar-section">
+          <div class="sidebar-header"><svg class="icon xs sidebar-chevron"><use href="#i-chev-d"/></svg><span class="sidebar-title">Libraries</span></div>
+          <div class="sidebar-content">
+            <div class="sidebar-item active"><svg class="icon"><use href="#i-pkg"/></svg><span class="sidebar-item-name">REZZON</span><span class="sidebar-item-count">2,793</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item-name">R4-Grid</span><span class="sidebar-item-count">3,590</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item-name">R4-Spacing-Scale</span><span class="sidebar-item-count">772</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item-name">R4-Typography</span><span class="sidebar-item-count">562</span></div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header"><svg class="icon xs sidebar-chevron"><use href="#i-chev-d"/></svg><span class="sidebar-title">Collections</span></div>
+          <div class="sidebar-content">
+            <div class="sidebar-item"><svg class="icon"><use href="#i-layers"/></svg><span class="sidebar-item-name">Theme</span><span class="sidebar-item-count">1,058</span></div>
+            <div class="sidebar-item active"><svg class="icon"><use href="#i-layers"/></svg><span class="sidebar-item-name">Viewport</span><span class="sidebar-item-count">1,471</span></div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header"><svg class="icon xs sidebar-chevron"><use href="#i-chev-d"/></svg><span class="sidebar-title">Folders</span></div>
+          <div class="sidebar-content">
+            <div class="tree-item expanded active">
+              <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="tree-chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+              <svg class="icon"><use href="#i-folder"/></svg><span>Radius</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-item"><div class="checkbox"></div><span class="tree-chevron"></span><svg class="icon"><use href="#i-folder"/></svg><span>Container</span></div>
+              <div class="tree-item"><div class="checkbox"></div><span class="tree-chevron"></span><svg class="icon"><use href="#i-folder"/></svg><span>Button</span></div>
+            </div>
+            <div class="tree-item"><div class="checkbox"></div><span class="tree-chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span><svg class="icon"><use href="#i-folder"/></svg><span>Spacing</span></div>
+            <div class="tree-item"><div class="checkbox"></div><span class="tree-chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span><svg class="icon"><use href="#i-folder"/></svg><span>Grid</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button class="tool-btn" title="Expand all"><svg class="icon"><use href="#i-exp"/></svg></button>
+          <button class="tool-btn" title="Collapse all"><svg class="icon"><use href="#i-col"/></svg></button>
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-group">
+          <button class="tool-btn" title="Rename"><svg class="icon"><use href="#i-edit"/></svg></button>
+          <button class="tool-btn" title="Duplicate"><svg class="icon"><use href="#i-copy"/></svg></button>
+          <button class="tool-btn" title="Delete"><svg class="icon"><use href="#i-trash"/></svg></button>
+        </div>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn" title="Bulk Alias"><svg class="icon"><use href="#i-link"/></svg></button>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-group">
+          <button class="tool-btn" title="Undo"><svg class="icon"><use href="#i-undo"/></svg></button>
+          <button class="tool-btn" title="Redo" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
+        </div>
+        <div class="toolbar-sep"></div>
+        <div style="position:relative">
+          <button class="filter-btn active"><svg class="icon sm"><use href="#i-filter"/></svg>Filter<span class="filter-badge">2</span></button>
+          <div class="filter-dropdown">
+            <div class="filter-section">
+              <div class="filter-section-title">By Type</div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="type-dot number"></div>
+                <span class="filter-option-label">Number</span>
+                <span class="filter-option-count">4,821</span>
+              </div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="type-dot boolean"></div>
+                <span class="filter-option-label">Boolean</span>
+                <span class="filter-option-count">342</span>
+              </div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="type-dot string"></div>
+                <span class="filter-option-label">String</span>
+                <span class="filter-option-count">156</span>
+              </div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="type-dot color"></div>
+                <span class="filter-option-label">Color</span>
+                <span class="filter-option-count">3,252</span>
+              </div>
+            </div>
+            <div class="filter-section">
+              <div class="filter-section-title">By Alias</div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="alias-dot none"></div>
+                <span class="filter-option-label">No alias</span>
+                <span class="filter-option-count">2,104</span>
+              </div>
+              <div class="filter-option selected">
+                <div class="filter-check"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                <div class="alias-dot internal"></div>
+                <span class="filter-option-label">Internal</span>
+                <span class="filter-option-count">5,234</span>
+              </div>
+              <div class="filter-option selected">
+                <div class="filter-check"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                <div class="alias-dot external"></div>
+                <span class="filter-option-label">External</span>
+                <span class="filter-option-count">1,208</span>
+              </div>
+              <div class="filter-option">
+                <div class="filter-check"></div>
+                <div class="alias-dot broken"></div>
+                <span class="filter-option-label">Broken</span>
+                <span class="filter-option-count">25</span>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="filter-clear">Clear all</button>
+              <button class="filter-apply">Apply</button>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn active" title="Details"><svg class="icon"><use href="#i-panel"/></svg></button>
+        <div class="toolbar-spacer"></div>
+        <div class="breadcrumb">
+          <span class="breadcrumb-item">REZZON</span><span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item">Viewport</span><span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Radius</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="var-table">
+          <thead>
+            <tr>
+              <th class="col-check"><div class="checkbox indeterminate"></div></th>
+              <th class="col-name">Name</th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-label">1920</span><span class="mode-size">Desktop</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-label">1366</span><span class="mode-size">Laptop</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-label">768</span><span class="mode-size">Tablet</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-label">390</span><span class="mode-size">Mobile</span></div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-folder expanded">
+              <td><div class="check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-chevron"><use href="#i-chev-r"/></svg><svg class="icon folder"><use href="#i-folder"/></svg><span class="folder-name">Radius</span><span class="folder-count">48</span></div></td>
+            </tr>
+            <tr class="row-folder expanded" style="background:var(--bg-elevated)">
+              <td><div class="check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td colspan="5"><div class="folder-cell" style="padding-left:32px"><svg class="icon xs folder-chevron"><use href="#i-chev-r"/></svg><svg class="icon folder"><use href="#i-folder"/></svg><span class="folder-name">Container</span><span class="folder-count">12</span></div></td>
+            </tr>
+            <tr class="row-var selected">
+              <td><div class="check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-name">top-left</span></div></td>
+              <td class="val-cell"><span class="val-text">24</span></td>
+              <td class="val-cell"><span class="val-text">20</span></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-name">top-right</span></div></td>
+              <td class="val-cell"><span class="val-text">24</span></td>
+              <td class="val-cell"><span class="val-text">20</span></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-name">bottom-left</span></div></td>
+              <td class="val-cell"><div class="val-alias internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias-path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias-path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias-path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias-path">v-0</span></div></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-name">bottom-right</span></div></td>
+              <td class="val-cell"><div class="val-alias external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias-path">R4-Radii/lg</span></div></td>
+              <td class="val-cell"><div class="val-alias external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias-path">R4-Radii/md</span></div></td>
+              <td class="val-cell"><div class="val-alias external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias-path">R4-Radii/sm</span></div></td>
+              <td class="val-cell"><div class="val-alias external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias-path">R4-Radii/xs</span></div></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-name">all</span></div></td>
+              <td class="val-cell"><div class="val-alias broken"><svg class="icon sm"><use href="#i-warn"/></svg><span class="val-alias-path">Missing</span></div></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+              <td class="val-cell"><span class="val-text">8</span></td>
+            </tr>
+            <tr class="row-folder" style="background:var(--bg-elevated)">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell" style="padding-left:32px"><svg class="icon xs folder-chevron"><use href="#i-chev-r"/></svg><svg class="icon folder"><use href="#i-folder"/></svg><span class="folder-name">Button</span><span class="folder-count">8</span></div></td>
+            </tr>
+            <tr class="row-folder">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-chevron"><use href="#i-chev-r"/></svg><svg class="icon folder"><use href="#i-folder"/></svg><span class="folder-name">Spacing</span><span class="folder-count">156</span></div></td>
+            </tr>
+            <tr class="row-folder">
+              <td><div class="check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-chevron"><use href="#i-chev-r"/></svg><svg class="icon folder"><use href="#i-folder"/></svg><span class="folder-name">Grid</span><span class="folder-count">89</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="panel">
+      <div class="panel-header"><span class="panel-title">Details</span><button class="panel-close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      <div class="panel-body">
+        <div class="detail-group"><div class="detail-label">Name</div><div class="detail-value">top-left</div></div>
+        <div class="detail-group"><div class="detail-label">Path</div><div class="detail-mono">Viewport / Radius / Container / top-left</div></div>
+        <div class="detail-group"><div class="detail-label">Type</div><div class="detail-value" style="display:flex;align-items:center;gap:8px"><div class="type-badge" style="width:20px;height:20px"><svg class="icon sm"><use href="#i-hash"/></svg></div>Number</div></div>
+        <div class="detail-group"><div class="detail-label">Values per mode</div>
+          <div class="modes-list">
+            <div class="mode-row"><span class="mode-name">1920 · Desktop</span><span class="mode-val">24</span></div>
+            <div class="mode-row"><span class="mode-name">1366 · Laptop</span><span class="mode-val">20</span></div>
+            <div class="mode-row"><span class="mode-name">768 · Tablet</span><span class="mode-val">16</span></div>
+            <div class="mode-row"><span class="mode-name">390 · Mobile</span><span class="mode-val">12</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot ok"></span>8,571 variables</div>
+      <div class="status-item"><span class="status-dot warn"></span>24 changed</div>
+      <div class="status-item"><span class="status-dot err"></span>1 broken</div>
+      <div class="statusbar-spacer"></div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>K</kbd> Search</div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>Z</kbd> Undo</div>
+    </footer>
+  </div>
+</body>
+</html>
