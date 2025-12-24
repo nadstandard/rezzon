@@ -132,43 +132,64 @@
 
 ---
 
-## Grid Builder Design Notes (2025-12-18)
+## Grid Editor Design Notes (2025-12-24) — NOWA KONCEPCJA
 
-### Kluczowe ustalenia z analizy JSON
+### Kluczowe ustalenia
 
-**Uniwersalna formuła kolumn:**
+**Architektura UI:**
+- Panel sterowania (globalny): viewporty + BASE per viewport
+- Podgląd wyników: read-only drzewo z tokenami
+- Edycja folderów: container/photo z dropdownami per viewport
+
+**Viewporty na sztywno:** Desktop, Laptop, Tablet, Mobile
+
+**BASE per viewport (5 wartości źródłowych):**
+- viewport (px)
+- number of columns (12/6/4/2)
+- gutter width (px)
+- margin m (px)
+- margin xs (px)
+
+**Wartości wyliczane:**
 ```
-wartość = (DL_Col × column-width) + (DL_Gutter × gutter) + (Add_Half × col-width/2) + (Add_Margin × photo-margin) + (Add_Edge × margin-m)
+number of gutters = columns - 1
+ingrid = viewport - (2 × margin m)
+column width = (ingrid - (gutters × gutter width)) / columns
 ```
 
-**Warianty kolumn:**
-- `v-col-N` — N kolumn + (N-1) gutterów
-- `v-col-N-1G` — dodaj 1 gutter
-- `v-col-N-2G` — dodaj 2 guttery
-- `v-col-N-w-half` — dodaj pół kolumny (nie pół guttera!)
-- `v-col-N-w-margin` — dodaj photo-margin
-- `v-col-N-to-edge` — dodaj margin-m
+**Automatycznie generowane foldery:**
 
-**Warianty responsywne:**
-- `static` — użyj gridu danego viewportu
-- `to-tab-6-col` — od tabletu użyj połowy ingridu
-- `to-tab-viewport` — od tabletu użyj pełnego viewportu
-- `heading` — placeholder na przyszłość (obecnie = static)
-- `margin-to-tab-margin` — dodaj photo-margin (= margin-m - margin-xs)
+`{viewport}/column/` z tokenami:
+- v-col-1 do v-col-12
+- v-col-n-w-half (+ gutter + col/2)
+- v-col-n-w-margin (+ margin m - margin xs)
+- v-col-n-to-edge (+ margin m)
+- v-col-n-1g (+ gutter)
+- v-col-n-2g (+ 2×gutter)
+- v-col-viewport
+- v-col-viewport-w-margin
 
-**Marginesy z sufiksami:**
-- `-DL` — widoczne tylko na Desktop/Laptop (Tablet/Mobile = 0)
-- `-TM` — widoczne tylko na Tablet/Mobile (Desktop/Laptop = 0)
+`{viewport}/margin/` z tokenami (każdy z wariantami -DL i -TM):
+- v-xs, v-m, v-l, v-xl, v-xxl, v-xxxl
+- v-ingrid-l, v-ingrid-xl, v-ingrid-xxl, v-ingrid-xxxl
 
-**Viewporty w REZZON:**
-- Desktop: 1920px, 12 kolumn
-- Laptop: 1366px, 12 kolumn
-- Tablet: 768px, 12 kolumn
-- Mobile: 390px, 4 kolumny
+**Warianty -DL / -TM:**
+- -DL: wartość na Desktop/Laptop, 0 na Tablet/Mobile
+- -TM: wartość na Tablet/Mobile, 0 na Desktop/Laptop
 
-**Persystencja:**
-- Konfiguracja buildera w polu `description` zmiennych Figma
-- Przetrwa eksport/import
+**Zasada dla mobile/column:**
+Jeśli n > number of columns → wartość = ingrid
+
+**Tworzenie folderów (container, photo):**
+1. Wpisuję nazwę (np. to-tab-6-col)
+2. Wybieram typ: container (szerokości) lub photo (szerokości + wysokości z ratio)
+3. Konfiguruję dropdowny per viewport: liczba kolumn (1-12) + typ przeliczania
+4. Jeśli photo — definiuję ratio (nazwa + proporcja)
+5. Wybieram warianty do generowania
+
+**Wyjątki responsywne — dwa poziomy:**
+- Per folder: dropdown z liczbą kolumn per viewport
+- Per wiersz: opcjonalny override dla konkretnego tokena
 
 ---
 
@@ -182,11 +203,11 @@ wartość = (DL_Col × column-width) + (DL_Gutter × gutter) + (Add_Half × col-
 ### Znane limitacje
 - Brak undo/redo
 - Brak localStorage persistence (celowe)
-- Viewports hardcoded w Radius (ale dynamic w Spacing i Typography)
+- Viewporty hardcoded w Radius i Grid
 
 ### Jak dodać nowy editor (np. Grid)
 1. Stwórz `gridStore.ts` w `src/stores/`
-2. Stwórz `GridBuilder.tsx` w `src/components/`
+2. Stwórz `GridEditor.tsx` w `src/components/`
 3. Dodaj do `App.tsx` w renderowaniu tabów
 4. Dodaj grupy do `getSidebarGroups()`
 5. Opcjonalnie: dodaj sub-collections do `getSubCollections()`
@@ -196,3 +217,11 @@ wartość = (DL_Col × column-width) + (DL_Gutter × gutter) + (Add_Half × col-
 - `*Spacing*.json` → Spacing tab
 - `*Grid*.json` → Grid tab
 - `*Radii*.json` lub `*Radius*.json` → Radius tab
+
+### Grid Editor — specyficzne wymagania
+- Viewporty na sztywno: Desktop, Laptop, Tablet, Mobile
+- BASE edytowalne per viewport per tryb (CROSS, CIRCLE, TRIANGLE, SQUARE)
+- /column/ i /margin/ generowane automatycznie
+- container/ i photo/ tworzone ręcznie z drzewa
+- Dropdown per viewport definiuje liczbę kolumn i typ przeliczania
+- Zasada mobile: n > columns → ingrid
