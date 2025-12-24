@@ -300,7 +300,7 @@ function BaseTable({ viewport }: BaseTableProps) {
               {/* Editable values */}
               {[
                 { field: 'viewport' as const, label: 'viewport' },
-                { field: 'columns' as const, label: 'columns' },
+                { field: 'columns' as const, label: 'number of columns' },
                 { field: 'gutterWidth' as const, label: 'gutter width' },
                 { field: 'marginM' as const, label: 'margin m' },
                 { field: 'marginXs' as const, label: 'margin xs' },
@@ -329,6 +329,23 @@ function BaseTable({ viewport }: BaseTableProps) {
               ))}
 
               {/* Computed values */}
+              <tr>
+                <td>
+                  <div className="cell-name">
+                    <span className="cell-icon computed">=</span>
+                    <span>number of gutters</span>
+                  </div>
+                </td>
+                {store.modes.map(mode => {
+                  const base = store.base[vp][mode.id];
+                  const computed = computeBaseValues(base);
+                  return (
+                    <td key={mode.id}>
+                      <span className="cell-value computed">{computed.gutters}</span>
+                    </td>
+                  );
+                })}
+              </tr>
               <tr>
                 <td>
                   <div className="cell-name">
@@ -731,9 +748,10 @@ function MarginTable({ viewport }: MarginTableProps) {
 interface FolderConfigProps {
   folderId: string;
   folderType: 'container' | 'photo';
+  onSwitchToTable?: () => void;
 }
 
-function FolderConfig({ folderId, folderType }: FolderConfigProps) {
+function FolderConfig({ folderId, folderType, onSwitchToTable }: FolderConfigProps) {
   const store = useGridStore();
   const folder = store.folders.find(f => f.id === folderId);
 
@@ -779,6 +797,13 @@ function FolderConfig({ folderId, folderType }: FolderConfigProps) {
     if (presets[preset]) {
       store.setRatio(folderId, vp, presets[preset]);
     }
+    // 'custom' nie zmienia wartości - pozwala edytować istniejące
+  };
+
+  const handleRatioChange = (vp: ViewportName, field: 'a' | 'b', value: number) => {
+    const ratio = folder.ratios![vp];
+    const newValue = Math.max(1, value); // Walidacja: minimum 1
+    store.setRatio(folderId, vp, { ...ratio, [field]: newValue });
   };
 
   return (
@@ -820,14 +845,16 @@ function FolderConfig({ folderId, folderType }: FolderConfigProps) {
                     type="number"
                     className="config-input"
                     value={ratio.a}
-                    onChange={(e) => store.setRatio(folderId, vp, { ...ratio, a: Number(e.target.value) })}
+                    min={1}
+                    onChange={(e) => handleRatioChange(vp, 'a', Number(e.target.value))}
                     disabled={!isCustom}
                   />
                   <input
                     type="number"
                     className="config-input"
                     value={ratio.b}
-                    onChange={(e) => store.setRatio(folderId, vp, { ...ratio, b: Number(e.target.value) })}
+                    min={1}
+                    onChange={(e) => handleRatioChange(vp, 'b', Number(e.target.value))}
                     disabled={!isCustom}
                   />
                 </React.Fragment>
@@ -922,7 +949,12 @@ function FolderConfig({ folderId, folderType }: FolderConfigProps) {
       {/* Actions */}
       <div className="config-section">
         <div className="config-actions">
-          <button className="btn btn-primary">Save & generate</button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => onSwitchToTable?.()}
+          >
+            View generated tokens
+          </button>
           <button 
             className="btn btn-danger"
             onClick={() => {
@@ -935,6 +967,272 @@ function FolderConfig({ folderId, folderType }: FolderConfigProps) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// CONTAINER TABLE - generated tokens
+// ============================================================================
+
+interface ContainerTableProps {
+  folderId: string;
+}
+
+function ContainerTable({ folderId }: ContainerTableProps) {
+  const store = useGridStore();
+  const folder = store.folders.find(f => f.id === folderId);
+
+  if (!folder) {
+    return <div className="empty-state">Folder not found</div>;
+  }
+
+  // Calculate width based on exception value
+  const calcWidth = (vp: ViewportName, modeId: string, variant: string): number => {
+    const base = store.base[vp][modeId];
+    const computed = computeBaseValues(base);
+    const exc = folder.exceptions[vp];
+    
+    let baseWidth: number;
+    if (exc.enabled) {
+      if (exc.value === 'viewport') {
+        baseWidth = base.viewport;
+      } else if (exc.value === 'to-margins') {
+        baseWidth = computed.ingrid + 2 * (base.marginM - base.marginXs);
+      } else {
+        baseWidth = calcColN(exc.value, base, computed);
+      }
+    } else {
+      // Full ingrid by default
+      baseWidth = computed.ingrid;
+    }
+
+    // Apply variant
+    switch (variant) {
+      case 'base': return baseWidth;
+      case 'wHalf': return baseWidth + base.gutterWidth + computed.columnWidth / 2;
+      case 'wMargin': return baseWidth + (base.marginM - base.marginXs);
+      case 'toEdge': return baseWidth + base.marginM;
+      case 'oneG': return baseWidth + base.gutterWidth;
+      case 'twoG': return baseWidth + 2 * base.gutterWidth;
+      default: return baseWidth;
+    }
+  };
+
+  const getTokenName = (variant: string): string => {
+    switch (variant) {
+      case 'base': return 'v-col-n';
+      case 'wHalf': return 'v-col-n-w-half';
+      case 'wMargin': return 'v-col-n-w-margin';
+      case 'toEdge': return 'v-col-n-to-edge';
+      case 'oneG': return 'v-col-n-1g';
+      case 'twoG': return 'v-col-n-2g';
+      default: return variant;
+    }
+  };
+
+  const activeVariants = [
+    folder.variants.base && 'base',
+    folder.variants.wHalf && 'wHalf',
+    folder.variants.wMargin && 'wMargin',
+    folder.variants.toEdge && 'toEdge',
+    folder.variants.oneG && 'oneG',
+    folder.variants.twoG && 'twoG',
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="table-container">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            {store.modes.map(mode => (
+              <th key={mode.id}>{mode.name}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {VIEWPORTS.map(vp => (
+            <React.Fragment key={vp}>
+              <tr className="group-header">
+                <td colSpan={store.modes.length + 1}>
+                  {vp} — {folder.exceptions[vp].enabled 
+                    ? (typeof folder.exceptions[vp].value === 'string' 
+                        ? folder.exceptions[vp].value 
+                        : `${folder.exceptions[vp].value} columns`)
+                    : 'ingrid (default)'}
+                </td>
+              </tr>
+              
+              {activeVariants.map((variant, idx) => (
+                <tr key={`${vp}-${variant}`}>
+                  <td>
+                    <div className={`cell-name ${idx > 0 ? 'cell-name-indent' : ''}`}>
+                      <span className="cell-icon computed">=</span>
+                      <span>{getTokenName(variant)}</span>
+                    </div>
+                  </td>
+                  {store.modes.map(mode => (
+                    <td key={mode.id}>
+                      <span className="cell-value computed">
+                        {Math.round(calcWidth(vp, mode.id, variant))}
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ============================================================================
+// PHOTO TABLE - generated width/height tokens
+// ============================================================================
+
+interface PhotoTableProps {
+  folderId: string;
+}
+
+function PhotoTable({ folderId }: PhotoTableProps) {
+  const store = useGridStore();
+  const folder = store.folders.find(f => f.id === folderId);
+
+  if (!folder || !folder.ratios) {
+    return <div className="empty-state">Folder not found</div>;
+  }
+
+  // Calculate width based on exception value
+  const calcWidth = (vp: ViewportName, modeId: string, variant: string): number => {
+    const base = store.base[vp][modeId];
+    const computed = computeBaseValues(base);
+    const exc = folder.exceptions[vp];
+    
+    let baseWidth: number;
+    if (exc.enabled) {
+      if (exc.value === 'viewport') {
+        baseWidth = base.viewport;
+      } else if (exc.value === 'to-margins') {
+        baseWidth = computed.ingrid + 2 * (base.marginM - base.marginXs);
+      } else {
+        baseWidth = calcColN(exc.value, base, computed);
+      }
+    } else {
+      baseWidth = computed.ingrid;
+    }
+
+    switch (variant) {
+      case 'base': return baseWidth;
+      case 'wMargin': return baseWidth + (base.marginM - base.marginXs);
+      case 'toEdge': return baseWidth + base.marginM;
+      default: return baseWidth;
+    }
+  };
+
+  const calcHeightForWidth = (vp: ViewportName, width: number): number => {
+    const ratio = folder.ratios![vp];
+    return Math.round(width * (ratio.b / ratio.a));
+  };
+
+  const getWidthTokenName = (variant: string): string => {
+    switch (variant) {
+      case 'base': return 'w-col-n';
+      case 'wMargin': return 'w-col-n-w-margin';
+      case 'toEdge': return 'w-col-n-to-edge';
+      default: return variant;
+    }
+  };
+
+  const getHeightTokenName = (variant: string): string => {
+    switch (variant) {
+      case 'base': return 'h-col-n';
+      case 'wMargin': return 'h-col-n-w-margin';
+      case 'toEdge': return 'h-col-n-to-edge';
+      default: return variant;
+    }
+  };
+
+  const activeVariants = [
+    folder.variants.base && 'base',
+    folder.variants.wMargin && 'wMargin',
+    folder.variants.toEdge && 'toEdge',
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="table-container">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            {store.modes.map(mode => (
+              <th key={mode.id}>{mode.name}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {VIEWPORTS.map(vp => {
+            const ratio = folder.ratios![vp];
+            return (
+              <React.Fragment key={vp}>
+                <tr className="group-header">
+                  <td colSpan={store.modes.length + 1}>
+                    {vp} — ratio {ratio.a}:{ratio.b}
+                    {folder.exceptions[vp].enabled && ` — ${
+                      typeof folder.exceptions[vp].value === 'string' 
+                        ? folder.exceptions[vp].value 
+                        : `${folder.exceptions[vp].value} columns`
+                    }`}
+                  </td>
+                </tr>
+                
+                {/* Width tokens */}
+                {activeVariants.map((variant, idx) => (
+                  <tr key={`${vp}-w-${variant}`}>
+                    <td>
+                      <div className={`cell-name ${idx > 0 ? 'cell-name-indent' : ''}`}>
+                        <span className="cell-icon computed">=</span>
+                        <span>width/{getWidthTokenName(variant)}</span>
+                      </div>
+                    </td>
+                    {store.modes.map(mode => (
+                      <td key={mode.id}>
+                        <span className="cell-value computed">
+                          {Math.round(calcWidth(vp, mode.id, variant))}
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Height tokens */}
+                {activeVariants.map((variant, idx) => (
+                  <tr key={`${vp}-h-${variant}`}>
+                    <td>
+                      <div className={`cell-name ${idx > 0 ? 'cell-name-indent' : ''}`}>
+                        <span className="cell-icon computed">=</span>
+                        <span>height/{getHeightTokenName(variant)}</span>
+                      </div>
+                    </td>
+                    {store.modes.map(mode => {
+                      const width = calcWidth(vp, mode.id, variant);
+                      return (
+                        <td key={mode.id}>
+                          <span className="cell-value computed">
+                            {calcHeightForWidth(vp, width)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -1051,10 +1349,9 @@ export function GridEditor() {
         );
       }
       if (viewMode === 'config') {
-        return <FolderConfig folderId={folderId} folderType="container" />;
+        return <FolderConfig folderId={folderId} folderType="container" onSwitchToTable={() => setViewMode('table')} />;
       }
-      // TODO: Table view for container folder
-      return <div className="empty-state">Table view for container folder (TODO)</div>;
+      return <ContainerTable folderId={folderId} />;
     }
     if (selection.type === 'photo') {
       const folderId = (selection as any).folderId;
@@ -1071,10 +1368,9 @@ export function GridEditor() {
         );
       }
       if (viewMode === 'config') {
-        return <FolderConfig folderId={folderId} folderType="photo" />;
+        return <FolderConfig folderId={folderId} folderType="photo" onSwitchToTable={() => setViewMode('table')} />;
       }
-      // TODO: Table view for photo folder
-      return <div className="empty-state">Table view for photo folder (TODO)</div>;
+      return <PhotoTable folderId={folderId} />;
     }
     return null;
   };

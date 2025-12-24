@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Studio v0.4.0 – Variables</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="rezzon-studio-styles.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app app--variables" id="app">
+    <!-- SVG ICONS -->
+    <svg style="display:none">
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+      <symbol id="i-pkg" viewBox="0 0 24 24"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></symbol>
+      <symbol id="i-cube" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+      <symbol id="i-hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-ul" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+      <symbol id="i-exp" viewBox="0 0 24 24"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8M3 16.2V21m0 0h4.8M3 21l6-6M21 7.8V3m0 0h-4.8M21 3l-6 6M3 7.8V3m0 0h4.8M3 3l6 6"/></symbol>
+      <symbol id="i-col" viewBox="0 0 24 24"><path d="m15 15 6 6m-6-6v4.8m0-4.8h4.8M9 19.8V15m0 0H4.2M9 15l-6 6M15 4.2V9m0 0h4.8M15 9l6-6M9 4.2V9m0 0H4.2M9 9 3 3"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></symbol>
+      <symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></symbol>
+      <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol>
+      <symbol id="i-arr" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    </svg>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo__icon">R</div>
+        <span class="logo__text">REZZON Studio</span>
+      </div>
+      <nav class="nav">
+        <a class="nav__item active" href="rezzon-studio-v0.4.0-variables.html">
+          <svg class="icon"><use href="#i-grid"/></svg>Variables
+        </a>
+        <a class="nav__item" href="rezzon-studio-v0.4.0-aliases.html">
+          <svg class="icon"><use href="#i-link"/></svg>Aliases
+        </a>
+        <a class="nav__item" href="rezzon-studio-v0.4.0-snapshots.html">
+          <svg class="icon"><use href="#i-hist"/></svg>Snapshots
+        </a>
+      </nav>
+      <div class="header__spacer"></div>
+      <div class="search">
+        <svg class="icon sm search__icon"><use href="#i-search"/></svg>
+        <input type="text" class="search__input" placeholder="Search variables...">
+      </div>
+      <div class="header__actions">
+        <button class="btn btn--ghost"><svg class="icon sm"><use href="#i-dl"/></svg>Import</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-ul"/></svg>Export</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__scroll">
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Libraries</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="sidebar-item active"><svg class="icon"><use href="#i-pkg"/></svg><span class="sidebar-item__name">REZZON</span><span class="sidebar-item__count">2,793</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item__name">R4-Grid</span><span class="sidebar-item__count">3,590</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item__name">R4-Spacing-Scale</span><span class="sidebar-item__count">772</span></div>
+            <div class="sidebar-item"><svg class="icon"><use href="#i-cube"/></svg><span class="sidebar-item__name">R4-Typography</span><span class="sidebar-item__count">562</span></div>
+          </div>
+        </div>
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Collections</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="sidebar-item"><svg class="icon"><use href="#i-layers"/></svg><span class="sidebar-item__name">Theme</span><span class="sidebar-item__count">1,058</span></div>
+            <div class="sidebar-item active"><svg class="icon"><use href="#i-layers"/></svg><span class="sidebar-item__name">Viewport</span><span class="sidebar-item__count">1,471</span></div>
+          </div>
+        </div>
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Folders</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="tree-item expanded active">
+              <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="tree-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+              <svg class="icon"><use href="#i-folder"/></svg><span>Radius</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-item"><div class="checkbox"></div><span class="tree-item__chevron"></span><svg class="icon"><use href="#i-folder"/></svg><span>Container</span></div>
+              <div class="tree-item"><div class="checkbox"></div><span class="tree-item__chevron"></span><svg class="icon"><use href="#i-folder"/></svg><span>Button</span></div>
+            </div>
+            <div class="tree-item"><div class="checkbox"></div><span class="tree-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span><svg class="icon"><use href="#i-folder"/></svg><span>Spacing</span></div>
+            <div class="tree-item"><div class="checkbox"></div><span class="tree-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span><svg class="icon"><use href="#i-folder"/></svg><span>Grid</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="toolbar">
+        <div class="toolbar__group">
+          <button class="tool-btn" title="Expand all"><svg class="icon"><use href="#i-exp"/></svg></button>
+          <button class="tool-btn" title="Collapse all"><svg class="icon"><use href="#i-col"/></svg></button>
+        </div>
+        <div class="toolbar__sep"></div>
+        <div class="toolbar__group">
+          <button class="tool-btn" title="Rename"><svg class="icon"><use href="#i-edit"/></svg></button>
+          <button class="tool-btn" title="Duplicate"><svg class="icon"><use href="#i-copy"/></svg></button>
+          <button class="tool-btn" title="Delete"><svg class="icon"><use href="#i-trash"/></svg></button>
+        </div>
+        <div class="toolbar__sep"></div>
+        <button class="tool-btn" title="Bulk Alias"><svg class="icon"><use href="#i-link"/></svg></button>
+        <div class="toolbar__sep"></div>
+        <div class="toolbar__group">
+          <button class="tool-btn" title="Undo"><svg class="icon"><use href="#i-undo"/></svg></button>
+          <button class="tool-btn" title="Redo" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
+        </div>
+        <div class="toolbar__sep"></div>
+        <div class="filter-wrapper" id="filterWrapper">
+          <button class="filter-btn active" onclick="toggleFilter()">
+            <svg class="icon sm"><use href="#i-filter"/></svg>Filter
+            <span class="filter-btn__badge" id="filterBadge">2</span>
+          </button>
+          <div class="filter-dropdown">
+            <div class="filter-section">
+              <div class="filter-section__title">By Type</div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="type-dot type-dot--number"></div><span class="filter-option__label">Number</span><span class="filter-option__count">4,821</span></div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="type-dot type-dot--boolean"></div><span class="filter-option__label">Boolean</span><span class="filter-option__count">342</span></div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="type-dot type-dot--string"></div><span class="filter-option__label">String</span><span class="filter-option__count">156</span></div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="type-dot type-dot--color"></div><span class="filter-option__label">Color</span><span class="filter-option__count">3,252</span></div>
+            </div>
+            <div class="filter-section">
+              <div class="filter-section__title">By Alias</div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="alias-dot alias-dot--none"></div><span class="filter-option__label">No alias</span><span class="filter-option__count">2,104</span></div>
+              <div class="filter-option selected" onclick="toggleFilterOption(this)"><div class="filter-option__check"><svg class="icon xs"><use href="#i-check"/></svg></div><div class="alias-dot alias-dot--internal"></div><span class="filter-option__label">Internal</span><span class="filter-option__count">5,234</span></div>
+              <div class="filter-option selected" onclick="toggleFilterOption(this)"><div class="filter-option__check"><svg class="icon xs"><use href="#i-check"/></svg></div><div class="alias-dot alias-dot--external"></div><span class="filter-option__label">External</span><span class="filter-option__count">1,208</span></div>
+              <div class="filter-option" onclick="toggleFilterOption(this)"><div class="filter-option__check"></div><div class="alias-dot alias-dot--broken"></div><span class="filter-option__label">Broken</span><span class="filter-option__count">25</span></div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn--ghost" onclick="clearFilters()">Clear all</button>
+              <button class="btn btn--primary" onclick="applyFilters()">Apply</button>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar__sep"></div>
+        <button class="tool-btn active" title="Details panel" onclick="togglePanel()"><svg class="icon"><use href="#i-panel"/></svg></button>
+        <div class="toolbar__spacer"></div>
+        <div class="breadcrumb">
+          <span class="breadcrumb__item">REZZON</span><span class="breadcrumb__sep">›</span>
+          <span class="breadcrumb__item">Viewport</span><span class="breadcrumb__sep">›</span>
+          <span class="breadcrumb__current">Radius</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table var-table">
+          <thead>
+            <tr>
+              <th class="col-check"><div class="checkbox indeterminate"></div></th>
+              <th class="col-name">Name</th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-header__label">1920</span><span class="mode-header__size">Desktop</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-header__label">1366</span><span class="mode-header__size">Laptop</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-header__label">768</span><span class="mode-header__size">Tablet</span></div></th>
+              <th class="col-mode"><div class="mode-header"><span class="mode-header__label">390</span><span class="mode-header__size">Mobile</span></div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-folder expanded">
+              <td><div class="table__check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-cell__chevron"><use href="#i-chev-r"/></svg><svg class="icon"><use href="#i-folder"/></svg><span class="folder-cell__name">Radius</span><span class="folder-cell__count">48</span></div></td>
+            </tr>
+            <tr class="row-folder expanded" style="background:var(--bg-elevated)">
+              <td><div class="table__check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td colspan="5"><div class="folder-cell" style="padding-left:32px"><svg class="icon xs folder-cell__chevron"><use href="#i-chev-r"/></svg><svg class="icon"><use href="#i-folder"/></svg><span class="folder-cell__name">Container</span><span class="folder-cell__count">12</span></div></td>
+            </tr>
+            <tr class="row-var selected">
+              <td><div class="table__check-cell"><div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-cell__name">top-left</span></div></td>
+              <td class="val-cell"><span class="val-text">24</span></td>
+              <td class="val-cell"><span class="val-text">20</span></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-cell__name">top-right</span></div></td>
+              <td class="val-cell"><span class="val-text">24</span></td>
+              <td class="val-cell"><span class="val-text">20</span></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-cell__name">bottom-left</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias__path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias__path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias__path">v-0</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--internal"><svg class="icon sm"><use href="#i-arr"/></svg><span class="val-alias__path">v-0</span></div></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-cell__name">bottom-right</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias__path">R4-Radii/lg</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias__path">R4-Radii/md</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias__path">R4-Radii/sm</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--external"><svg class="icon sm"><use href="#i-ext"/></svg><span class="val-alias__path">R4-Radii/xs</span></div></td>
+            </tr>
+            <tr class="row-var">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td><div class="var-cell" style="padding-left:72px"><div class="type-badge"><svg class="icon sm"><use href="#i-hash"/></svg></div><span class="var-cell__name">all</span></div></td>
+              <td class="val-cell"><div class="val-alias val-alias--broken"><svg class="icon sm"><use href="#i-warn"/></svg><span class="val-alias__path">Missing</span></div></td>
+              <td class="val-cell"><span class="val-text">16</span></td>
+              <td class="val-cell"><span class="val-text">12</span></td>
+              <td class="val-cell"><span class="val-text">8</span></td>
+            </tr>
+            <tr class="row-folder" style="background:var(--bg-elevated)">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell" style="padding-left:32px"><svg class="icon xs folder-cell__chevron"><use href="#i-chev-r"/></svg><svg class="icon"><use href="#i-folder"/></svg><span class="folder-cell__name">Button</span><span class="folder-cell__count">8</span></div></td>
+            </tr>
+            <tr class="row-folder">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-cell__chevron"><use href="#i-chev-r"/></svg><svg class="icon"><use href="#i-folder"/></svg><span class="folder-cell__name">Spacing</span><span class="folder-cell__count">156</span></div></td>
+            </tr>
+            <tr class="row-folder">
+              <td><div class="table__check-cell"><div class="checkbox"></div></div></td>
+              <td colspan="5"><div class="folder-cell"><svg class="icon xs folder-cell__chevron"><use href="#i-chev-r"/></svg><svg class="icon"><use href="#i-folder"/></svg><span class="folder-cell__name">Grid</span><span class="folder-cell__count">89</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- PANEL -->
+    <aside class="panel">
+      <div class="panel__header">
+        <span class="panel__title">Details</span>
+        <button class="panel__close" onclick="togglePanel()"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="panel__body">
+        <div class="detail-group">
+          <div class="detail-label">Name</div>
+          <div class="detail-value">top-left</div>
+        </div>
+        <div class="detail-group">
+          <div class="detail-label">Path</div>
+          <div class="detail-mono">Viewport / Radius / Container / top-left</div>
+        </div>
+        <div class="detail-group">
+          <div class="detail-label">Type</div>
+          <div class="detail-value" style="display:flex;align-items:center;gap:8px">
+            <div class="type-badge" style="width:20px;height:20px"><svg class="icon sm"><use href="#i-hash"/></svg></div>Number
+          </div>
+        </div>
+        <div class="detail-group">
+          <div class="detail-label">Values per mode</div>
+          <div class="modes-list">
+            <div class="mode-row"><span class="mode-row__name">1920 · Desktop</span><span class="mode-row__val">24</span></div>
+            <div class="mode-row"><span class="mode-row__name">1366 · Laptop</span><span class="mode-row__val">20</span></div>
+            <div class="mode-row"><span class="mode-row__name">768 · Tablet</span><span class="mode-row__val">16</span></div>
+            <div class="mode-row"><span class="mode-row__name">390 · Mobile</span><span class="mode-row__val">12</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- STATUSBAR -->
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>8,571 variables</div>
+      <div class="status-item"><span class="status-dot status-dot--warn"></span>24 changed</div>
+      <div class="status-item"><span class="status-dot status-dot--err"></span>25 broken</div>
+      <div class="statusbar__spacer"></div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>K</kbd> Search</div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>Z</kbd> Undo</div>
+    </footer>
+  </div>
+
+  <script>
+    function togglePanel() {
+      document.getElementById('app').classList.toggle('panel-closed');
+    }
+
+    function toggleFilter() {
+      document.getElementById('filterWrapper').classList.toggle('open');
+    }
+
+    function toggleFilterOption(el) {
+      el.classList.toggle('selected');
+      const check = el.querySelector('.filter-option__check');
+      check.innerHTML = el.classList.contains('selected') ? '<svg class="icon xs"><use href="#i-check"/></svg>' : '';
+      updateBadge();
+    }
+
+    function clearFilters() {
+      document.querySelectorAll('.filter-option.selected').forEach(opt => {
+        opt.classList.remove('selected');
+        opt.querySelector('.filter-option__check').innerHTML = '';
+      });
+      updateBadge();
+    }
+
+    function applyFilters() {
+      document.getElementById('filterWrapper').classList.remove('open');
+      const count = document.querySelectorAll('.filter-option.selected').length;
+      document.querySelector('.filter-btn').classList.toggle('active', count > 0);
+    }
+
+    function updateBadge() {
+      const count = document.querySelectorAll('.filter-option.selected').length;
+      const badge = document.getElementById('filterBadge');
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline' : 'none';
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('filterWrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        wrapper.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

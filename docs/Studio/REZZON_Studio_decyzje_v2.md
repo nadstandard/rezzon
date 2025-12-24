@@ -38,11 +38,23 @@ Flow:
 
 ## 4. Restore po disconnect
 
-**Decyzja:** Punkt otwarty – do rozstrzygnięcia w praktyce.
+**Decyzja:** Restore działa również po ponownym imporcie sesji.
 
-Opcje:
-- A) Przy disconnect zapisujemy "snapshot aliasów" i restore odtwarza połączenia
-- C) Inne podejście
+Szczegóły:
+
+**4.1 Przechowywanie danych o disconnectach:**
+- Dedykowane pole `disconnectedLibraries` w eksporcie sesji
+- Nie jako auto-snapshoty (żeby nie zaśmiecać listy snapshotów)
+- Zawiera: nazwę biblioteki, datę disconnect, wybrany mode dla resolved values, listę poprzednich mapowań aliasów
+
+**4.2 Restore gdy biblioteka zewnętrzna się zmieniła:**
+- Restore pokazuje preview: "X aliasów zostanie przywróconych, Y będzie broken"
+- User decyduje czy kontynuować
+- Aliasy do usuniętych zmiennych stają się "broken" po Restore
+
+**4.3 Granularność Restore:**
+- Restore = wszystko albo nic (cała biblioteka naraz)
+- Granularna kontrola przez ręczne aliasowanie pojedynczych zmiennych
 
 ---
 

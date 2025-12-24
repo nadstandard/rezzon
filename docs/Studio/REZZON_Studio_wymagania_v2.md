@@ -155,8 +155,12 @@ Breadcrumb po prawej stronie toolbara pokazuje aktualną ścieżkę: Library ›
   - wylistowuje wszystkie aliasy w bibliotece,
   - rozdziela aliasy na internal i external,
   - umożliwia odłączanie (disconnect) poszczególnych bibliotek zewnętrznych od aktualnej biblioteki,
-  - przy odłączaniu biblioteki pozwala wybrać źródło, które ma zostać użyte do resolved values,
+  - przy odłączaniu biblioteki pozwala wybrać źródło (mode), które ma zostać użyte do resolved values,
+  - przechowuje dane o odłączonych bibliotekach w eksporcie sesji (pole `disconnectedLibraries`),
   - posiada funkcję restore umożliwiającą przywracanie wcześniej odłączonych bibliotek wraz z ich aliasami,
+  - restore działa również po ponownym imporcie sesji (dane przechowywane w eksporcie sesji),
+  - przy restore pokazuje preview: ile aliasów zostanie przywróconych, ile będzie broken (jeśli target nie istnieje),
+  - restore przywraca całą bibliotekę naraz (wszystko albo nic),
   - wykrywa i oznacza broken aliasy oraz udostępnia osobny status i filtr dla nich.
 - Operacje rename / bulk rename działają na zaznaczonym zakresie zmiennych.
 - Zakres operacji bulk może być definiowany przez:
@@ -201,7 +205,9 @@ Breadcrumb po prawej stronie toolbara pokazuje aktualną ścieżkę: Library ›
   - wykrycie broken aliasów (eksport możliwy z ostrzeżeniem).
 - Aplikacja rozróżnia dwa typy eksportu:
   - **eksport do Figmy** – zawiera wyłącznie dane wymagane przez Figmę (biblioteki, zmienne, aliasy), bez danych sesyjnych,
-  - **eksport sesji projektu** – zawiera pełny stan sesji, w tym dane nieistotne dla Figmy (stan UI, snapshoty, zakresy filtrów, kontekst pracy).
+  - **eksport sesji projektu** – zawiera pełny stan sesji, w tym:
+    - dane nieistotne dla Figmy (stan UI, snapshoty, zakresy filtrów, kontekst pracy),
+    - pole `disconnectedLibraries` z historią odłączonych bibliotek i mapowaniami aliasów (umożliwia restore po ponownym imporcie).
 - Eksport plików do Figmy po operacjach bulk rename musi powodować aktualizację nazw istniejących zmiennych w Figmie, a nie tworzenie nowych pozycji.
 - Mechanizm eksportu do Figmy zachowuje ciągłość identyfikatorów / mapowanie zmiennych, tak aby zmiana nazwy była traktowana jako edycja, a nie nowa definicja.
 - W przypadku występowania broken aliasów eksport do Figmy jest możliwy, ale aplikacja wyświetla ostrzeżenie informujące o ich obecności.
