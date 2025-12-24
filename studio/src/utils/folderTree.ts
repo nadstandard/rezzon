@@ -97,7 +97,7 @@ export function flattenTree(
   
   // Najpierw foldery
   for (const child of node.children) {
-    const isExpanded = expandedFolders.includes(child.id) || expandedFolders.includes('all');
+    const isExpanded = expandedFolders.includes(child.id);
     const childCount = countAllVariables(child);
     
     rows.push({

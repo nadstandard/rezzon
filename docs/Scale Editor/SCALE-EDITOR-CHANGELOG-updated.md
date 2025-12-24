@@ -1,5 +1,20 @@
 # Scale Editor Changelog
 
+## [0.0.25] - 2025-12-24
+
+### Added
+- **PRD v1.1** — dodano sekcję 0 (relacja z REZZON Studio)
+- Dokumentacja workflow między Studio a Scale Editor
+- Sekcja HTML Mockups Workflow (zgodna z wersjonowaniem Studio)
+- Zaktualizowano README projektu
+
+### Documentation
+- Wyjaśniono podział odpowiedzialności: Studio = struktura, Scale Editor = wartości
+- Dodano diagram przepływu pracy Figma → JSON → Tools → Figma
+- Tabela "który tool do czego"
+
+---
+
 ## [0.0.24] - 2024-12-18
 
 ### Fixed
@@ -111,11 +126,18 @@
 
 ---
 
-## UI Mockups v1.0 - 2024-12-17
+## UI Mockups
 
-### Added
+### v1.0 - 2024-12-17
+
 - Typography Scale mockup (`docs/mockups/typography-mockup.html`)
 - Radius mockup (`docs/mockups/radius-mockup.html`)
+
+### v0.5.0 (planned) - 2025-12-24
+
+- Ujednolicenie z REZZON Studio design system
+- Nowe pliki: `scale-editor-v0.5.0-*.html`
+- Wspólne style: `scale-editor-styles.css` (bazujące na Studio)
 
 ### UI Design Decisions
 - Layout based on Figma Variables panel
@@ -254,3 +276,9 @@ Jeśli n > number of columns → wartość = ingrid
 - container/ i photo/ tworzone ręcznie z drzewa
 - Dropdown per viewport definiuje liczbę kolumn i typ przeliczania
 - Zasada mobile: n > columns → ingrid
+
+### Relacja z REZZON Studio
+- Studio = struktura, aliasy, rename, snapshots
+- Scale Editor = wartości, formuły, generowanie tokenów
+- Wspólny format JSON (Figma Variables)
+- Wspólny design system UI (dark theme, Figma-inspired)

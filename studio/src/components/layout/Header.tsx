@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search } from 'lucide-react';
+import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { ImportModal } from '../ui/ImportModal';
+import { ClearWorkspaceModal } from '../ui/ClearWorkspaceModal';
 
 export function Header() {
   const location = useLocation();
   const searchQuery = useAppStore((state) => state.ui.searchQuery);
   const setSearchQuery = useAppStore((state) => state.setSearchQuery);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Variables', icon: Grid3X3 },
@@ -58,6 +60,13 @@ export function Header() {
       </div>
       
       <div className="header__actions">
+        <button 
+          className="btn btn--ghost" 
+          onClick={() => setClearModalOpen(true)}
+          title="Clear Workspace"
+        >
+          <Trash2 className="icon sm" />
+        </button>
         <button className="btn btn--ghost" onClick={() => setImportModalOpen(true)}>
           <Download className="icon sm" />
           Import
@@ -69,6 +78,7 @@ export function Header() {
       </div>
       
       <ImportModal isOpen={importModalOpen} onClose={() => setImportModalOpen(false)} />
+      <ClearWorkspaceModal isOpen={clearModalOpen} onClose={() => setClearModalOpen(false)} />
     </header>
   );
 }

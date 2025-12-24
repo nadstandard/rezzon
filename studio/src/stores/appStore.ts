@@ -33,10 +33,13 @@ interface AppState {
   selectLibrary: (id: string | null) => void;
   selectCollection: (id: string | null) => void;
   toggleFolder: (folderId: string) => void;
+  setExpandedFolders: (folderIds: string[]) => void;
   expandAllFolders: () => void;
   collapseAllFolders: () => void;
   toggleVariable: (variableId: string) => void;
-  selectAllVariables: () => void;
+  selectVariables: (variableIds: string[]) => void;
+  addToSelection: (variableIds: string[]) => void;
+  selectAllVariables: (variableIds: string[]) => void;
   clearSelection: () => void;
   toggleDetailsPanel: () => void;
   setSearchQuery: (query: string) => void;
@@ -100,6 +103,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   
   clearLibraries: () => set({
     libraries: [],
+    snapshots: [],
     ui: initialUIState,
   }),
   
@@ -137,9 +141,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     return { ui: { ...state.ui, expandedFolders: expanded } };
   }),
   
+  setExpandedFolders: (folderIds) => set((state) => ({
+    ui: { ...state.ui, expandedFolders: folderIds },
+  })),
+  
   expandAllFolders: () => set((state) => {
-    // TODO: Zebrać wszystkie folder IDs
-    return { ui: { ...state.ui, expandedFolders: ['all'] } };
+    return { ui: { ...state.ui, expandedFolders: ['__all__'] } };
   }),
   
   collapseAllFolders: () => set((state) => ({
@@ -157,10 +164,23 @@ export const useAppStore = create<AppState>()((set, get) => ({
     return { ui: { ...state.ui, selectedVariables: selected } };
   }),
   
-  selectAllVariables: () => set((state) => {
-    // TODO: Zebrać wszystkie visible variable IDs
-    return state;
+  selectVariables: (variableIds) => set((state) => ({
+    ui: { ...state.ui, selectedVariables: variableIds },
+  })),
+  
+  addToSelection: (variableIds) => set((state) => {
+    const newSelection = [...state.ui.selectedVariables];
+    for (const id of variableIds) {
+      if (!newSelection.includes(id)) {
+        newSelection.push(id);
+      }
+    }
+    return { ui: { ...state.ui, selectedVariables: newSelection } };
   }),
+  
+  selectAllVariables: (variableIds) => set((state) => ({
+    ui: { ...state.ui, selectedVariables: variableIds },
+  })),
   
   clearSelection: () => set((state) => ({
     ui: { ...state.ui, selectedVariables: [] },
@@ -191,27 +211,33 @@ export const useAppStore = create<AppState>()((set, get) => ({
   clearFilters: () => set((state) => ({
     ui: { 
       ...state.ui, 
-      filters: { types: [], aliasTypes: [] } 
+      filters: { types: [], aliasTypes: [] },
+      searchQuery: '',
     },
   })),
   
-  createSnapshot: (name, description) => set((state) => ({
-    snapshots: [
-      ...state.snapshots,
-      {
-        id: crypto.randomUUID(),
-        name,
-        description,
-        createdAt: new Date().toISOString(),
-        type: 'manual',
-        variableCount: 0, // TODO: policzyć
-        aliasCount: 0, // TODO: policzyć
-        data: {
-          libraries: JSON.parse(JSON.stringify(state.libraries)),
+  createSnapshot: (name, description) => set((state) => {
+    const variableCount = state.libraries.reduce((acc, lib) => 
+      acc + Object.keys(lib.file.variables || {}).length, 0);
+    
+    return {
+      snapshots: [
+        ...state.snapshots,
+        {
+          id: crypto.randomUUID(),
+          name,
+          description,
+          createdAt: new Date().toISOString(),
+          type: 'manual',
+          variableCount,
+          aliasCount: 0,
+          data: {
+            libraries: JSON.parse(JSON.stringify(state.libraries)),
+          },
         },
-      },
-    ],
-  })),
+      ],
+    };
+  }),
   
   restoreSnapshot: (id) => set((state) => {
     const snapshot = state.snapshots.find((s) => s.id === id);

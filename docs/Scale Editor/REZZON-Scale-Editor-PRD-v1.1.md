@@ -1,5 +1,91 @@
 # REZZON Scale Editor — Product Requirements Document
 
+**Wersja:** 1.1  
+**Data:** 2025-12-24  
+**Status:** Active Development
+
+---
+
+## 0. Relacja z REZZON Studio
+
+### 0.1 Dwie aplikacje, jeden ekosystem
+
+| Aplikacja | Odpowiedzialność | Dane wejściowe | Dane wyjściowe |
+|-----------|------------------|----------------|----------------|
+| **REZZON Studio** | Struktura, aliasy, rename, bulk operations | JSON z Figma (wszystkie biblioteki) | JSON do Figma |
+| **REZZON Scale Editor** | Wartości, formuły, generowanie tokenów | JSON z Figma (biblioteki skali) | JSON do Figma |
+
+### 0.2 Przepływ pracy
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         FIGMA                                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │   REZZON    │  │  R4-Grid    │  │ R4-Spacing  │  │R4-Typography│ │
+│  │  (główna)   │  │             │  │   -Scale    │  │   -Scale    │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
+│         │                │                │                │        │
+│         └────────────────┴────────────────┴────────────────┘        │
+│                                   │                                  │
+│                          REZZON Portal                               │
+│                          (export JSON)                               │
+└───────────────────────────────────┬─────────────────────────────────┘
+                                    │
+                                    ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                        JSON FILES                                  │
+│  REZZON.json, R4-Grid.json, R4-Spacing-Scale.json, R4-Typography...│
+└───────────────────────────────────┬───────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+┌───────────────────────────────┐   ┌───────────────────────────────┐
+│       REZZON STUDIO           │   │     REZZON SCALE EDITOR       │
+│                               │   │                               │
+│  • Import wszystkich JSON     │   │  • Import JSON bibliotek skali│
+│  • Zarządzanie strukturą      │   │  • Edycja parametrów bazowych │
+│  • Bulk rename                │   │  • Automatyczne przeliczanie  │
+│  • Aliasy (internal/external) │   │  • Generowanie tokenów        │
+│  • Snapshots                  │   │  • Preview formuł             │
+│  • UNDO/REDO                  │   │                               │
+│                               │   │  Edytory:                     │
+│  Eksport:                     │   │  • Typography (Size, LH)      │
+│  • JSON do Figmy              │   │  • Spacing (Vertical, Horiz.) │
+│  • Sesja projektu             │   │  • Grid (Column, Margin, etc.)│
+│                               │   │  • Radius                     │
+└───────────────────────────────┘   └───────────────────────────────┘
+                    │                               │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                          REZZON Portal (import)
+                                    │
+                                    ▼
+                               FIGMA
+```
+
+### 0.3 Który tool do czego?
+
+| Zadanie | Narzędzie | Powód |
+|---------|-----------|-------|
+| Zmiana nazwy folderu | Studio | Propagacja do aliasów |
+| Zmiana wartości bazowej spacing | Scale Editor | Automatyczne przeliczenie |
+| Bulk aliasowanie do Color-Library | Studio | Bulk alias z matchowaniem |
+| Dodanie nowego breakpoint (viewport) | Scale Editor | Generowanie tokenów |
+| Usunięcie nieużywanych zmiennych | Studio | Walidacja broken aliasów |
+| Zmiana proporcji zdjęć na mobile | Scale Editor (Grid) | Responsive exceptions |
+| Disconnect zewnętrznej biblioteki | Studio | Restore history |
+
+### 0.4 Wspólne zasady
+
+- **Ten sam format JSON** — oba narzędzia importują/eksportują format Figma Variables
+- **Ten sam design system UI** — dark theme, Figma-inspired, wspólne tokeny CSS
+- **Brak backendu** — oba działają lokalnie w przeglądarce
+- **Single user** — brak multiuser, brak kont
+
+---
+
 ## 1. Problem
 
 Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
@@ -23,6 +109,8 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 ### Ograniczenie Figma
 - Maksymalnie **10 modów (stylów)** per kolekcja zmiennych
 
+---
+
 ## 2. Rozwiązanie
 
 **REZZON Scale Editor** — aplikacja webowa do zarządzania bibliotekami skali.
@@ -35,6 +123,8 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 4. **Output to JSON** — kompatybilny z REZZON Portal do importu do Figmy
 5. **Konfiguracja w Figma Variables** — metadane zapisane w `description`, przetrwają eksport/import
 
+---
+
 ## 3. Użytkownicy
 
 **Główny użytkownik:** Projektant (właściciel design systemu)
@@ -44,6 +134,8 @@ Zarządzanie bibliotekami skali w REZZON Design System jest obecnie:
 - Dodawać nowe tagi/kombinacje bez ręcznego tworzenia formuł
 - Definiować zachowania responsywne (np. "16:9 na desktop → 4:3 na mobile")
 - Eksportować gotowy JSON do Figmy
+
+---
 
 ## 4. Funkcje MVP
 
@@ -293,12 +385,12 @@ desktop/
         └── static/
         └── to-tab-6-col/
   └── photo/                         ← user-created
-        └── static/
-              └── horizontal/
-                    └── width/
-                    └── height/
-        └── to-tab-6-col/
-              └── horizontal/
+        └── horizontal/
+              └── width/
+              └── height/
+        └── panoramic/
+              └── width/
+              └── height/
 laptop/
   └── ...
 tablet/
@@ -314,6 +406,8 @@ Konfiguracja buildera zapisywana w polu `description` zmiennych Figma:
 - Nie wymaga osobnego pliku konfiguracyjnego
 - Edytowalna z poziomu Scale Editor
 
+---
+
 ## 5. UI Components (✅ Implemented)
 
 | Component | Status | Description |
@@ -325,6 +419,8 @@ Konfiguracja buildera zapisywana w polu `description` zmiennych Figma:
 | Toast | ✅ | Error/success notifications |
 | Context Menu | ✅ | Delete ref value (right-click) |
 | Data Table | ✅ | Editable parameters, computed display |
+
+---
 
 ## 6. Technical Implementation
 
@@ -378,6 +474,8 @@ scale-editor/
 }
 ```
 
+---
+
 ## 7. Roadmap
 
 | Phase | Scope | Status |
@@ -387,7 +485,10 @@ scale-editor/
 | 3 | Typography Editor | ✅ v0.0.24 |
 | 4 | Grid Editor — design | ✅ v1.0 PRD + mockup |
 | 5 | Grid Editor — implementacja | 🔲 planned |
-| 6 | Undo/Redo | 🔲 planned |
+| 6 | HTML Mockups (Studio-style) | 🔲 v0.5.0 planned |
+| 7 | Undo/Redo | 🔲 planned |
+
+---
 
 ## 8. Znane limitacje
 
@@ -399,18 +500,56 @@ scale-editor/
 
 ---
 
-**Wersja:** 1.0  
-**Data:** 2025-12-24  
+## 9. HTML Mockups Workflow
+
+### 9.1 Wersjonowanie makiet
+
+Semantic versioning dla makiet HTML (zgodnie z REZZON Studio):
+
+- `v0.x.y` — iteracje makiet
+- `v1.0.0` — kompletna makieta gotowa do implementacji
+
+### 9.2 Pliki makiet
+
+```
+docs/mockups/
+├── scale-editor-styles.css              # Wspólne style (bazujące na Studio)
+├── scale-editor-v0.5.0-typography.html  # Typography Editor
+├── scale-editor-v0.5.0-spacing.html     # Spacing Editor
+├── scale-editor-v0.5.0-radius.html      # Radius Editor
+├── scale-editor-v0.5.0-grid.html        # Grid Editor
+└── (legacy)
+    ├── typography-mockup.html           # Stary format
+    └── radius-mockup.html               # Stary format
+```
+
+### 9.3 Wspólny design system
+
+Scale Editor używa tych samych tokenów CSS co REZZON Studio:
+
+- `--bg-app`, `--bg-surface`, `--bg-elevated`
+- `--text`, `--text-secondary`, `--text-muted`
+- `--accent`, `--green`, `--orange`, `--red`
+- Wspólne komponenty: `.btn`, `.tool-btn`, `.sidebar`, `.table`
+
+### 9.4 Różnice UI między Studio a Scale Editor
+
+| Element | REZZON Studio | Scale Editor |
+|---------|---------------|--------------|
+| **Tabs** | Variables / Aliases / Snapshots | Typography / Spacing / Grid / Radius |
+| **Sidebar** | Libraries → Collections → Folders | Collections → Sub-collections → Groups |
+| **Tabela** | Name + Mode columns (read-only) | Parameters (editable) + Computed (read-only) |
+| **Ikony wartości** | Alias badges (→, ↗, ⚠) | Value type (#, ƒ, =) |
+| **Panel** | Details (read-only) | Brak (edycja inline) |
+
+---
+
 **Autor:** Claude + Marcin
 
 **Changelog:**
-- 1.0: **Grid Editor design complete** — makieta UI v0.8, modal Create folder, responsive exceptions z opcjami (columns/viewport/to margins), nazewnictwo tokenów photo (w-col/h-col), ratio per viewport, photo zawsze generuje width+height
-- 0.9: Dodano ratio per viewport dla proporcji wysokości (photo)
-- 0.8: NOWA KONCEPCJA Grid Editor — panel sterowania z BASE per viewport
-- 0.7: Poprzednia koncepcja Grid Builder (zastąpiona)
-- 0.6: Dodano Typography Editor (v0.0.24)
-- 0.5: Zaktualizowano status implementacji (v0.0.22)
-- 0.4: Dodano sekcję UI Design
-- 0.3: Dodano szczegółowe formuły i parametry
-- 0.2: Dodano zarządzanie modami, strukturą
-- 0.1: Wersja inicjalna
+- 1.1: **Dodano sekcję 0 (relacja z Studio)**, sekcję 9 (HTML Mockups Workflow), zaktualizowano roadmapę
+- 1.0: Grid Editor design complete
+- 0.9: Ratio per viewport dla photo
+- 0.8: Nowa koncepcja Grid Editor
+- 0.6: Typography Editor
+- 0.5: Status implementacji v0.0.22

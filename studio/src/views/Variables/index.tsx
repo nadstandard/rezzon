@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Maximize2, 
   Minimize2, 
@@ -17,13 +17,15 @@ import {
   ArrowRight,
   ExternalLink,
   ChevronRight,
-  Folder
+  Folder,
+  Check,
+  X
 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { VariablesSidebar } from '../../components/layout/VariablesSidebar';
 import { DetailsPanel } from '../../components/layout/DetailsPanel';
 import { buildFolderTree, flattenTree, getAllFolderIds } from '../../utils/folderTree';
-import type { Variable, VariableType, VariableValue } from '../../types';
+import type { Variable, VariableType, VariableValue, AliasType } from '../../types';
 
 // Ikona dla typu zmiennej
 function TypeIcon({ type }: { type: VariableType }) {
@@ -69,6 +71,23 @@ function formatValue(value: VariableValue | undefined, type: VariableType): stri
   }
   
   return String(v);
+}
+
+// Określ typ aliasu dla zmiennej
+function getAliasType(variable: Variable, allVariables: Record<string, Variable>): AliasType {
+  const firstModeValue = Object.values(variable.valuesByMode || {})[0];
+  
+  if (!firstModeValue || firstModeValue.type !== 'VARIABLE_ALIAS') {
+    return 'none';
+  }
+  
+  const targetId = firstModeValue.variableId;
+  if (!targetId) return 'broken';
+  
+  const targetVar = allVariables[targetId];
+  if (!targetVar) return 'external'; // Nie znaleziono = external
+  
+  return 'internal';
 }
 
 // Komponent dla komórki wartości
@@ -128,50 +147,338 @@ function ValueCell({ value, type, allVariables }: {
   return <span className="val-text">{formatted}</span>;
 }
 
+// Checkbox component
+function Checkbox({ 
+  checked, 
+  indeterminate, 
+  onChange 
+}: { 
+  checked: boolean; 
+  indeterminate?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <div 
+      className={`checkbox ${checked ? 'checked' : ''} ${indeterminate ? 'indeterminate' : ''}`}
+      onClick={(e) => { e.stopPropagation(); onChange(); }}
+    >
+      {checked && <Check className="icon xs" />}
+    </div>
+  );
+}
+
+// Filter dropdown component
+function FilterDropdown({ 
+  isOpen, 
+  onClose,
+  typeFilters,
+  aliasFilters,
+  onTypeFilterChange,
+  onAliasFilterChange,
+  onClear,
+  counts
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  typeFilters: VariableType[];
+  aliasFilters: AliasType[];
+  onTypeFilterChange: (type: VariableType) => void;
+  onAliasFilterChange: (type: AliasType) => void;
+  onClear: () => void;
+  counts: {
+    types: Record<VariableType, number>;
+    aliases: Record<AliasType, number>;
+  };
+}) {
+  if (!isOpen) return null;
+  
+  const typeOptions: { type: VariableType; label: string }[] = [
+    { type: 'FLOAT', label: 'Number' },
+    { type: 'BOOLEAN', label: 'Boolean' },
+    { type: 'STRING', label: 'String' },
+    { type: 'COLOR', label: 'Color' },
+  ];
+  
+  const aliasOptions: { type: AliasType; label: string }[] = [
+    { type: 'none', label: 'No alias' },
+    { type: 'internal', label: 'Internal' },
+    { type: 'external', label: 'External' },
+    { type: 'broken', label: 'Broken' },
+  ];
+  
+  return (
+    <div className="filter-dropdown" style={{ display: 'block' }}>
+      <div className="filter-section">
+        <div className="filter-section__title">By Type</div>
+        {typeOptions.map(({ type, label }) => (
+          <div 
+            key={type}
+            className={`filter-option ${typeFilters.includes(type) ? 'selected' : ''}`}
+            onClick={() => onTypeFilterChange(type)}
+          >
+            <div className="filter-option__check">
+              {typeFilters.includes(type) && <Check className="icon xs" />}
+            </div>
+            <div className={`type-dot type-dot--${type.toLowerCase()}`} />
+            <span className="filter-option__label">{label}</span>
+            <span className="filter-option__count">{counts.types[type] || 0}</span>
+          </div>
+        ))}
+      </div>
+      <div className="filter-section">
+        <div className="filter-section__title">By Alias</div>
+        {aliasOptions.map(({ type, label }) => (
+          <div 
+            key={type}
+            className={`filter-option ${aliasFilters.includes(type) ? 'selected' : ''}`}
+            onClick={() => onAliasFilterChange(type)}
+          >
+            <div className="filter-option__check">
+              {aliasFilters.includes(type) && <Check className="icon xs" />}
+            </div>
+            <div className={`alias-dot alias-dot--${type}`} />
+            <span className="filter-option__label">{label}</span>
+            <span className="filter-option__count">{counts.aliases[type] || 0}</span>
+          </div>
+        ))}
+      </div>
+      <div className="filter-actions">
+        <button className="btn btn--ghost" onClick={onClear}>Clear all</button>
+        <button className="btn btn--primary" onClick={onClose}>Apply</button>
+      </div>
+    </div>
+  );
+}
+
+// Selection bar component
+function SelectionBar({ 
+  count, 
+  onClear 
+}: { 
+  count: number; 
+  onClear: () => void;
+}) {
+  if (count === 0) return null;
+  
+  return (
+    <div 
+      style={{
+        position: 'fixed',
+        bottom: '48px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        padding: '8px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        zIndex: 100,
+      }}
+    >
+      <span style={{ fontWeight: 500 }}>{count} selected</span>
+      <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
+      <button className="btn btn--ghost" style={{ padding: '4px 8px' }}>
+        <Edit3 className="icon sm" /> Rename
+      </button>
+      <button className="btn btn--ghost" style={{ padding: '4px 8px' }}>
+        <Copy className="icon sm" /> Duplicate
+      </button>
+      <button className="btn btn--ghost" style={{ padding: '4px 8px', color: 'var(--red)' }}>
+        <Trash2 className="icon sm" /> Delete
+      </button>
+      <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
+      <button 
+        className="btn btn--ghost" 
+        style={{ padding: '4px 8px' }}
+        onClick={onClear}
+      >
+        <X className="icon sm" /> Clear
+      </button>
+    </div>
+  );
+}
+
 export function VariablesView() {
   const libraries = useAppStore((state) => state.libraries);
   const selectedLibraryId = useAppStore((state) => state.ui.selectedLibraryId);
   const selectedCollectionId = useAppStore((state) => state.ui.selectedCollectionId);
   const expandedFolders = useAppStore((state) => state.ui.expandedFolders);
+  const selectedVariables = useAppStore((state) => state.ui.selectedVariables);
   const detailsPanelOpen = useAppStore((state) => state.ui.detailsPanelOpen);
+  const searchQuery = useAppStore((state) => state.ui.searchQuery);
+  const filters = useAppStore((state) => state.ui.filters);
+  
   const toggleDetailsPanel = useAppStore((state) => state.toggleDetailsPanel);
   const toggleFolder = useAppStore((state) => state.toggleFolder);
+  const setExpandedFolders = useAppStore((state) => state.setExpandedFolders);
+  const toggleVariable = useAppStore((state) => state.toggleVariable);
+  const selectVariables = useAppStore((state) => state.selectVariables);
+  const clearSelection = useAppStore((state) => state.clearSelection);
+  const setTypeFilter = useAppStore((state) => state.setTypeFilter);
+  const setAliasFilter = useAppStore((state) => state.setAliasFilter);
+  const clearFilters = useAppStore((state) => state.clearFilters);
+  
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+  
+  // Zamykanie filtra po kliknięciu poza nim
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+    
+    if (filterOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [filterOpen]);
   
   const selectedLibrary = libraries.find((l) => l.id === selectedLibraryId);
   const selectedCollection = selectedLibrary?.file.variableCollections?.[selectedCollectionId || ''];
   const allVariables = selectedLibrary?.file.variables || {};
   
-  const variables = useMemo(() => {
+  // Pobierz wszystkie zmienne dla kolekcji
+  const allCollectionVariables = useMemo(() => {
     if (!selectedCollection) return [];
     return selectedCollection.variableIds
       .map((id) => allVariables[id])
       .filter(Boolean) as Variable[];
   }, [selectedCollection, allVariables]);
   
-  const folderTree = useMemo(() => buildFolderTree(variables), [variables]);
+  // Filtruj zmienne
+  const filteredVariables = useMemo(() => {
+    let result = allCollectionVariables;
+    
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((v) => 
+        v.name.toLowerCase().includes(query)
+      );
+    }
+    
+    // Type filter
+    if (filters.types.length > 0) {
+      result = result.filter((v) => filters.types.includes(v.resolvedType));
+    }
+    
+    // Alias filter
+    if (filters.aliasTypes.length > 0) {
+      result = result.filter((v) => {
+        const aliasType = getAliasType(v, allVariables);
+        return filters.aliasTypes.includes(aliasType);
+      });
+    }
+    
+    return result;
+  }, [allCollectionVariables, searchQuery, filters, allVariables]);
   
-  const rows = useMemo(() => 
-    flattenTree(folderTree, expandedFolders), 
-    [folderTree, expandedFolders]
-  );
+  // Policz statystyki dla filtrów
+  const filterCounts = useMemo(() => {
+    const types: Record<VariableType, number> = { FLOAT: 0, BOOLEAN: 0, STRING: 0, COLOR: 0 };
+    const aliases: Record<AliasType, number> = { none: 0, internal: 0, external: 0, broken: 0 };
+    
+    for (const v of allCollectionVariables) {
+      types[v.resolvedType] = (types[v.resolvedType] || 0) + 1;
+      const aliasType = getAliasType(v, allVariables);
+      aliases[aliasType] = (aliases[aliasType] || 0) + 1;
+    }
+    
+    return { types, aliases };
+  }, [allCollectionVariables, allVariables]);
   
+  // Zbuduj drzewo folderów
+  const folderTree = useMemo(() => buildFolderTree(filteredVariables), [filteredVariables]);
+  
+  // Sprawdź czy "expand all"
+  const isExpandAll = expandedFolders.includes('__all__');
+  
+  // Spłaszcz do wierszy
+  const rows = useMemo(() => {
+    if (isExpandAll) {
+      const allIds = getAllFolderIds(folderTree);
+      return flattenTree(folderTree, allIds);
+    }
+    return flattenTree(folderTree, expandedFolders);
+  }, [folderTree, expandedFolders, isExpandAll]);
+  
+  // Wszystkie folder IDs
   const allFolderIds = useMemo(() => getAllFolderIds(folderTree), [folderTree]);
   
+  // Wszystkie visible variable IDs
+  const visibleVariableIds = useMemo(() => 
+    rows.filter((r) => r.type === 'variable').map((r) => r.id),
+    [rows]
+  );
+  
+  // Pobierz modes
   const modes = selectedCollection?.modes || [];
 
-  const handleExpandAll = () => {
-    for (const id of allFolderIds) {
-      if (!expandedFolders.includes(id)) {
-        toggleFolder(id);
-      }
-    }
-  };
+  // Expand/Collapse all
+  const handleExpandAll = useCallback(() => {
+    setExpandedFolders(allFolderIds);
+  }, [allFolderIds, setExpandedFolders]);
   
-  const handleCollapseAll = () => {
-    for (const id of expandedFolders) {
-      toggleFolder(id);
+  const handleCollapseAll = useCallback(() => {
+    setExpandedFolders([]);
+  }, [setExpandedFolders]);
+  
+  // Select all checkbox logic
+  const allSelected = visibleVariableIds.length > 0 && 
+    visibleVariableIds.every((id) => selectedVariables.includes(id));
+  const someSelected = visibleVariableIds.some((id) => selectedVariables.includes(id));
+  
+  const handleSelectAll = useCallback(() => {
+    if (allSelected) {
+      clearSelection();
+    } else {
+      selectVariables(visibleVariableIds);
     }
-  };
+  }, [allSelected, visibleVariableIds, selectVariables, clearSelection]);
+  
+  // Row click with shift support
+  const handleRowClick = useCallback((id: string, isVariable: boolean, e: React.MouseEvent) => {
+    if (!isVariable) return;
+    
+    if (e.shiftKey && lastClickedId) {
+      // Shift+click - select range
+      const startIdx = visibleVariableIds.indexOf(lastClickedId);
+      const endIdx = visibleVariableIds.indexOf(id);
+      if (startIdx !== -1 && endIdx !== -1) {
+        const start = Math.min(startIdx, endIdx);
+        const end = Math.max(startIdx, endIdx);
+        const rangeIds = visibleVariableIds.slice(start, end + 1);
+        selectVariables([...new Set([...selectedVariables, ...rangeIds])]);
+      }
+    } else {
+      toggleVariable(id);
+      setLastClickedId(id);
+    }
+  }, [lastClickedId, visibleVariableIds, selectedVariables, selectVariables, toggleVariable]);
+  
+  // Toggle type filter
+  const handleTypeFilterChange = useCallback((type: VariableType) => {
+    const newTypes = filters.types.includes(type)
+      ? filters.types.filter((t) => t !== type)
+      : [...filters.types, type];
+    setTypeFilter(newTypes);
+  }, [filters.types, setTypeFilter]);
+  
+  // Toggle alias filter
+  const handleAliasFilterChange = useCallback((type: AliasType) => {
+    const newTypes = filters.aliasTypes.includes(type)
+      ? filters.aliasTypes.filter((t) => t !== type)
+      : [...filters.aliasTypes, type];
+    setAliasFilter(newTypes);
+  }, [filters.aliasTypes, setAliasFilter]);
+  
+  const activeFilterCount = filters.types.length + filters.aliasTypes.length;
 
   return (
     <>
@@ -191,20 +498,20 @@ export function VariablesView() {
           <div className="toolbar__sep" />
           
           <div className="toolbar__group">
-            <button className="tool-btn" title="Rename">
+            <button className="tool-btn" title="Rename" disabled={selectedVariables.length === 0}>
               <Edit3 className="icon" />
             </button>
-            <button className="tool-btn" title="Duplicate">
+            <button className="tool-btn" title="Duplicate" disabled={selectedVariables.length === 0}>
               <Copy className="icon" />
             </button>
-            <button className="tool-btn" title="Delete">
+            <button className="tool-btn" title="Delete" disabled={selectedVariables.length === 0}>
               <Trash2 className="icon" />
             </button>
           </div>
           
           <div className="toolbar__sep" />
           
-          <button className="tool-btn" title="Bulk Alias">
+          <button className="tool-btn" title="Bulk Alias" disabled={selectedVariables.length === 0}>
             <Link className="icon" />
           </button>
           
@@ -221,10 +528,28 @@ export function VariablesView() {
           
           <div className="toolbar__sep" />
           
-          <button className="filter-btn">
-            <Filter className="icon sm" />
-            Filter
-          </button>
+          <div className="filter-wrapper" ref={filterRef} style={{ position: 'relative' }}>
+            <button 
+              className={`filter-btn ${activeFilterCount > 0 ? 'active' : ''}`}
+              onClick={() => setFilterOpen(!filterOpen)}
+            >
+              <Filter className="icon sm" />
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="filter-btn__badge">{activeFilterCount}</span>
+              )}
+            </button>
+            <FilterDropdown
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              typeFilters={filters.types}
+              aliasFilters={filters.aliasTypes}
+              onTypeFilterChange={handleTypeFilterChange}
+              onAliasFilterChange={handleAliasFilterChange}
+              onClear={() => { clearFilters(); setFilterOpen(false); }}
+              counts={filterCounts}
+            />
+          </div>
           
           <div className="toolbar__sep" />
           
@@ -265,7 +590,11 @@ export function VariablesView() {
               <thead>
                 <tr>
                   <th className="col-check">
-                    <div className="checkbox" />
+                    <Checkbox 
+                      checked={allSelected} 
+                      indeterminate={someSelected && !allSelected}
+                      onChange={handleSelectAll}
+                    />
                   </th>
                   <th className="col-name">Name</th>
                   {modes.map((mode) => (
@@ -281,13 +610,15 @@ export function VariablesView() {
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={2 + modes.length} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>
-                      No variables in this collection
+                      {searchQuery || activeFilterCount > 0 
+                        ? 'No variables match your filters'
+                        : 'No variables in this collection'}
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => {
                     if (row.type === 'folder') {
-                      const isExpanded = expandedFolders.includes(row.id) || expandedFolders.includes('all');
+                      const isExpanded = isExpandAll || expandedFolders.includes(row.id);
                       
                       return (
                         <tr 
@@ -325,12 +656,20 @@ export function VariablesView() {
                     }
                     
                     const variable = row.variable!;
+                    const isSelected = selectedVariables.includes(row.id);
                     
                     return (
-                      <tr key={row.id} className="row-var">
+                      <tr 
+                        key={row.id} 
+                        className={`row-var ${isSelected ? 'selected' : ''}`}
+                        onClick={(e) => handleRowClick(row.id, true, e)}
+                      >
                         <td>
                           <div className="table__check-cell">
-                            <div className="checkbox" />
+                            <Checkbox 
+                              checked={isSelected}
+                              onChange={() => toggleVariable(row.id)}
+                            />
                           </div>
                         </td>
                         <td>
@@ -341,7 +680,13 @@ export function VariablesView() {
                             <div className="type-badge">
                               <TypeIcon type={variable.resolvedType} />
                             </div>
-                            <span className="var-cell__name">{row.name}</span>
+                            <span className="var-cell__name">
+                              {searchQuery ? (
+                                <HighlightText text={row.name} highlight={searchQuery} />
+                              ) : (
+                                row.name
+                              )}
+                            </span>
                           </div>
                         </td>
                         {modes.map((mode) => (
@@ -361,9 +706,32 @@ export function VariablesView() {
             </table>
           )}
         </div>
+        
+        <SelectionBar count={selectedVariables.length} onClear={clearSelection} />
       </main>
       
       {detailsPanelOpen && <DetailsPanel />}
+    </>
+  );
+}
+
+// Podświetlanie tekstu wyszukiwania
+function HighlightText({ text, highlight }: { text: string; highlight: string }) {
+  if (!highlight.trim()) return <>{text}</>;
+  
+  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+  
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === highlight.toLowerCase() ? (
+          <mark key={i} style={{ background: 'var(--accent)', color: 'white', borderRadius: '2px', padding: '0 2px' }}>
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
     </>
   );
 }
