@@ -111,7 +111,7 @@ Każdy mode może mieć inne wartości dla wszystkich parametrów.
 
 **Kategorie Line Height:** xl, l, m, s, xs
 
-### 4.6 Grid Editor (🔲 In Design — NOWA KONCEPCJA)
+### 4.6 Grid Editor (🔲 In Design v1.0)
 
 Grid Editor to narzędzie do **projektowania całego systemu siatki od zera** lub edycji istniejącej biblioteki po wgraniu JSON.
 
@@ -119,17 +119,20 @@ Grid Editor to narzędzie do **projektowania całego systemu siatki od zera** lu
 
 **Panel sterowania (globalny):**
 - Viewporty na sztywno: Desktop, Laptop, Tablet, Mobile
-- Definiowanie BASE per viewport
+- Definiowanie BASE per viewport per tryb
 - Automatyczne generowanie `/column/` i `/margin/`
 
 **Podgląd wyników:**
-- Read-only
-- Drzewo z tokenami i wartościami per tryb (CROSS, CIRCLE, TRIANGLE, SQUARE)
+- Read-only tabela
+- Wartości per tryb (CROSS, CIRCLE, TRIANGLE, SQUARE)
 
-**Edycja folderów (container, photo, custom):**
-- Tworzenie z poziomu drzewa
-- Konfiguracja wyjątków responsywnych per folder
-- Opcjonalne override per wiersz
+**Sidebar (drzewo folderów):**
+- BASE, column (auto), margin (auto)
+- container/, photo/ — tworzone przez użytkownika
+
+**Tworzenie folderów:**
+- Modal "Create folder" z wyborem parent (container/photo) i nazwą
+- Typ folderu wynika z parent — nie trzeba wybierać osobno
 
 #### 4.6.2 BASE — Wartości źródłowe per viewport
 
@@ -219,46 +222,52 @@ Generowane tokeny (każdy z wariantami -DL i -TM):
 - `-DL` (Desktop-Laptop): wartość na Desktop/Laptop, 0 na Tablet/Mobile
 - `-TM` (Tablet-Mobile): wartość na Tablet/Mobile, 0 na Desktop/Laptop
 
-#### 4.6.4 Tworzenie folderów w drzewie (container, photo, custom)
+#### 4.6.4 Tworzenie folderów (container, photo)
 
-Użytkownik może tworzyć dodatkowe foldery z poziomu drzewa:
+**Modal "Create folder":**
+- Parent folder: dropdown (container / photo)
+- Folder name: input (np. `to-tab-6-col`, `static`, `horizontal`)
 
-1. **Wpisuję nazwę** (np. `to-tab-6-col`, `static`, `panoramic-to-horizontal`)
-2. **Wybieram typ:**
-   - container — tylko szerokości
-   - photo — szerokości + wysokości z ratio
-3. **Konfiguruję dropdowny per viewport:**
-   - Liczba kolumn (1-12)
-   - Typ przeliczania (standard, -w-margin, -to-edge, itd.)
-4. **Jeśli photo — definiuję ratio** (nazwa + proporcja, np. horizontal 4:3)
-5. **Wybieram warianty do generowania** (-w-half, -w-margin, -to-edge, -1g, -2g)
+**Typ folderu wynika z parent:**
+- `container/` → tylko szerokości (`v-col-n`)
+- `photo/` → szerokości + wysokości (`w-col-n`, `h-col-n`)
 
-#### 4.6.5 Wyjątki responsywne — dwa poziomy
+#### 4.6.5 Konfiguracja folderu
 
-**Per folder (główna zasada):**
-```
-Folder: to-tab-6-col
-  desktop: [12] kolumn
-  laptop:  [12] kolumn
-  tablet:  [6] kolumn    ← dropdown
-  mobile:  [2] kolumn    ← dropdown
-```
+**Responsive exceptions:**
+Checkbox per viewport → dropdown pojawia się gdy zaznaczony.
 
-Aplikacja przelicza wszystkie tokeny automatycznie według wybranej liczby kolumn per viewport.
+Opcje dropdown:
+- 1-12 columns
+- viewport (pełna szerokość ekranu)
+- to margins (ingrid + 2 × (margin m - margin xs))
 
-**Per wiersz (opcjonalny override):**
-Dla konkretnego tokena można nadpisać regułę folderu.
+**Variants to generate:**
+Checkboxy: v-col-n (base), -w-half, -w-margin, -to-edge, -1g, -2g
 
 #### 4.6.6 Proporcje wysokości (photo)
 
-Użytkownik dodaje proporcje wysokości:
-1. Wpisuje **nazwę** (np. `horizontal`, `panoramic`, `square`, `vertical`)
-2. Definiuje **ratio** (np. 4:3, 16:9, 1:1, 3:4)
+**Ratio per viewport:**
+Dropdown per viewport z opcjami: 16:9, 4:3, 3:4, 1:1, custom
+
+**Przykłady:**
+
+| Nazwa | Desktop | Laptop | Tablet | Mobile |
+|-------|---------|--------|--------|--------|
+| horizontal | 4:3 | 4:3 | 4:3 | 4:3 |
+| panoramic | 16:9 | 16:9 | 16:9 | 16:9 |
+| panoramic-to-square | 16:9 | 16:9 | 4:3 | 1:1 |
+
+**Nazewnictwo tokenów w photo:**
+- `w-col-n` — szerokości (width)
+- `h-col-n` — wysokości (height)
 
 **Formuła wysokości:**
 ```
-h-col-n/{nazwa} = v-col-n × (ratio-b / ratio-a)
+h-col-n = w-col-n × (ratio-b[viewport] / ratio-a[viewport])
 ```
+
+**Photo zawsze generuje width/ i height/** — bez osobnego wyboru w UI.
 
 #### 4.6.7 Nazewnictwo wariantów
 
@@ -278,30 +287,18 @@ Specjalne tokeny:
 
 ```
 desktop/
-  └── column/
-        └── v-col-1, v-col-1-w-half, v-col-1-w-margin, v-col-1-to-edge, v-col-1-1g, v-col-1-2g
-        └── ...
-        └── v-col-12, v-col-12-w-margin, v-col-12-to-edge, v-col-12-1g, v-col-12-2g
-        └── v-col-viewport, v-col-viewport-w-margin
-  └── margin/
-        └── v-xs, v-xs-DL, v-xs-TM
-        └── v-m, v-m-DL, v-m-TM
-        └── v-l, v-l-DL, v-l-TM
-        └── ...
-  └── container/                     ← tworzone ręcznie
+  └── column/                        ← auto
+  └── margin/                        ← auto
+  └── container/                     ← user-created
         └── static/
         └── to-tab-6-col/
-        └── to-mobile-6-col/
-  └── photo/                         ← tworzone ręcznie
+  └── photo/                         ← user-created
         └── static/
               └── horizontal/
                     └── width/
                     └── height/
-        └── dynamic/
-              └── to-tab-6-col/
-                    └── horizontal/
-                          └── width/
-                          └── height/
+        └── to-tab-6-col/
+              └── horizontal/
 laptop/
   └── ...
 tablet/
@@ -324,7 +321,7 @@ Konfiguracja buildera zapisywana w polu `description` zmiennych Figma:
 | Sidebar | ✅ | Collections, sub-collections, groups |
 | Tabs | ✅ | Przełączanie editorów |
 | Toolbar | ✅ | Import/Export, formula tooltip |
-| Modal | ✅ | Add ref value, keyboard support |
+| Modal | ✅ | Add ref value, Create folder |
 | Toast | ✅ | Error/success notifications |
 | Context Menu | ✅ | Delete ref value (right-click) |
 | Data Table | ✅ | Editable parameters, computed display |
@@ -388,7 +385,7 @@ scale-editor/
 | 1 | Radius Editor | ✅ v0.0.22 |
 | 2 | Spacing Editor | ✅ v0.0.22 |
 | 3 | Typography Editor | ✅ v0.0.24 |
-| 4 | Grid Editor — design | ✅ v0.8 PRD |
+| 4 | Grid Editor — design | ✅ v1.0 PRD + mockup |
 | 5 | Grid Editor — implementacja | 🔲 planned |
 | 6 | Undo/Redo | 🔲 planned |
 
@@ -402,12 +399,14 @@ scale-editor/
 
 ---
 
-**Wersja:** 0.8  
+**Wersja:** 1.0  
 **Data:** 2025-12-24  
 **Autor:** Claude + Marcin
 
 **Changelog:**
-- 0.8: **NOWA KONCEPCJA Grid Editor** — panel sterowania z BASE per viewport, automatyczne generowanie /column/ i /margin/, tworzenie folderów container/photo z drzewa, wyjątki responsywne per folder z dropdownami, warianty -DL/-TM dla marginesów, zasada mobile (n > columns = ingrid)
+- 1.0: **Grid Editor design complete** — makieta UI v0.8, modal Create folder, responsive exceptions z opcjami (columns/viewport/to margins), nazewnictwo tokenów photo (w-col/h-col), ratio per viewport, photo zawsze generuje width+height
+- 0.9: Dodano ratio per viewport dla proporcji wysokości (photo)
+- 0.8: NOWA KONCEPCJA Grid Editor — panel sterowania z BASE per viewport
 - 0.7: Poprzednia koncepcja Grid Builder (zastąpiona)
 - 0.6: Dodano Typography Editor (v0.0.24)
 - 0.5: Zaktualizowano status implementacji (v0.0.22)

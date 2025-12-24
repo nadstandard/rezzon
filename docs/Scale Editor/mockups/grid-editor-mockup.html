@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale Editor — Grid Editor Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    /* Dark scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #1e1e1e;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #424242;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    
+    /* Layout */
+    .app {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      background: #252526;
+      border-right: 1px solid #3c3c3c;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #3c3c3c;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+    }
+    
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    
+    /* Tree */
+    .tree-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .tree-item:hover {
+      background: #2a2d2e;
+    }
+    
+    .tree-item.active {
+      background: #37373d;
+      color: #fff;
+    }
+    
+    .tree-item.folder {
+      font-weight: 500;
+    }
+    
+    .tree-arrow {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 10px;
+      margin-right: 4px;
+      transition: transform 0.15s;
+    }
+    
+    .tree-arrow.expanded {
+      transform: rotate(90deg);
+    }
+    
+    .tree-arrow.hidden {
+      visibility: hidden;
+    }
+    
+    .tree-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    
+    .tree-icon.folder-icon {
+      color: #dcb67a;
+    }
+    
+    .tree-icon.file-icon {
+      color: #888;
+    }
+    
+    .tree-label {
+      flex: 1;
+    }
+    
+    .tree-badge {
+      font-size: 10px;
+      color: #888;
+      background: #3c3c3c;
+      padding: 1px 6px;
+      border-radius: 8px;
+    }
+    
+    .tree-children {
+      /* No extra margin - indentation handled by indent classes */
+    }
+    
+    /* Indent levels - smaller and consistent */
+    .indent-1 { padding-left: 32px; }
+    .indent-2 { padding-left: 48px; }
+    .indent-3 { padding-left: 64px; }
+    
+    /* Main content */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #252526;
+      border-bottom: 1px solid #3c3c3c;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      color: #888;
+      border-bottom: 2px solid transparent;
+      font-size: 13px;
+    }
+    
+    .tab:hover {
+      color: #e0e0e0;
+    }
+    
+    .tab.active {
+      color: #fff;
+      border-bottom-color: #0d99ff;
+    }
+    
+    /* Toolbar */
+    .toolbar {
+      padding: 8px 16px;
+      border-bottom: 1px solid #3c3c3c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #252526;
+    }
+    
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .toolbar-title {
+      font-weight: 600;
+      color: #fff;
+    }
+    
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn-secondary {
+      background: #3c3c3c;
+      color: #e0e0e0;
+    }
+    
+    .btn-secondary:hover {
+      background: #4c4c4c;
+    }
+    
+    .btn-primary {
+      background: #0d99ff;
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      background: #0b87e0;
+    }
+    
+    /* Content area */
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+    }
+    
+    /* Table */
+    .table-container {
+      height: 100%;
+      overflow: auto;
+    }
+    
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #3c3c3c;
+      min-width: 100px;
+      white-space: nowrap;
+    }
+    
+    th {
+      background: #2d2d2d;
+      font-weight: 500;
+      color: #888;
+      position: sticky;
+      top: 0;
+      font-size: 12px;
+      z-index: 2;
+    }
+    
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: #1e1e1e;
+      min-width: 180px;
+    }
+    
+    th:first-child {
+      z-index: 3;
+      background: #2d2d2d;
+    }
+    
+    tr:hover td {
+      background: #2a2d2e;
+    }
+    
+    tr:hover td:first-child {
+      background: #2a2d2e;
+    }
+    
+    .group-header td {
+      background: #252526;
+      font-weight: 600;
+      color: #888;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 16px;
+    }
+    
+    .group-header td:first-child {
+      background: #252526;
+    }
+    
+    .cell-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .cell-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 3px;
+    }
+    
+    .cell-icon.hash {
+      background: #4a3f2a;
+      color: #dcb67a;
+    }
+    
+    .cell-icon.fx {
+      background: #2a3f4a;
+      color: #7ab8dc;
+    }
+    
+    .cell-icon.eq {
+      background: #2a4a3f;
+      color: #7adcb6;
+    }
+    
+    .cell-value {
+      padding: 4px 8px;
+      border-radius: 4px;
+      min-width: 60px;
+      display: inline-block;
+      text-align: right;
+    }
+    
+    .cell-value.editable {
+      background: #3c3c3c;
+      cursor: text;
+    }
+    
+    .cell-value.editable:hover {
+      background: #4c4c4c;
+    }
+    
+    .cell-value.computed {
+      color: #7adcb6;
+    }
+    
+    /* Folder config panel */
+    .folder-config {
+      padding: 24px;
+      max-width: 800px;
+    }
+    
+    .folder-config h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    
+    .folder-config .subtitle {
+      color: #888;
+      margin-bottom: 24px;
+    }
+    
+    .config-section {
+      margin-bottom: 32px;
+    }
+    
+    .config-section h3 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    
+    .config-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .config-grid.four-cols {
+      grid-template-columns: 120px 1fr 1fr 1fr;
+    }
+    
+    .config-label {
+      color: #888;
+      font-size: 12px;
+    }
+    
+    .config-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      padding-bottom: 4px;
+    }
+    
+    .config-select {
+      background: #3c3c3c;
+      border: 1px solid #4c4c4c;
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #e0e0e0;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+    }
+    
+    .config-select:hover {
+      border-color: #5c5c5c;
+    }
+    
+    .config-select:focus {
+      outline: none;
+      border-color: #0d99ff;
+    }
+    
+    .config-input {
+      background: #3c3c3c;
+      border: 1px solid #4c4c4c;
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #e0e0e0;
+      font-size: 13px;
+      width: 100%;
+    }
+    
+    .config-input:focus {
+      outline: none;
+      border-color: #0d99ff;
+    }
+    
+    .config-checkbox-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .config-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    
+    .config-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: #0d99ff;
+    }
+    
+    .ratio-grid {
+      display: grid;
+      grid-template-columns: 150px repeat(4, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .ratio-row {
+      display: contents;
+    }
+    
+    .ratio-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ratio-delete {
+      width: 20px;
+      height: 20px;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .ratio-delete:hover {
+      background: #3c3c3c;
+      color: #e57373;
+    }
+    
+    .add-ratio-btn {
+      margin-top: 12px;
+      background: none;
+      border: 1px dashed #4c4c4c;
+      border-radius: 4px;
+      padding: 8px 16px;
+      color: #888;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .add-ratio-btn:hover {
+      border-color: #0d99ff;
+      color: #0d99ff;
+    }
+    
+    /* Exception rows */
+    .exceptions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .exception-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .exception-row .config-checkbox {
+      min-width: 100px;
+    }
+    
+    /* Config actions */
+    .config-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    
+    .modal-overlay.hidden {
+      display: none;
+    }
+    
+    .modal {
+      background: #2d2d2d;
+      border: 1px solid #3c3c3c;
+      border-radius: 8px;
+      width: 400px;
+      max-width: 90vw;
+    }
+    
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #3c3c3c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    
+    .modal-close:hover {
+      color: #fff;
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    .modal-field {
+      margin-bottom: 16px;
+    }
+    
+    .modal-field:last-child {
+      margin-bottom: 0;
+    }
+    
+    .modal-field label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+    
+    .modal-field input,
+    .modal-field select {
+      width: 100%;
+      background: #3c3c3c;
+      border: 1px solid #4c4c4c;
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: #e0e0e0;
+      font-size: 13px;
+    }
+    
+    .modal-field input:focus,
+    .modal-field select:focus {
+      outline: none;
+      border-color: #0d99ff;
+    }
+    
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #3c3c3c;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    
+    /* View switcher */
+    .view-tabs {
+      display: flex;
+      gap: 4px;
+      background: #1e1e1e;
+      padding: 4px;
+      border-radius: 6px;
+    }
+    
+    .view-tab {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #888;
+      background: none;
+      border: none;
+    }
+    
+    .view-tab:hover {
+      color: #e0e0e0;
+    }
+    
+    .view-tab.active {
+      background: #3c3c3c;
+      color: #fff;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .empty-state-text {
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">Grid Editor</div>
+      <div class="sidebar-content">
+        <!-- BASE folder -->
+        <div class="tree-item folder active">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">BASE</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Desktop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Laptop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Tablet</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Mobile</span>
+        </div>
+        
+        <!-- column folder -->
+        <div class="tree-item folder">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">column</span>
+          <span class="tree-badge">auto</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Desktop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Laptop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Tablet</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Mobile</span>
+        </div>
+        
+        <!-- margin folder -->
+        <div class="tree-item folder">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">margin</span>
+          <span class="tree-badge">auto</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Desktop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Laptop</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Tablet</span>
+        </div>
+        <div class="tree-item indent-1">
+          <span class="tree-arrow hidden">▶</span>
+          <span class="tree-icon file-icon">◇</span>
+          <span class="tree-label">Mobile</span>
+        </div>
+        
+        <!-- container folder -->
+        <div class="tree-item folder">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">container</span>
+        </div>
+        <div class="tree-item indent-1 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">static</span>
+        </div>
+        <div class="tree-item indent-1 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">to-tab-6-col</span>
+        </div>
+        <div class="tree-item indent-1 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">to-mobile-6-col</span>
+        </div>
+        
+        <!-- photo folder -->
+        <div class="tree-item folder">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">photo</span>
+        </div>
+        <div class="tree-item indent-1 folder">
+          <span class="tree-arrow expanded">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">static</span>
+        </div>
+        <div class="tree-item indent-2 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">horizontal</span>
+        </div>
+        <div class="tree-item indent-2 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">vertical</span>
+        </div>
+        <div class="tree-item indent-2 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">panoramic</span>
+        </div>
+        <div class="tree-item indent-1 folder">
+          <span class="tree-arrow">▶</span>
+          <span class="tree-icon folder-icon">📁</span>
+          <span class="tree-label">to-tab-6-col</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main -->
+    <div class="main">
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab">Typography</div>
+        <div class="tab">Spacing</div>
+        <div class="tab active">Grid</div>
+        <div class="tab">Radius</div>
+      </div>
+      
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">BASE</span>
+          <div class="view-tabs">
+            <button class="view-tab active">Table</button>
+            <button class="view-tab">Configuration</button>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-secondary">+ Folder</button>
+          <button class="btn btn-secondary">Import</button>
+          <button class="btn btn-primary">Export JSON</button>
+        </div>
+      </div>
+      
+      <!-- Content: Folder Config View (hidden by default, pokazuję jako drugi widok) -->
+      <div class="content" id="config-view" style="display: none;">
+        <div class="folder-config">
+          <h2>container / to-tab-6-col</h2>
+          <p class="subtitle">Responsive exception configuration</p>
+          
+          <!-- Responsive exceptions -->
+          <div class="config-section">
+            <h3>Responsive exceptions</h3>
+            <div class="config-grid four-cols">
+              <div class="config-label"></div>
+              <div class="config-header">Exception</div>
+              <div class="config-header">Value</div>
+              <div class="config-header"></div>
+              
+              <div class="config-label">Desktop</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Laptop</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Tablet</div>
+              <div><input type="checkbox" class="exception-toggle" checked></div>
+              <select class="config-select exception-select">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6" selected>6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Mobile</div>
+              <div><input type="checkbox" class="exception-toggle" checked></div>
+              <select class="config-select exception-select">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2" selected>2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+            </div>
+          </div>
+          
+          <!-- Variants to generate -->
+          <div class="config-section">
+            <h3>Variants to generate</h3>
+            <div class="config-checkbox-row">
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>v-col-n (base)</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>-w-half</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>-w-margin</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>-to-edge</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-1g</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-2g</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Akcje -->
+          <div class="config-section config-actions">
+            <button class="btn btn-primary">Save & generate</button>
+            <button class="btn btn-secondary">Delete folder</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content: Photo Config View -->
+      <div class="content" id="photo-config-view" style="display: none;">
+        <div class="folder-config">
+          <h2>photo / static / horizontal</h2>
+          <p class="subtitle">Photo ratio configuration</p>
+          
+          <!-- Typ -->
+          <div class="config-section">
+            <h3>Folder type</h3>
+            <div class="config-checkbox-row">
+              <label class="config-checkbox">
+                <input type="radio" name="photo-type">
+                <span>Width only</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="radio" name="photo-type" checked>
+                <span>Width + height (ratio)</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Ratio per viewport -->
+          <div class="config-section">
+            <h3>Ratio per viewport</h3>
+            <div class="config-grid four-cols">
+              <div class="config-label"></div>
+              <div class="config-header">Ratio</div>
+              <div class="config-header">Custom A</div>
+              <div class="config-header">Custom B</div>
+              
+              <div class="config-label">Desktop</div>
+              <select class="config-select">
+                <option value="4:3" selected>4:3 (horizontal)</option>
+                <option value="16:9">16:9 (panoramic)</option>
+                <option value="1:1">1:1 (square)</option>
+                <option value="3:4">3:4 (vertical)</option>
+                <option value="custom">custom</option>
+              </select>
+              <input type="text" class="config-input" placeholder="4" disabled style="opacity: 0.5;">
+              <input type="text" class="config-input" placeholder="3" disabled style="opacity: 0.5;">
+              
+              <div class="config-label">Laptop</div>
+              <select class="config-select">
+                <option value="4:3" selected>4:3 (horizontal)</option>
+                <option value="16:9">16:9 (panoramic)</option>
+                <option value="1:1">1:1 (square)</option>
+                <option value="3:4">3:4 (vertical)</option>
+                <option value="custom">custom</option>
+              </select>
+              <input type="text" class="config-input" placeholder="4" disabled style="opacity: 0.5;">
+              <input type="text" class="config-input" placeholder="3" disabled style="opacity: 0.5;">
+              
+              <div class="config-label">Tablet</div>
+              <select class="config-select">
+                <option value="4:3" selected>4:3 (horizontal)</option>
+                <option value="16:9">16:9 (panoramic)</option>
+                <option value="1:1">1:1 (square)</option>
+                <option value="3:4">3:4 (vertical)</option>
+                <option value="custom">custom</option>
+              </select>
+              <input type="text" class="config-input" placeholder="4" disabled style="opacity: 0.5;">
+              <input type="text" class="config-input" placeholder="3" disabled style="opacity: 0.5;">
+              
+              <div class="config-label">Mobile</div>
+              <select class="config-select">
+                <option value="4:3">4:3 (horizontal)</option>
+                <option value="16:9">16:9 (panoramic)</option>
+                <option value="1:1" selected>1:1 (square)</option>
+                <option value="3:4">3:4 (vertical)</option>
+                <option value="custom">custom</option>
+              </select>
+              <input type="text" class="config-input" placeholder="1" disabled style="opacity: 0.5;">
+              <input type="text" class="config-input" placeholder="1" disabled style="opacity: 0.5;">
+            </div>
+          </div>
+          
+          <!-- Responsive exceptions -->
+          <div class="config-section">
+            <h3>Responsive exceptions</h3>
+            <div class="config-grid four-cols">
+              <div class="config-label"></div>
+              <div class="config-header">Exception</div>
+              <div class="config-header">Value</div>
+              <div class="config-header"></div>
+              
+              <div class="config-label">Desktop</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Laptop</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Tablet</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+              
+              <div class="config-label">Mobile</div>
+              <div><input type="checkbox" class="exception-toggle"></div>
+              <select class="config-select exception-select" disabled style="opacity: 0.5;">
+                <option value="12">12 columns</option>
+                <option value="11">11 columns</option>
+                <option value="10">10 columns</option>
+                <option value="9">9 columns</option>
+                <option value="8">8 columns</option>
+                <option value="7">7 columns</option>
+                <option value="6">6 columns</option>
+                <option value="5">5 columns</option>
+                <option value="4">4 columns</option>
+                <option value="3">3 columns</option>
+                <option value="2">2 columns</option>
+                <option value="1">1 column</option>
+                <option disabled>───────────</option>
+                <option value="viewport">viewport</option>
+                <option value="to-margins">to margins</option>
+              </select>
+              <div></div>
+            </div>
+          </div>
+          
+          <!-- Variants to generate -->
+          <div class="config-section">
+            <h3>Variants to generate</h3>
+            <div class="config-checkbox-row">
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>v-col-n (base)</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-w-half</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox" checked>
+                <span>-w-margin</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-to-edge</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-1g</span>
+              </label>
+              <label class="config-checkbox">
+                <input type="checkbox">
+                <span>-2g</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Akcje -->
+          <div class="config-section config-actions">
+            <button class="btn btn-primary">Save & generate</button>
+            <button class="btn btn-secondary">Delete folder</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content: BASE Table View -->
+      <div class="content" id="table-view">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>CROSS</th>
+                <th>CIRCLE</th>
+                <th>TRIANGLE</th>
+                <th>SQUARE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Desktop -->
+              <tr class="group-header">
+                <td colspan="5">Desktop</td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> viewport</span></td>
+                <td><span class="cell-value editable">1920</span></td>
+                <td><span class="cell-value editable">1920</span></td>
+                <td><span class="cell-value editable">1920</span></td>
+                <td><span class="cell-value editable">1920</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> columns</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> gutter width</span></td>
+                <td><span class="cell-value editable">24</span></td>
+                <td><span class="cell-value editable">32</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">28</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin m</span></td>
+                <td><span class="cell-value editable">204</span></td>
+                <td><span class="cell-value editable">180</span></td>
+                <td><span class="cell-value editable">220</span></td>
+                <td><span class="cell-value editable">160</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin xs</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> ingrid</span></td>
+                <td><span class="cell-value computed">1512</span></td>
+                <td><span class="cell-value computed">1560</span></td>
+                <td><span class="cell-value computed">1480</span></td>
+                <td><span class="cell-value computed">1600</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> column width</span></td>
+                <td><span class="cell-value computed">104</span></td>
+                <td><span class="cell-value computed">101</span></td>
+                <td><span class="cell-value computed">105</span></td>
+                <td><span class="cell-value computed">107</span></td>
+              </tr>
+              
+              <!-- Laptop -->
+              <tr class="group-header">
+                <td colspan="5">Laptop</td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> viewport</span></td>
+                <td><span class="cell-value editable">1366</span></td>
+                <td><span class="cell-value editable">1366</span></td>
+                <td><span class="cell-value editable">1366</span></td>
+                <td><span class="cell-value editable">1366</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> columns</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> gutter width</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">24</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">20</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin m</span></td>
+                <td><span class="cell-value editable">45</span></td>
+                <td><span class="cell-value editable">60</span></td>
+                <td><span class="cell-value editable">50</span></td>
+                <td><span class="cell-value editable">40</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin xs</span></td>
+                <td><span class="cell-value editable">15</span></td>
+                <td><span class="cell-value editable">15</span></td>
+                <td><span class="cell-value editable">15</span></td>
+                <td><span class="cell-value editable">15</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> ingrid</span></td>
+                <td><span class="cell-value computed">1276</span></td>
+                <td><span class="cell-value computed">1246</span></td>
+                <td><span class="cell-value computed">1266</span></td>
+                <td><span class="cell-value computed">1286</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> column width</span></td>
+                <td><span class="cell-value computed">88</span></td>
+                <td><span class="cell-value computed">82</span></td>
+                <td><span class="cell-value computed">91</span></td>
+                <td><span class="cell-value computed">89</span></td>
+              </tr>
+              
+              <!-- Tablet -->
+              <tr class="group-header">
+                <td colspan="5">Tablet</td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> viewport</span></td>
+                <td><span class="cell-value editable">768</span></td>
+                <td><span class="cell-value editable">768</span></td>
+                <td><span class="cell-value editable">768</span></td>
+                <td><span class="cell-value editable">768</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> columns</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+                <td><span class="cell-value editable">12</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> gutter width</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">20</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin m</span></td>
+                <td><span class="cell-value editable">58</span></td>
+                <td><span class="cell-value editable">48</span></td>
+                <td><span class="cell-value editable">64</span></td>
+                <td><span class="cell-value editable">52</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin xs</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">16</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> ingrid</span></td>
+                <td><span class="cell-value computed">652</span></td>
+                <td><span class="cell-value computed">672</span></td>
+                <td><span class="cell-value computed">640</span></td>
+                <td><span class="cell-value computed">664</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> column width</span></td>
+                <td><span class="cell-value computed">36</span></td>
+                <td><span class="cell-value computed">38</span></td>
+                <td><span class="cell-value computed">39</span></td>
+                <td><span class="cell-value computed">37</span></td>
+              </tr>
+              
+              <!-- Mobile -->
+              <tr class="group-header">
+                <td colspan="5">Mobile</td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> viewport</span></td>
+                <td><span class="cell-value editable">390</span></td>
+                <td><span class="cell-value editable">390</span></td>
+                <td><span class="cell-value editable">390</span></td>
+                <td><span class="cell-value editable">390</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> columns</span></td>
+                <td><span class="cell-value editable">2</span></td>
+                <td><span class="cell-value editable">4</span></td>
+                <td><span class="cell-value editable">2</span></td>
+                <td><span class="cell-value editable">2</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> gutter width</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">16</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin m</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">24</span></td>
+                <td><span class="cell-value editable">20</span></td>
+                <td><span class="cell-value editable">20</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon hash">#</span> margin xs</span></td>
+                <td><span class="cell-value editable">10</span></td>
+                <td><span class="cell-value editable">10</span></td>
+                <td><span class="cell-value editable">10</span></td>
+                <td><span class="cell-value editable">10</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> ingrid</span></td>
+                <td><span class="cell-value computed">350</span></td>
+                <td><span class="cell-value computed">342</span></td>
+                <td><span class="cell-value computed">350</span></td>
+                <td><span class="cell-value computed">350</span></td>
+              </tr>
+              <tr>
+                <td><span class="cell-name"><span class="cell-icon eq">=</span> column width</span></td>
+                <td><span class="cell-value computed">165</span></td>
+                <td><span class="cell-value computed">74</span></td>
+                <td><span class="cell-value computed">165</span></td>
+                <td><span class="cell-value computed">165</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal: Create Folder -->
+  <div class="modal-overlay hidden" id="create-folder-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Create folder</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label>Parent folder</label>
+          <select id="modal-parent">
+            <option value="container">container</option>
+            <option value="photo">photo</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Folder name</label>
+          <input type="text" id="modal-folder-name" placeholder="e.g. to-tab-6-col, static, horizontal">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createFolder()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // View switching
+    const views = {
+      table: document.getElementById('table-view'),
+      config: document.getElementById('config-view'),
+      photoConfig: document.getElementById('photo-config-view')
+    };
+    
+    const viewTabs = document.querySelector('.view-tabs');
+    const toolbarTitle = document.querySelector('.toolbar-title');
+    const treeItems = document.querySelectorAll('.tree-item');
+    
+    function showView(viewName, title, showTabs = true) {
+      Object.values(views).forEach(v => v.style.display = 'none');
+      views[viewName].style.display = 'block';
+      toolbarTitle.textContent = title;
+      
+      // Show/hide view tabs
+      viewTabs.style.display = showTabs ? 'flex' : 'none';
+      
+      // Update view tabs
+      document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+      if (viewName === 'table') {
+        document.querySelectorAll('.view-tab')[0].classList.add('active');
+      } else {
+        document.querySelectorAll('.view-tab')[1].classList.add('active');
+      }
+    }
+    
+    // View tab clicks
+    document.querySelectorAll('.view-tab')[0].addEventListener('click', () => {
+      const activeItem = document.querySelector('.tree-item.active');
+      const label = activeItem?.querySelector('.tree-label')?.textContent || 'BASE';
+      showView('table', label, true);
+    });
+    
+    document.querySelectorAll('.view-tab')[1].addEventListener('click', () => {
+      const activeItem = document.querySelector('.tree-item.active');
+      const label = activeItem?.querySelector('.tree-label')?.textContent || 'BASE';
+      // Check if it's a photo folder
+      if (label.includes('horizontal') || label.includes('vertical') || label.includes('panoramic')) {
+        showView('photoConfig', 'photo / static / ' + label, true);
+      } else {
+        showView('config', 'container / ' + label, true);
+      }
+    });
+    
+    // Tree item clicks
+    treeItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        // Remove active from all
+        treeItems.forEach(i => i.classList.remove('active'));
+        // Add active to clicked
+        item.classList.add('active');
+        
+        const label = item.querySelector('.tree-label').textContent;
+        const isFolder = item.classList.contains('folder');
+        const hasAutoBadge = item.querySelector('.tree-badge');
+        
+        // Check if it's BASE, column, margin (auto-generated) or viewport item
+        const isAutoGenerated = label === 'BASE' || label === 'column' || label === 'margin' || hasAutoBadge;
+        const isViewportItem = ['Desktop', 'Laptop', 'Tablet', 'Mobile'].includes(label);
+        
+        // Determine which view to show
+        if (isAutoGenerated || isViewportItem || !isFolder) {
+          // No config view for auto-generated folders
+          showView('table', label, false);
+        } else if (label.includes('horizontal') || label.includes('vertical') || label.includes('panoramic') || label.includes('square')) {
+          showView('photoConfig', 'photo / static / ' + label, true);
+        } else if (item.closest('.tree-children')?.previousElementSibling?.querySelector('.tree-label')?.textContent === 'photo') {
+          showView('photoConfig', 'photo / ' + label, true);
+        } else {
+          showView('config', 'container / ' + label, true);
+        }
+        
+        // Toggle arrow
+        const arrow = item.querySelector('.tree-arrow');
+        if (arrow && !arrow.classList.contains('hidden')) {
+          arrow.classList.toggle('expanded');
+        }
+      });
+    });
+    
+    // Exception toggle functionality
+    document.querySelectorAll('.exception-toggle').forEach(toggle => {
+      toggle.addEventListener('change', (e) => {
+        const row = e.target.closest('.config-grid') ? 
+          e.target.parentElement.parentElement : 
+          e.target.closest('.exception-row');
+        
+        // Find the select in the same row (grid layout)
+        let select;
+        if (e.target.closest('.config-grid')) {
+          // Grid layout - select is next sibling's next sibling
+          const parent = e.target.parentElement;
+          select = parent.nextElementSibling;
+        } else {
+          select = row.querySelector('.exception-select');
+        }
+        
+        if (select) {
+          if (e.target.checked) {
+            select.disabled = false;
+            select.style.opacity = '1';
+          } else {
+            select.disabled = true;
+            select.style.opacity = '0.5';
+          }
+        }
+      });
+    });
+    
+    // Initialize
+    showView('table', 'BASE', false);
+    
+    // Modal functions
+    function openModal() {
+      document.getElementById('create-folder-modal').classList.remove('hidden');
+      document.getElementById('modal-folder-name').value = '';
+      document.getElementById('modal-folder-name').focus();
+    }
+    
+    function closeModal() {
+      document.getElementById('create-folder-modal').classList.add('hidden');
+    }
+    
+    function createFolder() {
+      const parent = document.getElementById('modal-parent').value;
+      const name = document.getElementById('modal-folder-name').value.trim();
+      if (name) {
+        alert(`Folder "${parent}/${name}" would be created.\n\n(This is a mockup - no actual folder creation)`);
+        closeModal();
+      }
+    }
+    
+    // Add Folder button
+    document.querySelector('.btn-secondary').addEventListener('click', function(e) {
+      if (this.textContent.includes('Folder')) {
+        e.preventDefault();
+        openModal();
+      }
+    });
+    
+    // Close modal on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+    
+    // Close modal on overlay click
+    document.getElementById('create-folder-modal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) closeModal();
+    });
+  </script>
+</body>
+</html>

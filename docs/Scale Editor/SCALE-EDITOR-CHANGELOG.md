@@ -132,34 +132,48 @@
 
 ---
 
-## Grid Editor Design Notes (2025-12-24) — NOWA KONCEPCJA
+## Grid Editor Design Notes (2025-12-24) — FINAL v1.0
 
-### Kluczowe ustalenia
+### Architektura UI
 
-**Architektura UI:**
-- Panel sterowania (globalny): viewporty + BASE per viewport
-- Podgląd wyników: read-only drzewo z tokenami
-- Edycja folderów: container/photo z dropdownami per viewport
+**Panel sterowania (globalny):**
+- Viewporty na sztywno: Desktop, Laptop, Tablet, Mobile
+- BASE per viewport per tryb (CROSS, CIRCLE, TRIANGLE, SQUARE)
+- Automatyczne generowanie /column/ i /margin/
 
-**Viewporty na sztywno:** Desktop, Laptop, Tablet, Mobile
+**Sidebar (drzewo folderów):**
+- BASE, column (auto), margin (auto)
+- container/, photo/ — tworzone przez użytkownika
+- Spójne wcięcia w całym drzewie
 
-**BASE per viewport (5 wartości źródłowych):**
+**Podgląd wyników:**
+- Read-only tabela
+- Przełącznik Table/Configuration ukryty dla BASE/column/margin
+
+**Modal "Create folder":**
+- Parent folder: dropdown (container / photo)
+- Folder name: input
+- Typ folderu wynika z parent
+
+### BASE per viewport (5 wartości źródłowych)
+
 - viewport (px)
 - number of columns (12/6/4/2)
 - gutter width (px)
 - margin m (px)
 - margin xs (px)
 
-**Wartości wyliczane:**
+### Wartości wyliczane
+
 ```
 number of gutters = columns - 1
 ingrid = viewport - (2 × margin m)
 column width = (ingrid - (gutters × gutter width)) / columns
 ```
 
-**Automatycznie generowane foldery:**
+### Automatycznie generowane foldery
 
-`{viewport}/column/` z tokenami:
+**{viewport}/column/** z tokenami:
 - v-col-1 do v-col-12
 - v-col-n-w-half (+ gutter + col/2)
 - v-col-n-w-margin (+ margin m - margin xs)
@@ -169,27 +183,42 @@ column width = (ingrid - (gutters × gutter width)) / columns
 - v-col-viewport
 - v-col-viewport-w-margin
 
-`{viewport}/margin/` z tokenami (każdy z wariantami -DL i -TM):
+**{viewport}/margin/** z tokenami (każdy z wariantami -DL i -TM):
 - v-xs, v-m, v-l, v-xl, v-xxl, v-xxxl
 - v-ingrid-l, v-ingrid-xl, v-ingrid-xxl, v-ingrid-xxxl
 
-**Warianty -DL / -TM:**
+### Warianty -DL / -TM
+
 - -DL: wartość na Desktop/Laptop, 0 na Tablet/Mobile
 - -TM: wartość na Tablet/Mobile, 0 na Desktop/Laptop
 
-**Zasada dla mobile/column:**
+### Zasada dla mobile/column
+
 Jeśli n > number of columns → wartość = ingrid
 
-**Tworzenie folderów (container, photo):**
-1. Wpisuję nazwę (np. to-tab-6-col)
-2. Wybieram typ: container (szerokości) lub photo (szerokości + wysokości z ratio)
-3. Konfiguruję dropdowny per viewport: liczba kolumn (1-12) + typ przeliczania
-4. Jeśli photo — definiuję ratio (nazwa + proporcja)
-5. Wybieram warianty do generowania
+### Konfiguracja folderu (container, photo)
 
-**Wyjątki responsywne — dwa poziomy:**
-- Per folder: dropdown z liczbą kolumn per viewport
-- Per wiersz: opcjonalny override dla konkretnego tokena
+**Responsive exceptions:**
+- Checkbox per viewport → dropdown gdy zaznaczony
+- Opcje: 1-12 columns, viewport, to margins
+
+**Variants to generate:**
+- Checkboxy: v-col-n (base), -w-half, -w-margin, -to-edge, -1g, -2g
+
+### Photo — ratio per viewport
+
+**Dropdown per viewport:** 16:9, 4:3, 3:4, 1:1, custom
+
+**Nazewnictwo tokenów:**
+- w-col-n — szerokości (width)
+- h-col-n — wysokości (height)
+
+**Photo zawsze generuje width/ i height/** — bez osobnego wyboru.
+
+### Formuły wyjątków
+
+- **viewport** = pełna szerokość ekranu
+- **to margins** = ingrid + 2 × (margin m - margin xs)
 
 ---
 
