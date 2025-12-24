@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { 
   Maximize2, 
   Minimize2, 
@@ -10,44 +11,179 @@ import {
   Filter, 
   PanelRight,
   Hash,
-  ArrowRight
+  Type,
+  ToggleLeft,
+  Palette,
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  Folder
 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { VariablesSidebar } from '../../components/layout/VariablesSidebar';
 import { DetailsPanel } from '../../components/layout/DetailsPanel';
+import { buildFolderTree, flattenTree, getAllFolderIds } from '../../utils/folderTree';
+import type { Variable, VariableType, VariableValue } from '../../types';
+
+// Ikona dla typu zmiennej
+function TypeIcon({ type }: { type: VariableType }) {
+  switch (type) {
+    case 'FLOAT':
+      return <Hash className="icon sm" />;
+    case 'STRING':
+      return <Type className="icon sm" />;
+    case 'BOOLEAN':
+      return <ToggleLeft className="icon sm" />;
+    case 'COLOR':
+      return <Palette className="icon sm" />;
+    default:
+      return <Hash className="icon sm" />;
+  }
+}
+
+// Formatowanie wartości
+function formatValue(value: VariableValue | undefined, type: VariableType): string {
+  if (!value) return '-';
+  
+  if (value.type === 'VARIABLE_ALIAS') {
+    return 'alias';
+  }
+  
+  const v = value.value;
+  
+  if (v === undefined || v === null) return '-';
+  
+  if (type === 'COLOR' && typeof v === 'object' && 'r' in v) {
+    const r = Math.round(v.r * 255);
+    const g = Math.round(v.g * 255);
+    const b = Math.round(v.b * 255);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+  }
+  
+  if (type === 'BOOLEAN') {
+    return v ? 'true' : 'false';
+  }
+  
+  if (typeof v === 'number') {
+    return Number.isInteger(v) ? String(v) : v.toFixed(2);
+  }
+  
+  return String(v);
+}
+
+// Komponent dla komórki wartości
+function ValueCell({ value, type, allVariables }: { 
+  value: VariableValue | undefined; 
+  type: VariableType;
+  allVariables: Record<string, Variable>;
+}) {
+  if (!value) {
+    return <span className="val-text">-</span>;
+  }
+  
+  if (value.type === 'VARIABLE_ALIAS' && value.variableId) {
+    const targetVar = allVariables[value.variableId];
+    const targetName = targetVar?.name.split('/').pop() || 'unknown';
+    const isExternal = !targetVar;
+    
+    if (isExternal || !targetVar) {
+      return (
+        <div className="val-alias val-alias--external">
+          <ExternalLink className="icon sm" />
+          <span className="val-alias__path">{targetName}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="val-alias val-alias--internal">
+        <ArrowRight className="icon sm" />
+        <span className="val-alias__path">{targetName}</span>
+      </div>
+    );
+  }
+  
+  const formatted = formatValue(value, type);
+  
+  if (type === 'COLOR' && value.value && typeof value.value === 'object' && 'r' in value.value) {
+    const { r, g, b, a = 1 } = value.value;
+    const color = `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${a})`;
+    
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div 
+          style={{ 
+            width: '20px', 
+            height: '20px', 
+            borderRadius: '4px',
+            background: color,
+            border: '1px solid var(--border)',
+          }} 
+        />
+        <span className="val-text">{formatted}</span>
+      </div>
+    );
+  }
+  
+  return <span className="val-text">{formatted}</span>;
+}
 
 export function VariablesView() {
   const libraries = useAppStore((state) => state.libraries);
   const selectedLibraryId = useAppStore((state) => state.ui.selectedLibraryId);
   const selectedCollectionId = useAppStore((state) => state.ui.selectedCollectionId);
+  const expandedFolders = useAppStore((state) => state.ui.expandedFolders);
   const detailsPanelOpen = useAppStore((state) => state.ui.detailsPanelOpen);
   const toggleDetailsPanel = useAppStore((state) => state.toggleDetailsPanel);
-  const expandAllFolders = useAppStore((state) => state.expandAllFolders);
-  const collapseAllFolders = useAppStore((state) => state.collapseAllFolders);
+  const toggleFolder = useAppStore((state) => state.toggleFolder);
   
   const selectedLibrary = libraries.find((l) => l.id === selectedLibraryId);
   const selectedCollection = selectedLibrary?.file.variableCollections?.[selectedCollectionId || ''];
+  const allVariables = selectedLibrary?.file.variables || {};
   
-  // Pobierz zmienne dla wybranej kolekcji
-  const variables = selectedCollection?.variableIds
-    .map((id) => selectedLibrary?.file.variables?.[id])
-    .filter(Boolean) || [];
+  const variables = useMemo(() => {
+    if (!selectedCollection) return [];
+    return selectedCollection.variableIds
+      .map((id) => allVariables[id])
+      .filter(Boolean) as Variable[];
+  }, [selectedCollection, allVariables]);
   
-  // Pobierz modes
+  const folderTree = useMemo(() => buildFolderTree(variables), [variables]);
+  
+  const rows = useMemo(() => 
+    flattenTree(folderTree, expandedFolders), 
+    [folderTree, expandedFolders]
+  );
+  
+  const allFolderIds = useMemo(() => getAllFolderIds(folderTree), [folderTree]);
+  
   const modes = selectedCollection?.modes || [];
+
+  const handleExpandAll = () => {
+    for (const id of allFolderIds) {
+      if (!expandedFolders.includes(id)) {
+        toggleFolder(id);
+      }
+    }
+  };
+  
+  const handleCollapseAll = () => {
+    for (const id of expandedFolders) {
+      toggleFolder(id);
+    }
+  };
 
   return (
     <>
       <VariablesSidebar />
       
       <main className="main">
-        {/* Toolbar */}
         <div className="toolbar">
           <div className="toolbar__group">
-            <button className="tool-btn" title="Expand all" onClick={expandAllFolders}>
+            <button className="tool-btn" title="Expand all" onClick={handleExpandAll}>
               <Maximize2 className="icon" />
             </button>
-            <button className="tool-btn" title="Collapse all" onClick={collapseAllFolders}>
+            <button className="tool-btn" title="Collapse all" onClick={handleCollapseAll}>
               <Minimize2 className="icon" />
             </button>
           </div>
@@ -113,7 +249,6 @@ export function VariablesView() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="table-wrap">
           {!selectedCollection ? (
             <div style={{ 
@@ -143,53 +278,84 @@ export function VariablesView() {
                 </tr>
               </thead>
               <tbody>
-                {variables.length === 0 ? (
+                {rows.length === 0 ? (
                   <tr>
                     <td colSpan={2 + modes.length} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>
                       No variables in this collection
                     </td>
                   </tr>
                 ) : (
-                  variables.map((variable) => (
-                    <tr key={variable!.id} className="row-var">
-                      <td>
-                        <div className="table__check-cell">
-                          <div className="checkbox" />
-                        </div>
-                      </td>
-                      <td>
-                        <div className="var-cell">
-                          <div className="type-badge">
-                            <Hash className="icon sm" />
-                          </div>
-                          <span className="var-cell__name">
-                            {variable!.name.split('/').pop()}
-                          </span>
-                        </div>
-                      </td>
-                      {modes.map((mode) => {
-                        const value = variable!.valuesByMode?.[mode.modeId];
-                        const isAlias = value && typeof value === 'object' && 'type' in value && value.type === 'VARIABLE_ALIAS';
-                        
-                        return (
-                          <td key={mode.modeId} className="val-cell">
-                            {isAlias ? (
-                              <div className="val-alias val-alias--internal">
-                                <ArrowRight className="icon sm" />
-                                <span className="val-alias__path">alias</span>
-                              </div>
-                            ) : (
-                              <span className="val-text">
-                                {typeof value === 'object' && value && 'value' in value
-                                  ? String(value.value)
-                                  : String(value ?? '-')}
-                              </span>
-                            )}
+                  rows.map((row) => {
+                    if (row.type === 'folder') {
+                      const isExpanded = expandedFolders.includes(row.id) || expandedFolders.includes('all');
+                      
+                      return (
+                        <tr 
+                          key={row.id} 
+                          className={`row-folder ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => toggleFolder(row.id)}
+                          style={{ 
+                            background: row.depth === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)'
+                          }}
+                        >
+                          <td>
+                            <div className="table__check-cell">
+                              <div className="checkbox" />
+                            </div>
                           </td>
-                        );
-                      })}
-                    </tr>
-                  ))
+                          <td colSpan={1 + modes.length}>
+                            <div 
+                              className="folder-cell" 
+                              style={{ paddingLeft: `${12 + row.depth * 20}px` }}
+                            >
+                              <ChevronRight 
+                                className="icon xs folder-cell__chevron" 
+                                style={{ 
+                                  transform: isExpanded ? 'rotate(90deg)' : 'none',
+                                  transition: 'transform 0.15s'
+                                }}
+                              />
+                              <Folder className="icon" />
+                              <span className="folder-cell__name">{row.name}</span>
+                              <span className="folder-cell__count">{row.childCount}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    
+                    const variable = row.variable!;
+                    
+                    return (
+                      <tr key={row.id} className="row-var">
+                        <td>
+                          <div className="table__check-cell">
+                            <div className="checkbox" />
+                          </div>
+                        </td>
+                        <td>
+                          <div 
+                            className="var-cell" 
+                            style={{ paddingLeft: `${32 + row.depth * 20}px` }}
+                          >
+                            <div className="type-badge">
+                              <TypeIcon type={variable.resolvedType} />
+                            </div>
+                            <span className="var-cell__name">{row.name}</span>
+                          </div>
+                        </td>
+                        {modes.map((mode) => (
+                          <td key={mode.modeId} className="val-cell">
+                            <ValueCell 
+                              value={variable.valuesByMode?.[mode.modeId]} 
+                              type={variable.resolvedType}
+                              allVariables={allVariables}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import { ImportModal } from '../ui/ImportModal';
 
 export function Header() {
   const location = useLocation();
   const searchQuery = useAppStore((state) => state.ui.searchQuery);
   const setSearchQuery = useAppStore((state) => state.setSearchQuery);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Variables', icon: Grid3X3 },
@@ -55,7 +58,7 @@ export function Header() {
       </div>
       
       <div className="header__actions">
-        <button className="btn btn--ghost">
+        <button className="btn btn--ghost" onClick={() => setImportModalOpen(true)}>
           <Download className="icon sm" />
           Import
         </button>
@@ -64,6 +67,8 @@ export function Header() {
           Export
         </button>
       </div>
+      
+      <ImportModal isOpen={importModalOpen} onClose={() => setImportModalOpen(false)} />
     </header>
   );
 }
