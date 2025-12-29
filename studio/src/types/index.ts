@@ -3,8 +3,10 @@ export type VariableType = 'COLOR' | 'FLOAT' | 'STRING' | 'BOOLEAN';
 
 export interface VariableValue {
   type: 'VARIABLE_ALIAS' | 'DIRECT';
-  value?: string | number | boolean | { r: number; g: number; b: number; a: number };
+  value?: string | number | boolean | { r: number; g: number; b: number; a?: number };
   variableId?: string; // dla aliasów
+  variableName?: string; // nazwa zmiennej docelowej (dla external)
+  collectionName?: string; // nazwa kolekcji docelowej (dla external)
 }
 
 export interface Variable {

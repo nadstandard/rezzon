@@ -11,6 +11,7 @@ export interface FolderNode {
 
 /**
  * Buduje drzewo folderów ze zmiennych na podstawie ich nazw (ścieżek)
+ * Zachowuje oryginalną kolejność z Figmy (nie sortuje alfabetycznie)
  */
 export function buildFolderTree(variables: Variable[]): FolderNode {
   const root: FolderNode = {
@@ -55,23 +56,9 @@ export function buildFolderTree(variables: Variable[]): FolderNode {
     current.variables.push(variable);
   }
 
-  // Sortuj foldery i zmienne alfabetycznie
-  sortFolderTree(root);
+  // NIE sortujemy - zachowujemy kolejność z Figmy
 
   return root;
-}
-
-function sortFolderTree(node: FolderNode): void {
-  node.children.sort((a, b) => a.name.localeCompare(b.name));
-  node.variables.sort((a, b) => {
-    const aName = a.name.split('/').pop() || '';
-    const bName = b.name.split('/').pop() || '';
-    return aName.localeCompare(bName);
-  });
-  
-  for (const child of node.children) {
-    sortFolderTree(child);
-  }
 }
 
 /**

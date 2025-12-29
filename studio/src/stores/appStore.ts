@@ -85,13 +85,35 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
   
   // Implementacje akcji
-  addLibrary: (library) => set((state) => ({
-    libraries: [...state.libraries, library],
-    ui: {
-      ...state.ui,
-      selectedLibraryId: state.ui.selectedLibraryId || library.id,
-    },
-  })),
+  addLibrary: (library) => set((state) => {
+    const newLibraries = [...state.libraries, library];
+    
+    // Sortuj: REZZON (główna) na górze, potem R4-* w kolejności numerycznej
+    newLibraries.sort((a, b) => {
+      // Główna biblioteka zawsze na górze
+      if (a.isMain && !b.isMain) return -1;
+      if (!a.isMain && b.isMain) return 1;
+      
+      // Dla bibliotek R4-* sortuj numerycznie
+      const aMatch = a.name.match(/^(\d+)-/);
+      const bMatch = b.name.match(/^(\d+)-/);
+      
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+      }
+      
+      // Fallback: alfabetycznie
+      return a.name.localeCompare(b.name);
+    });
+    
+    return {
+      libraries: newLibraries,
+      ui: {
+        ...state.ui,
+        selectedLibraryId: state.ui.selectedLibraryId || library.id,
+      },
+    };
+  }),
   
   removeLibrary: (id) => set((state) => ({
     libraries: state.libraries.filter((l) => l.id !== id),
@@ -111,15 +133,23 @@ export const useAppStore = create<AppState>()((set, get) => ({
     ui: { ...state.ui, activeView: view },
   })),
   
-  selectLibrary: (id) => set((state) => ({
-    ui: { 
-      ...state.ui, 
-      selectedLibraryId: id,
-      selectedCollectionId: null,
-      expandedFolders: [],
-      selectedVariables: [],
-    },
-  })),
+  selectLibrary: (id) => set((state) => {
+    // Znajdź bibliotekę i jej pierwszą kolekcję
+    const library = state.libraries.find((l) => l.id === id);
+    const firstCollectionId = library 
+      ? Object.keys(library.file.variableCollections)[0] || null 
+      : null;
+    
+    return {
+      ui: { 
+        ...state.ui, 
+        selectedLibraryId: id,
+        selectedCollectionId: firstCollectionId, // Auto-wybór pierwszej kolekcji
+        expandedFolders: [],
+        selectedVariables: [],
+      },
+    };
+  }),
   
   selectCollection: (id) => set((state) => ({
     ui: { 

@@ -66,7 +66,34 @@ function convertValue(figmaValue: FigmaExportValue): VariableValue {
     return {
       type: 'VARIABLE_ALIAS',
       variableId: figmaValue.variableId,
+      // Zachowujemy dodatkowe info o aliasie dla external
+      variableName: figmaValue.variableName,
+      collectionName: figmaValue.collectionName,
     };
+  }
+  
+  // Dla kolorów - Figma eksportuje jako obiekt {r, g, b, a} z wartościami 0-1
+  // ale czasem może być w formacie hex string lub innym
+  if (figmaValue.type === 'COLOR' && figmaValue.value) {
+    // Jeśli to już obiekt RGBA
+    if (typeof figmaValue.value === 'object' && 'r' in figmaValue.value) {
+      return {
+        type: 'DIRECT',
+        value: figmaValue.value,
+      };
+    }
+    // Jeśli to string hex, konwertujemy
+    if (typeof figmaValue.value === 'string') {
+      const hex = figmaValue.value.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const a = hex.length === 8 ? parseInt(hex.substring(6, 8), 16) / 255 : 1;
+      return {
+        type: 'DIRECT',
+        value: { r, g, b, a },
+      };
+    }
   }
   
   return {
