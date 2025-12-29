@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale v0.1.0 – Grid Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="rezzon-studio-styles.css" rel="stylesheet">
+  <link href="rezzon-scale-styles.css" rel="stylesheet">
+  <style>
+    /* Preview-specific styles */
+    .preview-filters {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    
+    .filter-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    
+    .filter-select:hover {
+      border-color: var(--text-muted);
+    }
+    
+    .filter-select.active {
+      border-color: var(--accent);
+      background: var(--bg-selected);
+    }
+    
+    .filter-select__label {
+      color: var(--text-muted);
+    }
+    
+    .filter-select__value {
+      color: var(--text);
+      font-weight: 500;
+    }
+    
+    .filter-select select {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    .filter-select select option {
+      background: var(--bg-surface);
+      color: var(--text);
+    }
+    
+    /* Token tree */
+    .token-tree {
+      padding: 8px;
+    }
+    
+    .token-folder {
+      margin-bottom: 2px;
+    }
+    
+    .token-folder__header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .token-folder__header:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+    
+    .token-folder__chevron {
+      color: var(--text-muted);
+      transition: transform 0.15s;
+    }
+    
+    .token-folder.expanded .token-folder__chevron {
+      transform: rotate(90deg);
+    }
+    
+    .token-folder__name {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .token-folder__count {
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    
+    .token-folder__children {
+      display: none;
+      padding-left: 20px;
+    }
+    
+    .token-folder.expanded > .token-folder__children {
+      display: block;
+    }
+    
+    /* Token table */
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .token-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .token-table th.col-value {
+      text-align: right;
+      min-width: 80px;
+    }
+    
+    .token-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+    }
+    
+    .token-table tr:hover {
+      background: var(--bg-hover);
+    }
+    
+    .token-name {
+      font-family: 'SF Mono', monospace;
+      color: var(--text);
+    }
+    
+    .token-name__base {
+      color: var(--text-secondary);
+    }
+    
+    .token-name__modifier {
+      color: var(--accent);
+    }
+    
+    .token-value {
+      text-align: right;
+      font-family: 'SF Mono', monospace;
+      color: var(--text-secondary);
+    }
+    
+    .token-path {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+    
+    /* Stats bar */
+    .preview-stats {
+      display: flex;
+      gap: 24px;
+      padding: 10px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    
+    .preview-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+    
+    .preview-stat strong {
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    
+    /* Layer badges */
+    .layer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    
+    .layer-badge--base {
+      background: var(--type-base-bg);
+      color: var(--type-base);
+    }
+    
+    .layer-badge--column {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+    
+    .layer-badge--photo {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+    
+    .layer-badge--container {
+      background: var(--type-computed-bg);
+      color: var(--type-computed);
+    }
+    
+    /* Search in preview */
+    .preview-search {
+      flex: 1;
+      max-width: 300px;
+      position: relative;
+    }
+    
+    .preview-search input {
+      width: 100%;
+      padding: 6px 10px 6px 32px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text);
+      outline: none;
+    }
+    
+    .preview-search input:focus {
+      border-color: var(--accent);
+    }
+    
+    .preview-search input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .preview-search__icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .view-toggle__btn {
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .view-toggle__btn:hover {
+      color: var(--text-secondary);
+    }
+    
+    .view-toggle__btn.active {
+      background: var(--bg-elevated);
+      color: var(--text);
+    }
+    
+    .view-toggle__btn:not(:last-child) {
+      border-right: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="app app--scale">
+    <!-- SVG ICONS -->
+    <svg style="display:none">
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol>
+      <symbol id="i-spacing" viewBox="0 0 24 24"><path d="M21 6H3M21 12H3M21 18H3"/></symbol>
+      <symbol id="i-radius" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 12 3 12"/><path d="M12 12V3"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-ul" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></symbol>
+      <symbol id="i-tree" viewBox="0 0 24 24"><path d="M21 12h-4"/><path d="M21 6h-4"/><path d="M21 18h-4"/><path d="M17 6v12"/><path d="M3 6h4"/><path d="M3 12h4"/><path d="M3 18h4"/></symbol>
+    </svg>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo__icon logo__icon--scale">S</div>
+        <span class="logo__text">REZZON Scale</span>
+      </div>
+      
+      <div class="scale-tabs">
+        <div class="scale-tab active"><svg class="icon sm"><use href="#i-grid"/></svg> Grid</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-type"/></svg> Typography</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-spacing"/></svg> Spacing</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-radius"/></svg> Radii</div>
+      </div>
+      
+      <div class="header__spacer"></div>
+      
+      <div class="header__actions">
+        <button class="btn btn--ghost"><svg class="icon sm"><use href="#i-dl"/></svg>Import</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-ul"/></svg>Export</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__scroll">
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Layers</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="sidebar-item"><span class="layer-badge layer-badge--base">#</span><span class="sidebar-item__name">base</span><span class="sidebar-item__count">36</span></div>
+            <div class="sidebar-item active"><span class="layer-badge layer-badge--column">=</span><span class="sidebar-item__name">column</span><span class="sidebar-item__count">268</span></div>
+            <div class="sidebar-item"><span class="layer-badge layer-badge--container">→</span><span class="sidebar-item__name">container</span><span class="sidebar-item__count">84</span></div>
+            <div class="sidebar-item"><span class="layer-badge layer-badge--photo">⊞</span><span class="sidebar-item__name">photo/width</span><span class="sidebar-item__count">588</span></div>
+            <div class="sidebar-item"><span class="layer-badge layer-badge--photo">⊞</span><span class="sidebar-item__name">photo/height</span><span class="sidebar-item__count">1568</span></div>
+          </div>
+        </div>
+        
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Statistics</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="summary-card" style="margin:0">
+              <div class="summary-row">
+                <span class="summary-row__label">Total tokens</span>
+                <span class="summary-row__value">2,544</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row__label">Filtered</span>
+                <span class="summary-row__value">268</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="toolbar">
+        <div class="tabs">
+          <a class="tab" href="rezzon-scale-v0.1.0-grid-matrix.html">Parameters</a>
+          <a class="tab" href="rezzon-scale-v0.1.0-grid-generators.html">Generators</a>
+          <div class="tab active">Preview</div>
+        </div>
+        <div class="toolbar__spacer"></div>
+        <div class="view-toggle">
+          <button class="view-toggle__btn active"><svg class="icon xs"><use href="#i-list"/></svg>Table</button>
+          <button class="view-toggle__btn"><svg class="icon xs"><use href="#i-tree"/></svg>Tree</button>
+        </div>
+      </div>
+      
+      <!-- Filters -->
+      <div class="preview-filters">
+        <div class="filter-select active">
+          <span class="filter-select__label">Layer:</span>
+          <select>
+            <option>All</option>
+            <option>base</option>
+            <option selected>column</option>
+            <option>container</option>
+            <option>photo/width</option>
+            <option>photo/height</option>
+          </select>
+        </div>
+        
+        <div class="filter-select">
+          <span class="filter-select__label">Viewport:</span>
+          <select>
+            <option selected>All</option>
+            <option>desktop</option>
+            <option>laptop</option>
+            <option>tablet</option>
+            <option>mobile</option>
+          </select>
+        </div>
+        
+        <div class="filter-select">
+          <span class="filter-select__label">Responsive:</span>
+          <select>
+            <option selected>All</option>
+            <option>static</option>
+            <option>to-tab-6-col</option>
+            <option>to-mobile-6-col</option>
+          </select>
+        </div>
+        
+        <div class="filter-select">
+          <span class="filter-select__label">Modifier:</span>
+          <select>
+            <option selected>All</option>
+            <option>(none)</option>
+            <option>-w-half</option>
+            <option>-w-margin</option>
+            <option>-to-edge</option>
+            <option>-1G</option>
+          </select>
+        </div>
+        
+        <div class="preview-search">
+          <svg class="icon xs preview-search__icon"><use href="#i-search"/></svg>
+          <input type="text" placeholder="Search tokens...">
+        </div>
+      </div>
+      
+      <!-- Stats -->
+      <div class="preview-stats">
+        <div class="preview-stat">Showing <strong>268</strong> of 2,544 tokens</div>
+        <div class="preview-stat">Layer: <strong>column</strong></div>
+      </div>
+
+      <!-- Token table -->
+      <div class="table-wrap">
+        <table class="token-table">
+          <thead>
+            <tr>
+              <th style="width:40%">Token Path</th>
+              <th class="col-value">CROSS</th>
+              <th class="col-value">CIRCLE</th>
+              <th class="col-value">TRIANGLE</th>
+              <th class="col-value">SQUARE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- desktop -->
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-1</span></span></td>
+              <td class="token-value">130</td>
+              <td class="token-value">160.4</td>
+              <td class="token-value">284</td>
+              <td class="token-value">438</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__modifier">-w-half</span></span></td>
+              <td class="token-value">195</td>
+              <td class="token-value">240.6</td>
+              <td class="token-value">426</td>
+              <td class="token-value">657</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__modifier">-w-margin</span></span></td>
+              <td class="token-value">162</td>
+              <td class="token-value">192.4</td>
+              <td class="token-value">316</td>
+              <td class="token-value">470</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__modifier">-to-edge</span></span></td>
+              <td class="token-value">178</td>
+              <td class="token-value">208.4</td>
+              <td class="token-value">332</td>
+              <td class="token-value">486</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__modifier">-1G</span></span></td>
+              <td class="token-value">154</td>
+              <td class="token-value">184.4</td>
+              <td class="token-value">308</td>
+              <td class="token-value">462</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-2</span></span></td>
+              <td class="token-value">284</td>
+              <td class="token-value">344.8</td>
+              <td class="token-value">592</td>
+              <td class="token-value">900</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-2</span><span class="token-name__modifier">-w-half</span></span></td>
+              <td class="token-value">349</td>
+              <td class="token-value">425</td>
+              <td class="token-value">734</td>
+              <td class="token-value">1119</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-2</span><span class="token-name__modifier">-w-margin</span></span></td>
+              <td class="token-value">316</td>
+              <td class="token-value">376.8</td>
+              <td class="token-value">624</td>
+              <td class="token-value">932</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-2</span><span class="token-name__modifier">-to-edge</span></span></td>
+              <td class="token-value">332</td>
+              <td class="token-value">392.8</td>
+              <td class="token-value">640</td>
+              <td class="token-value">948</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-3</span></span></td>
+              <td class="token-value">438</td>
+              <td class="token-value">529.2</td>
+              <td class="token-value">900</td>
+              <td class="token-value">1362</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-3</span><span class="token-name__modifier">-w-half</span></span></td>
+              <td class="token-value">503</td>
+              <td class="token-value">609.4</td>
+              <td class="token-value">1042</td>
+              <td class="token-value">1581</td>
+            </tr>
+            <tr style="opacity:0.5">
+              <td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">... 257 more tokens ...</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-12</span></span></td>
+              <td class="token-value">1824</td>
+              <td class="token-value">1824</td>
+              <td class="token-value">1824</td>
+              <td class="token-value">1824</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-12</span><span class="token-name__modifier">-w-margin</span></span></td>
+              <td class="token-value">1856</td>
+              <td class="token-value">1856</td>
+              <td class="token-value">1856</td>
+              <td class="token-value">1856</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-12</span><span class="token-name__modifier">-to-edge</span></span></td>
+              <td class="token-value">1872</td>
+              <td class="token-value">1872</td>
+              <td class="token-value">1872</td>
+              <td class="token-value">1872</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-col-viewport</span></span></td>
+              <td class="token-value">1920</td>
+              <td class="token-value">1920</td>
+              <td class="token-value">1920</td>
+              <td class="token-value">1920</td>
+            </tr>
+            <tr>
+              <td><span class="token-path">column/desktop/</span><span class="token-name"><span class="token-name__base">v-full-w-margin</span></span></td>
+              <td class="token-value">1888</td>
+              <td class="token-value">1888</td>
+              <td class="token-value">1888</td>
+              <td class="token-value">1888</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- STATUSBAR -->
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>268 tokens shown</div>
+      <div class="status-item">Layer: column</div>
+      <div class="status-item">Viewport: all</div>
+      <div class="statusbar__spacer"></div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>F</kbd> Search</div>
+    </footer>
+  </div>
+
+  <script>
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+    
+    document.querySelectorAll('.view-toggle__btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.view-toggle__btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    
+    document.querySelectorAll('.filter-select select').forEach(select => {
+      select.addEventListener('change', () => {
+        const parent = select.closest('.filter-select');
+        parent.classList.toggle('active', select.value !== 'All');
+      });
+    });
+  </script>
+</body>
+</html>
