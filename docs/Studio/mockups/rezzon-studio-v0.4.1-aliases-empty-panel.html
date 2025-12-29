@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Studio v0.4.1 — Aliases: Empty States & Detail Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==================== BASE TOKENS ==================== */
+    :root {
+      --bg-app: #1a1a1a;
+      --bg-surface: #242424;
+      --bg-elevated: #2e2e2e;
+      --bg-hover: #333333;
+      --bg-selected: rgba(99, 102, 241, 0.15);
+      --border: #3a3a3a;
+      --border-subtle: #2e2e2e;
+      --text: #f5f5f5;
+      --text-secondary: #a1a1a1;
+      --text-muted: #666666;
+      --accent: #6366f1;
+      --accent-hover: #5558e3;
+      --green: #22c55e;
+      --green-dim: #1a7f42;
+      --green-bg: rgba(34, 197, 94, 0.12);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ==================== SCROLLBAR ==================== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-elevated);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-elevated) transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-app);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+      min-height: 100vh;
+      padding: 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==================== ICONS ==================== */
+    svg.icon {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    svg.icon.sm { width: 14px; height: 14px; }
+    svg.icon.xs { width: 12px; height: 12px; }
+    svg.icon.lg { width: 20px; height: 20px; }
+    svg.icon.xl { width: 32px; height: 32px; }
+
+    /* ==================== DEMO LAYOUT ==================== */
+    .demo-header {
+      margin-bottom: 32px;
+    }
+
+    .demo-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .demo-description {
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-width: 700px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .demo-section {
+      min-width: 0;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .demo-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 48px 0;
+    }
+
+    /* ==================== EMPTY STATES ==================== */
+    .empty-state {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    .empty-state__icon {
+      width: 56px;
+      height: 56px;
+      background: var(--bg-elevated);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state__icon--success {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .empty-state__icon--warning {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+
+    .empty-state__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-state__description {
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-width: 280px;
+      margin: 0 auto 20px;
+      line-height: 1.5;
+    }
+
+    .empty-state__action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .empty-state__action:hover {
+      background: var(--accent-hover);
+    }
+
+    .empty-state__action--ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .empty-state__action--ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    /* ==================== DETAIL PANEL ==================== */
+    .detail-panel {
+      width: 300px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .panel__header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel__title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .panel__close {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .panel__close:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .panel__body {
+      padding: 16px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    /* Detail groups */
+    .detail-group {
+      margin-bottom: 20px;
+    }
+
+    .detail-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    .detail-value {
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .detail-mono {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-app);
+      padding: 10px 12px;
+      border-radius: 6px;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* Alias indicator */
+    .alias-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-app);
+      border-radius: 6px;
+    }
+
+    .alias-indicator__icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alias-indicator__icon--internal {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .alias-indicator__icon--external {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+
+    .alias-indicator__icon--broken {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .alias-indicator__content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .alias-indicator__name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .alias-indicator__path {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .alias-indicator__badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .alias-indicator__badge--internal {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .alias-indicator__badge--external {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+
+    .alias-indicator__badge--broken {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    /* Arrow between source and target */
+    .alias-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .alias-flow__arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 0;
+      color: var(--text-muted);
+    }
+
+    /* Type badge inline */
+    .type-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .type-badge-sm {
+      width: 20px;
+      height: 20px;
+      background: var(--bg-elevated);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* Resolved values */
+    .resolved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .resolved-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--bg-app);
+      border-radius: 6px;
+    }
+
+    .resolved-item__mode {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .resolved-item__value {
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* Actions */
+    .panel__actions {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .panel__action {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .panel__action--primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+    }
+
+    .panel__action--primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .panel__action--ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .panel__action--ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .panel__action--danger {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red-bg);
+    }
+
+    .panel__action--danger:hover {
+      background: var(--red-bg);
+    }
+
+    /* Warning box */
+    .warning-box {
+      background: var(--red-bg);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .warning-box__icon {
+      color: var(--red);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .warning-box__content {
+      flex: 1;
+    }
+
+    .warning-box__title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 2px;
+    }
+
+    .warning-box__text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Multi-select summary */
+    .multi-summary {
+      background: var(--bg-app);
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .multi-summary__count {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .multi-summary__label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .multi-summary__stats {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .multi-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .multi-stat__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .multi-stat__dot--internal { background: var(--green); }
+    .multi-stat__dot--external { background: var(--orange); }
+    .multi-stat__dot--broken { background: var(--red); }
+  </style>
+</head>
+<body>
+  <!-- SVG ICONS -->
+  <svg style="display:none">
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-unlink" viewBox="0 0 24 24"><path d="m18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m5.16 11.75-1.72 1.71a5 5 0 0 0 7.07 7.07l1.72-1.71"/><path d="m4 4 16 16"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-arr" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+    <symbol id="i-arr-down" viewBox="0 0 24 24"><path d="M12 5v14m-7-7 7 7 7-7"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol>
+  </svg>
+
+  <!-- ==================== EMPTY STATES ==================== -->
+  <div class="demo-header">
+    <div class="demo-title">Empty States — Widok Aliases</div>
+    <div class="demo-description">
+      Różne stany puste dla widoku Aliases: brak aliasów, brak wyników wyszukiwania, brak broken aliasów.
+    </div>
+  </div>
+
+  <div class="demo-grid">
+    <!-- Empty: No aliases at all -->
+    <div class="demo-section">
+      <div class="demo-label">Brak aliasów w bibliotece</div>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg class="icon xl"><use href="#i-link"/></svg>
+        </div>
+        <div class="empty-state__title">No aliases yet</div>
+        <div class="empty-state__description">
+          This library doesn't have any aliases. Create aliases to link variables across collections or libraries.
+        </div>
+        <button class="empty-state__action">
+          <svg class="icon sm"><use href="#i-link"/></svg>
+          Create Bulk Alias
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty: No search results -->
+    <div class="demo-section">
+      <div class="demo-label">Brak wyników wyszukiwania</div>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg class="icon xl"><use href="#i-search"/></svg>
+        </div>
+        <div class="empty-state__title">No aliases found</div>
+        <div class="empty-state__description">
+          No aliases match "xyz-test". Try a different search term or clear filters.
+        </div>
+        <button class="empty-state__action empty-state__action--ghost">
+          Clear search
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty: No broken aliases (success state) -->
+    <div class="demo-section">
+      <div class="demo-label">Brak broken aliasów (tab Broken)</div>
+      <div class="empty-state">
+        <div class="empty-state__icon empty-state__icon--success">
+          <svg class="icon xl"><use href="#i-check-circle"/></svg>
+        </div>
+        <div class="empty-state__title">All aliases healthy</div>
+        <div class="empty-state__description">
+          Great! There are no broken aliases in this library. All references are valid.
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty: No external aliases -->
+    <div class="demo-section">
+      <div class="demo-label">Brak external aliasów (tab External)</div>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg class="icon xl"><use href="#i-ext"/></svg>
+        </div>
+        <div class="empty-state__title">No external aliases</div>
+        <div class="empty-state__description">
+          This library doesn't reference any external libraries. Use Bulk Alias to connect to companion libraries.
+        </div>
+        <button class="empty-state__action">
+          <svg class="icon sm"><use href="#i-link"/></svg>
+          Connect Library
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-divider"></div>
+
+  <!-- ==================== DETAIL PANELS ==================== -->
+  <div class="demo-header">
+    <div class="demo-title">Detail Panel — Szczegóły aliasu</div>
+    <div class="demo-description">
+      Panel boczny pokazujący szczegóły wybranego aliasu. Pojawia się po kliknięciu w wiersz tabeli aliasów.
+    </div>
+  </div>
+
+  <div class="demo-grid">
+    <!-- Panel: Internal alias -->
+    <div class="demo-section">
+      <div class="demo-label">Internal alias</div>
+      <div class="detail-panel">
+        <div class="panel__header">
+          <span class="panel__title">Alias Details</span>
+          <button class="panel__close"><svg class="icon sm"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="panel__body">
+          <div class="detail-group">
+            <div class="detail-label">Source → Target</div>
+            <div class="alias-flow">
+              <div class="alias-indicator">
+                <div class="alias-indicator__icon alias-indicator__icon--internal">
+                  <svg class="icon sm"><use href="#i-arr"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name">radius-container-top-left</div>
+                  <div class="alias-indicator__path">Theme / Edit / Wave</div>
+                </div>
+              </div>
+              <div class="alias-flow__arrow">
+                <svg class="icon sm"><use href="#i-arr-down"/></svg>
+              </div>
+              <div class="alias-indicator">
+                <div class="alias-indicator__icon alias-indicator__icon--internal">
+                  <svg class="icon sm"><use href="#i-arr"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name">radius-lg</div>
+                  <div class="alias-indicator__path">Viewport / radius</div>
+                </div>
+                <span class="alias-indicator__badge alias-indicator__badge--internal">Internal</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Type</div>
+            <div class="type-inline">
+              <div class="type-badge-sm">#</div>
+              <span class="detail-value">Number</span>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Resolved values</div>
+            <div class="resolved-list">
+              <div class="resolved-item">
+                <span class="resolved-item__mode">1920 · Desktop</span>
+                <span class="resolved-item__value">24</span>
+              </div>
+              <div class="resolved-item">
+                <span class="resolved-item__mode">1366 · Laptop</span>
+                <span class="resolved-item__value">20</span>
+              </div>
+              <div class="resolved-item">
+                <span class="resolved-item__mode">768 · Tablet</span>
+                <span class="resolved-item__value">16</span>
+              </div>
+              <div class="resolved-item">
+                <span class="resolved-item__mode">390 · Mobile</span>
+                <span class="resolved-item__value">12</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel__actions">
+          <button class="panel__action panel__action--ghost">
+            <svg class="icon sm"><use href="#i-edit"/></svg>
+            Change
+          </button>
+          <button class="panel__action panel__action--danger">
+            <svg class="icon sm"><use href="#i-unlink"/></svg>
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: External alias -->
+    <div class="demo-section">
+      <div class="demo-label">External alias</div>
+      <div class="detail-panel">
+        <div class="panel__header">
+          <span class="panel__title">Alias Details</span>
+          <button class="panel__close"><svg class="icon sm"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="panel__body">
+          <div class="detail-group">
+            <div class="detail-label">Source → Target</div>
+            <div class="alias-flow">
+              <div class="alias-indicator">
+                <div class="alias-indicator__icon alias-indicator__icon--external">
+                  <svg class="icon sm"><use href="#i-ext"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name">primary-500</div>
+                  <div class="alias-indicator__path">Theme / Colors / Brand</div>
+                </div>
+              </div>
+              <div class="alias-flow__arrow">
+                <svg class="icon sm"><use href="#i-arr-down"/></svg>
+              </div>
+              <div class="alias-indicator">
+                <div class="alias-indicator__icon alias-indicator__icon--external">
+                  <svg class="icon sm"><use href="#i-ext"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name">Blue/500</div>
+                  <div class="alias-indicator__path">R4-Color-Library / Primitives</div>
+                </div>
+                <span class="alias-indicator__badge alias-indicator__badge--external">External</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Type</div>
+            <div class="type-inline">
+              <div class="type-badge-sm" style="background: #3b82f6; border: none;"></div>
+              <span class="detail-value">Color</span>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Resolved value</div>
+            <div class="resolved-item">
+              <span class="resolved-item__mode">All modes</span>
+              <span class="resolved-item__value" style="display:flex;align-items:center;gap:8px;">
+                <span style="width:14px;height:14px;background:#3b82f6;border-radius:3px;border:1px solid rgba(255,255,255,0.1);"></span>
+                #3B82F6
+              </span>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">External library</div>
+            <div class="detail-mono">R4-Color-Library</div>
+          </div>
+        </div>
+        <div class="panel__actions">
+          <button class="panel__action panel__action--ghost">
+            <svg class="icon sm"><use href="#i-eye"/></svg>
+            View in library
+          </button>
+          <button class="panel__action panel__action--danger">
+            <svg class="icon sm"><use href="#i-unlink"/></svg>
+            Disconnect
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Broken alias -->
+    <div class="demo-section">
+      <div class="demo-label">Broken alias</div>
+      <div class="detail-panel">
+        <div class="panel__header">
+          <span class="panel__title">Alias Details</span>
+          <button class="panel__close"><svg class="icon sm"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="panel__body">
+          <div class="detail-group">
+            <div class="warning-box">
+              <svg class="icon sm warning-box__icon"><use href="#i-warn"/></svg>
+              <div class="warning-box__content">
+                <div class="warning-box__title">Broken alias</div>
+                <div class="warning-box__text">The target variable no longer exists. This alias needs to be fixed or removed.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Source → Target</div>
+            <div class="alias-flow">
+              <div class="alias-indicator">
+                <div class="alias-indicator__icon alias-indicator__icon--broken">
+                  <svg class="icon sm"><use href="#i-warn"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name">spacing-deprecated</div>
+                  <div class="alias-indicator__path">Theme / Layout</div>
+                </div>
+              </div>
+              <div class="alias-flow__arrow">
+                <svg class="icon sm"><use href="#i-arr-down"/></svg>
+              </div>
+              <div class="alias-indicator" style="opacity: 0.5; border: 1px dashed var(--red); background: var(--red-bg);">
+                <div class="alias-indicator__icon alias-indicator__icon--broken">
+                  <svg class="icon sm"><use href="#i-x"/></svg>
+                </div>
+                <div class="alias-indicator__content">
+                  <div class="alias-indicator__name" style="text-decoration: line-through; color: var(--text-muted);">old-spacing-var</div>
+                  <div class="alias-indicator__path">Variable deleted</div>
+                </div>
+                <span class="alias-indicator__badge alias-indicator__badge--broken">Broken</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <div class="detail-label">Type</div>
+            <div class="type-inline">
+              <div class="type-badge-sm">#</div>
+              <span class="detail-value">Number</span>
+            </div>
+          </div>
+        </div>
+        <div class="panel__actions">
+          <button class="panel__action panel__action--primary">
+            <svg class="icon sm"><use href="#i-edit"/></svg>
+            Fix alias
+          </button>
+          <button class="panel__action panel__action--danger">
+            <svg class="icon sm"><use href="#i-unlink"/></svg>
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Multi-select -->
+    <div class="demo-section">
+      <div class="demo-label">Multi-select (wiele aliasów zaznaczonych)</div>
+      <div class="detail-panel">
+        <div class="panel__header">
+          <span class="panel__title">Selection</span>
+          <button class="panel__close"><svg class="icon sm"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="panel__body">
+          <div class="detail-group">
+            <div class="multi-summary">
+              <div class="multi-summary__count">24</div>
+              <div class="multi-summary__label">aliases selected</div>
+              <div class="multi-summary__stats">
+                <div class="multi-stat">
+                  <span class="multi-stat__dot multi-stat__dot--internal"></span>
+                  18 internal
+                </div>
+                <div class="multi-stat">
+                  <span class="multi-stat__dot multi-stat__dot--external"></span>
+                  5 external
+                </div>
+                <div class="multi-stat">
+                  <span class="multi-stat__dot multi-stat__dot--broken"></span>
+                  1 broken
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel__actions">
+          <button class="panel__action panel__action--danger" style="flex: 1;">
+            <svg class="icon sm"><use href="#i-unlink"/></svg>
+            Remove 24 aliases
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

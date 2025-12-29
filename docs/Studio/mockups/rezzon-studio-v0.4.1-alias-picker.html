@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Studio v0.4.1 — Alias Picker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==================== BASE TOKENS ==================== */
+    :root {
+      --bg-app: #1a1a1a;
+      --bg-surface: #242424;
+      --bg-elevated: #2e2e2e;
+      --bg-hover: #333333;
+      --bg-selected: rgba(99, 102, 241, 0.15);
+      --border: #3a3a3a;
+      --border-subtle: #2e2e2e;
+      --text: #f5f5f5;
+      --text-secondary: #a1a1a1;
+      --text-muted: #666666;
+      --accent: #6366f1;
+      --accent-hover: #5558e3;
+      --green: #22c55e;
+      --green-dim: #1a7f42;
+      --green-bg: rgba(34, 197, 94, 0.12);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ==================== SCROLLBAR ==================== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-elevated);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border);
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-elevated) transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-app);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+      min-height: 100vh;
+      padding: 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==================== ICONS ==================== */
+    svg.icon {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    svg.icon.sm { width: 14px; height: 14px; }
+    svg.icon.xs { width: 12px; height: 12px; }
+
+    /* ==================== DEMO LAYOUT ==================== */
+    .demo-header {
+      margin-bottom: 32px;
+    }
+
+    .demo-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .demo-description {
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-width: 600px;
+    }
+
+    .demo-container {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .demo-section {
+      min-width: 360px;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    /* ==================== TABLE CELL CONTEXT ==================== */
+    .table-context {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .var-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .type-badge {
+      width: 22px;
+      height: 22px;
+      background: var(--bg-elevated);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .var-label {
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .value-cell {
+      position: relative;
+    }
+
+    .value-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg-app);
+      border: 1px solid var(--accent);
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .value-trigger--alias {
+      background: var(--green-bg);
+      border-color: var(--green-dim);
+      color: var(--green);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+
+    /* ==================== ALIAS PICKER ==================== */
+    .alias-picker {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 320px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    /* Search */
+    .picker-search {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .picker-search__wrapper {
+      position: relative;
+    }
+
+    .picker-search__input {
+      width: 100%;
+      padding: 8px 10px 8px 32px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .picker-search__input:focus {
+      border-color: var(--accent);
+    }
+
+    .picker-search__input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .picker-search__icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    /* Tabs */
+    .picker-tabs {
+      display: flex;
+      padding: 8px 12px;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .picker-tab {
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: none;
+    }
+
+    .picker-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .picker-tab.active {
+      background: var(--bg-elevated);
+      color: var(--text);
+    }
+
+    .picker-tab__count {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: var(--bg-app);
+      color: var(--text-muted);
+    }
+
+    .picker-tab.active .picker-tab__count {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* List */
+    .picker-list {
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .picker-section {
+      padding: 6px 0;
+    }
+
+    .picker-section:not(:last-child) {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .picker-section__header {
+      padding: 6px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .picker-section__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .picker-section__dot--internal {
+      background: var(--green);
+    }
+
+    .picker-section__dot--external {
+      background: var(--orange);
+    }
+
+    .picker-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .picker-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .picker-item.selected {
+      background: var(--bg-selected);
+    }
+
+    .picker-item__icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .picker-item__icon--internal {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .picker-item__icon--external {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+
+    .picker-item__content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .picker-item__name {
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .picker-item__path {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .picker-item__value {
+      font-size: 11px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* Context indicator (sąsiednie zmienne) */
+    .picker-item--context {
+      opacity: 0.5;
+      padding-left: 24px;
+    }
+
+    .picker-item--context:hover {
+      opacity: 1;
+    }
+
+    /* Footer */
+    .picker-footer {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .picker-footer__hint {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .picker-footer__action {
+      font-size: 11px;
+      color: var(--red);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .picker-footer__action:hover {
+      background: var(--red-bg);
+    }
+
+    /* ==================== STANDALONE PICKER (for demo) ==================== */
+    .picker-standalone {
+      position: relative;
+      width: 320px;
+    }
+
+    .picker-standalone .alias-picker {
+      position: relative;
+      top: 0;
+    }
+
+    /* ==================== EMPTY STATE ==================== */
+    .picker-empty {
+      padding: 32px 16px;
+      text-align: center;
+    }
+
+    .picker-empty__icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-elevated);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      color: var(--text-muted);
+    }
+
+    .picker-empty__title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .picker-empty__description {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ==================== SEARCH HIGHLIGHT ==================== */
+    .highlight {
+      background: rgba(99, 102, 241, 0.3);
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG ICONS -->
+  <svg style="display:none">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></symbol>
+    <symbol id="i-arr" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  </svg>
+
+  <div class="demo-header">
+    <div class="demo-title">Alias Picker</div>
+    <div class="demo-description">
+      Popup pojawiający się po kliknięciu w komórkę wartości w tabeli zmiennych. 
+      Pozwala wybrać zmienną do aliasowania (tylko zmienne tego samego typu).
+      Inspiracja: Figma Variables picker.
+    </div>
+  </div>
+
+  <div class="demo-container">
+    <!-- EXAMPLE 1: Picker in context -->
+    <div class="demo-section">
+      <div class="demo-label">W kontekście tabeli</div>
+      <div class="table-context">
+        <div class="table-row">
+          <div class="var-name">
+            <div class="type-badge">#</div>
+            <span class="var-label">top-left</span>
+          </div>
+          <div class="value-cell">
+            <div class="value-trigger">24</div>
+            <div class="alias-picker">
+              <div class="picker-search">
+                <div class="picker-search__wrapper">
+                  <svg class="icon sm picker-search__icon"><use href="#i-search"/></svg>
+                  <input type="text" class="picker-search__input" placeholder="Search variables..." value="rad">
+                </div>
+              </div>
+              <div class="picker-tabs">
+                <button class="picker-tab active">All <span class="picker-tab__count">24</span></button>
+                <button class="picker-tab">Internal <span class="picker-tab__count">18</span></button>
+                <button class="picker-tab">External <span class="picker-tab__count">6</span></button>
+              </div>
+              <div class="picker-list">
+                <div class="picker-section">
+                  <div class="picker-section__header">
+                    <span class="picker-section__dot picker-section__dot--internal"></span>
+                    Internal · Viewport / radius
+                  </div>
+                  <div class="picker-item picker-item--context">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name">v-0</div>
+                    </div>
+                    <span class="picker-item__value">0</span>
+                  </div>
+                  <div class="picker-item selected">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ius-sm</div>
+                    </div>
+                    <span class="picker-item__value">4</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ius-md</div>
+                    </div>
+                    <span class="picker-item__value">8</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ius-lg</div>
+                    </div>
+                    <span class="picker-item__value">12</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ius-xl</div>
+                    </div>
+                    <span class="picker-item__value">16</span>
+                  </div>
+                  <div class="picker-item picker-item--context">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ius-2xl</div>
+                    </div>
+                    <span class="picker-item__value">24</span>
+                  </div>
+                </div>
+                <div class="picker-section">
+                  <div class="picker-section__header">
+                    <span class="picker-section__dot picker-section__dot--external"></span>
+                    External · R4-Radii
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--external"><svg class="icon xs"><use href="#i-ext"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ii/sm</div>
+                      <div class="picker-item__path">R4-Radii / Base</div>
+                    </div>
+                    <span class="picker-item__value">4</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--external"><svg class="icon xs"><use href="#i-ext"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ii/md</div>
+                      <div class="picker-item__path">R4-Radii / Base</div>
+                    </div>
+                    <span class="picker-item__value">8</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--external"><svg class="icon xs"><use href="#i-ext"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name"><span class="highlight">rad</span>ii/lg</div>
+                      <div class="picker-item__path">R4-Radii / Base</div>
+                    </div>
+                    <span class="picker-item__value">16</span>
+                  </div>
+                </div>
+              </div>
+              <div class="picker-footer">
+                <span class="picker-footer__hint">↑↓ navigate · Enter select · Esc close</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAMPLE 2: Already aliased -->
+    <div class="demo-section">
+      <div class="demo-label">Zmienna z istniejącym aliasem</div>
+      <div class="table-context">
+        <div class="table-row">
+          <div class="var-name">
+            <div class="type-badge">#</div>
+            <span class="var-label">bottom-left</span>
+          </div>
+          <div class="value-cell">
+            <div class="value-trigger value-trigger--alias">
+              <svg class="icon sm"><use href="#i-arr"/></svg>
+              radius-lg
+            </div>
+            <div class="alias-picker">
+              <div class="picker-search">
+                <div class="picker-search__wrapper">
+                  <svg class="icon sm picker-search__icon"><use href="#i-search"/></svg>
+                  <input type="text" class="picker-search__input" placeholder="Search variables...">
+                </div>
+              </div>
+              <div class="picker-tabs">
+                <button class="picker-tab active">All <span class="picker-tab__count">156</span></button>
+                <button class="picker-tab">Internal <span class="picker-tab__count">112</span></button>
+                <button class="picker-tab">External <span class="picker-tab__count">44</span></button>
+              </div>
+              <div class="picker-list">
+                <div class="picker-section">
+                  <div class="picker-section__header">
+                    <span class="picker-section__dot picker-section__dot--internal"></span>
+                    Current alias
+                  </div>
+                  <div class="picker-item selected">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name">radius-lg</div>
+                      <div class="picker-item__path">Viewport / radius</div>
+                    </div>
+                    <span class="picker-item__value">12</span>
+                  </div>
+                </div>
+                <div class="picker-section">
+                  <div class="picker-section__header">
+                    <span class="picker-section__dot picker-section__dot--internal"></span>
+                    Internal · Viewport / radius
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name">radius-sm</div>
+                    </div>
+                    <span class="picker-item__value">4</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name">radius-md</div>
+                    </div>
+                    <span class="picker-item__value">8</span>
+                  </div>
+                  <div class="picker-item">
+                    <div class="picker-item__icon picker-item__icon--internal"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+                    <div class="picker-item__content">
+                      <div class="picker-item__name">radius-xl</div>
+                    </div>
+                    <span class="picker-item__value">16</span>
+                  </div>
+                </div>
+              </div>
+              <div class="picker-footer">
+                <span class="picker-footer__hint">↑↓ navigate · Enter select</span>
+                <button class="picker-footer__action">Remove alias</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAMPLE 3: Empty state -->
+    <div class="demo-section">
+      <div class="demo-label">Brak wyników wyszukiwania</div>
+      <div class="picker-standalone">
+        <div class="alias-picker">
+          <div class="picker-search">
+            <div class="picker-search__wrapper">
+              <svg class="icon sm picker-search__icon"><use href="#i-search"/></svg>
+              <input type="text" class="picker-search__input" placeholder="Search variables..." value="xyz-nonexistent">
+            </div>
+          </div>
+          <div class="picker-tabs">
+            <button class="picker-tab active">All <span class="picker-tab__count">0</span></button>
+            <button class="picker-tab">Internal <span class="picker-tab__count">0</span></button>
+            <button class="picker-tab">External <span class="picker-tab__count">0</span></button>
+          </div>
+          <div class="picker-empty">
+            <div class="picker-empty__icon">
+              <svg class="icon"><use href="#i-inbox"/></svg>
+            </div>
+            <div class="picker-empty__title">No variables found</div>
+            <div class="picker-empty__description">Try a different search term or check<br>if the variable type matches (Number)</div>
+          </div>
+          <div class="picker-footer">
+            <span class="picker-footer__hint">Only Number variables are shown</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

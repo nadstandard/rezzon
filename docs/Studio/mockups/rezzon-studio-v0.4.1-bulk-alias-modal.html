@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Studio v0.4.1 — Bulk Alias Modal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==================== BASE TOKENS ==================== */
+    :root {
+      --bg-app: #1a1a1a;
+      --bg-surface: #242424;
+      --bg-elevated: #2e2e2e;
+      --bg-hover: #333333;
+      --bg-selected: rgba(99, 102, 241, 0.15);
+      --border: #3a3a3a;
+      --border-subtle: #2e2e2e;
+      --text: #f5f5f5;
+      --text-secondary: #a1a1a1;
+      --text-muted: #666666;
+      --accent: #6366f1;
+      --accent-hover: #5558e3;
+      --green: #22c55e;
+      --green-dim: #1a7f42;
+      --green-bg: rgba(34, 197, 94, 0.12);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ==================== SCROLLBAR ==================== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-elevated);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border);
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-elevated) transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-app);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==================== ICONS ==================== */
+    svg.icon {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    svg.icon.sm { width: 14px; height: 14px; }
+    svg.icon.xs { width: 12px; height: 12px; }
+
+    /* ==================== MODAL ==================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 560px;
+      max-width: 90vw;
+      max-height: 85vh;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal__header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .modal__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .modal__close {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal__close:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .modal__body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal__footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .modal__footer-info {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .modal__footer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ==================== FORM ELEMENTS ==================== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* ==================== SELECTION CARDS ==================== */
+    .selection-row {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .selection-card {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .selection-card__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .selection-card__icon {
+      width: 28px;
+      height: 28px;
+      background: var(--bg-elevated);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+    }
+
+    .selection-card__icon--source {
+      background: var(--accent);
+      color: white;
+    }
+
+    .selection-card__icon--target {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .selection-card__title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .selection-card__name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .selection-card__path {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .selection-card__stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .selection-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 40px;
+      color: var(--text-muted);
+    }
+
+    /* ==================== MODE CHECKBOXES ==================== */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    .mode-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .mode-checkbox:hover {
+      border-color: var(--text-muted);
+    }
+
+    .mode-checkbox.checked {
+      border-color: var(--accent);
+      background: var(--bg-selected);
+    }
+
+    .mode-checkbox__box {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--text-muted);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.1s;
+    }
+
+    .mode-checkbox.checked .mode-checkbox__box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .mode-checkbox__box svg {
+      color: white;
+      opacity: 0;
+    }
+
+    .mode-checkbox.checked .mode-checkbox__box svg {
+      opacity: 1;
+    }
+
+    .mode-checkbox__label {
+      flex: 1;
+    }
+
+    .mode-checkbox__name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .mode-checkbox__desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ==================== PREVIEW SECTION ==================== */
+    .preview-section {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-header__title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .preview-header__stats {
+      display: flex;
+      gap: 12px;
+    }
+
+    .preview-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .preview-stat--success {
+      color: var(--green);
+    }
+
+    .preview-stat--warning {
+      color: var(--orange);
+    }
+
+    .preview-list {
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .preview-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+    }
+
+    .preview-item:last-child {
+      border-bottom: none;
+    }
+
+    .preview-item__icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .preview-item__icon--match {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .preview-item__icon--unmatched {
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+
+    .preview-item__source {
+      flex: 1;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-item__arrow {
+      color: var(--text-muted);
+    }
+
+    .preview-item__target {
+      flex: 1;
+      color: var(--text);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-item__target--none {
+      color: var(--orange);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* ==================== BUTTONS ==================== */
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn--ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ==================== DIVIDER ==================== */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ==================== HELPER TEXT ==================== */
+    .select-all-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .select-all-btn {
+      font-size: 11px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .select-all-btn:hover {
+      text-decoration: underline;
+    }
+
+    /* ==================== TABS FOR MODAL STATES ==================== */
+    .demo-tabs {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      background: var(--bg-surface);
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      z-index: 2000;
+    }
+
+    .demo-tab {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .demo-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .demo-tab.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Hide states by default */
+    .state-initial,
+    .state-preview,
+    .state-result {
+      display: none;
+    }
+
+    .state-initial.active,
+    .state-preview.active,
+    .state-result.active {
+      display: block;
+    }
+
+    /* Footer button groups need flex */
+    .modal__footer-actions .state-initial,
+    .modal__footer-actions .state-preview,
+    .modal__footer-actions .state-result {
+      display: none;
+      gap: 8px;
+    }
+
+    .modal__footer-actions .state-initial.active,
+    .modal__footer-actions .state-preview.active,
+    .modal__footer-actions .state-result.active {
+      display: flex;
+    }
+
+    /* ==================== RESULT STATE ==================== */
+    .result-summary {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .result-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--green-bg);
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .result-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .result-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .result-stats {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    .result-stat {
+      text-align: center;
+    }
+
+    .result-stat__value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .result-stat__label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .result-stat--success .result-stat__value {
+      color: var(--green);
+    }
+
+    .result-stat--warning .result-stat__value {
+      color: var(--orange);
+    }
+
+    .unmatched-section {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .unmatched-section__title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+
+    .unmatched-list {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .unmatched-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .unmatched-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG ICONS -->
+  <svg style="display:none">
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-arr" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></symbol>
+  </svg>
+
+  <!-- MODAL -->
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal__header">
+        <span class="modal__title">Bulk Alias</span>
+        <button class="modal__close"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+
+      <!-- STATE 1: Initial / Configuration -->
+      <div class="modal__body state-initial active" id="stateInitial">
+        <!-- Source & Target Selection -->
+        <div class="form-group">
+          <div class="selection-row">
+            <div class="selection-card">
+              <div class="selection-card__header">
+                <div class="selection-card__icon selection-card__icon--source">
+                  <svg class="icon sm"><use href="#i-folder"/></svg>
+                </div>
+                <span class="selection-card__title">Source</span>
+              </div>
+              <div class="selection-card__name">Radius</div>
+              <div class="selection-card__path">REZZON / Viewport</div>
+              <div class="selection-card__stats">
+                <span>48 variables</span>
+              </div>
+            </div>
+
+            <div class="selection-arrow">
+              <svg class="icon"><use href="#i-arr"/></svg>
+            </div>
+
+            <div class="selection-card">
+              <div class="selection-card__header">
+                <div class="selection-card__icon selection-card__icon--target">
+                  <svg class="icon sm"><use href="#i-cube"/></svg>
+                </div>
+                <span class="selection-card__title">Target</span>
+              </div>
+              <select class="form-select" style="margin-bottom:8px">
+                <option>R4-Radii</option>
+                <option>R4-Color-Library</option>
+                <option>R4-Typography</option>
+                <option>REZZON / Theme</option>
+              </select>
+              <div class="selection-card__stats">
+                <span>156 variables available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Mode Selection -->
+        <div class="form-group">
+          <div class="select-all-row">
+            <label class="form-label" style="margin-bottom:0">Apply to modes</label>
+            <button class="select-all-btn" onclick="toggleAllModes()">Select all</button>
+          </div>
+          <div class="modes-grid">
+            <div class="mode-checkbox checked" onclick="toggleMode(this)">
+              <div class="mode-checkbox__box"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <div class="mode-checkbox__label">
+                <div class="mode-checkbox__name">1920</div>
+                <div class="mode-checkbox__desc">Desktop</div>
+              </div>
+            </div>
+            <div class="mode-checkbox checked" onclick="toggleMode(this)">
+              <div class="mode-checkbox__box"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <div class="mode-checkbox__label">
+                <div class="mode-checkbox__name">1366</div>
+                <div class="mode-checkbox__desc">Laptop</div>
+              </div>
+            </div>
+            <div class="mode-checkbox checked" onclick="toggleMode(this)">
+              <div class="mode-checkbox__box"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <div class="mode-checkbox__label">
+                <div class="mode-checkbox__name">768</div>
+                <div class="mode-checkbox__desc">Tablet</div>
+              </div>
+            </div>
+            <div class="mode-checkbox" onclick="toggleMode(this)">
+              <div class="mode-checkbox__box"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <div class="mode-checkbox__label">
+                <div class="mode-checkbox__name">390</div>
+                <div class="mode-checkbox__desc">Mobile</div>
+              </div>
+            </div>
+          </div>
+          <p class="form-hint">Variables will be aliased only in selected modes. Other modes remain unchanged.</p>
+        </div>
+      </div>
+
+      <!-- STATE 2: Preview -->
+      <div class="modal__body state-preview" id="statePreview">
+        <div class="preview-section">
+          <div class="preview-header">
+            <span class="preview-header__title">Matching Preview</span>
+            <div class="preview-header__stats">
+              <span class="preview-stat preview-stat--success">
+                <svg class="icon xs"><use href="#i-check"/></svg> 42 matched
+              </span>
+              <span class="preview-stat preview-stat--warning">
+                <svg class="icon xs"><use href="#i-arr"/></svg> 6 unmatched
+              </span>
+            </div>
+          </div>
+          <div class="preview-list">
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--match"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="preview-item__source">Container/top-left</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target">Container/top-left</span>
+            </div>
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--match"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="preview-item__source">Container/top-right</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target">Container/top-right</span>
+            </div>
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--match"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="preview-item__source">Container/bottom-left</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target">Container/bottom-left</span>
+            </div>
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--match"><svg class="icon xs"><use href="#i-check"/></svg></div>
+              <span class="preview-item__source">Container/bottom-right</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target">Container/bottom-right</span>
+            </div>
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--unmatched"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+              <span class="preview-item__source">Container/all</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target preview-item__target--none">No match found</span>
+            </div>
+            <div class="preview-item">
+              <div class="preview-item__icon preview-item__icon--unmatched"><svg class="icon xs"><use href="#i-arr"/></svg></div>
+              <span class="preview-item__source">Button/radius-sm</span>
+              <span class="preview-item__arrow">→</span>
+              <span class="preview-item__target preview-item__target--none">No match found</span>
+            </div>
+          </div>
+        </div>
+        <p class="form-hint" style="margin-top:12px">Matching is based on variable name. Unmatched variables will be skipped.</p>
+      </div>
+
+      <!-- STATE 3: Result -->
+      <div class="modal__body state-result" id="stateResult">
+        <div class="result-summary">
+          <div class="result-icon">
+            <svg class="icon"><use href="#i-check"/></svg>
+          </div>
+          <div class="result-title">Bulk Alias Complete</div>
+          <div class="result-stats">
+            <div class="result-stat result-stat--success">
+              <div class="result-stat__value">42</div>
+              <div class="result-stat__label">Aliases created</div>
+            </div>
+            <div class="result-stat result-stat--warning">
+              <div class="result-stat__value">6</div>
+              <div class="result-stat__label">Unmatched</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="unmatched-section">
+          <div class="unmatched-section__title">Unmatched Variables (6)</div>
+          <div class="unmatched-list">
+            <div class="unmatched-item">Radius / Container / all</div>
+            <div class="unmatched-item">Radius / Button / radius-sm</div>
+            <div class="unmatched-item">Radius / Button / radius-md</div>
+            <div class="unmatched-item">Radius / Card / inner</div>
+            <div class="unmatched-item">Radius / Card / outer</div>
+            <div class="unmatched-item">Radius / Input / focus</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal__footer">
+        <div class="modal__footer-info state-initial active">3 modes selected</div>
+        <div class="modal__footer-info state-preview">42 aliases will be created</div>
+        <div class="modal__footer-info state-result"></div>
+        
+        <div class="modal__footer-actions">
+          <!-- Initial state buttons -->
+          <div class="state-initial active">
+            <button class="btn btn--ghost">Cancel</button>
+            <button class="btn btn--primary" onclick="showState('preview')">Preview Matching</button>
+          </div>
+          <!-- Preview state buttons -->
+          <div class="state-preview">
+            <button class="btn btn--ghost" onclick="showState('initial')">Back</button>
+            <button class="btn btn--primary" onclick="showState('result')">
+              <svg class="icon sm"><use href="#i-link"/></svg>Apply Aliases
+            </button>
+          </div>
+          <!-- Result state buttons -->
+          <div class="state-result">
+            <button class="btn btn--primary" onclick="showState('initial')">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO TABS -->
+  <div class="demo-tabs">
+    <button class="demo-tab active" onclick="showState('initial')">1. Configure</button>
+    <button class="demo-tab" onclick="showState('preview')">2. Preview</button>
+    <button class="demo-tab" onclick="showState('result')">3. Result</button>
+  </div>
+
+  <script>
+    function toggleMode(el) {
+      el.classList.toggle('checked');
+      updateModeCount();
+    }
+
+    function toggleAllModes() {
+      const checkboxes = document.querySelectorAll('.mode-checkbox');
+      const allChecked = Array.from(checkboxes).every(cb => cb.classList.contains('checked'));
+      checkboxes.forEach(cb => {
+        if (allChecked) {
+          cb.classList.remove('checked');
+        } else {
+          cb.classList.add('checked');
+        }
+      });
+      updateModeCount();
+    }
+
+    function updateModeCount() {
+      const count = document.querySelectorAll('.mode-checkbox.checked').length;
+      document.querySelector('.modal__footer-info.state-initial').textContent = count + ' modes selected';
+    }
+
+    function showState(state) {
+      // Update content states
+      document.querySelectorAll('.state-initial, .state-preview, .state-result').forEach(el => {
+        el.classList.remove('active');
+      });
+      document.querySelectorAll('.state-' + state).forEach(el => {
+        el.classList.add('active');
+      });
+      
+      // Update demo tabs
+      document.querySelectorAll('.demo-tab').forEach(tab => tab.classList.remove('active'));
+      const tabIndex = state === 'initial' ? 0 : state === 'preview' ? 1 : 2;
+      document.querySelectorAll('.demo-tab')[tabIndex].classList.add('active');
+    }
+  </script>
+</body>
+</html>
