@@ -24,6 +24,8 @@ import {
 import { useAppStore } from '../../stores/appStore';
 import { VariablesSidebar } from '../../components/layout/VariablesSidebar';
 import { DetailsPanel } from '../../components/layout/DetailsPanel';
+import { BulkRenameModal, DeleteModal, DuplicateFolderModal } from '../../components/ui/CrudModals';
+import { InlineEdit } from '../../components/ui/InlineEdit';
 import { buildFolderTree, flattenTree, getAllFolderIds } from '../../utils/folderTree';
 import type { FolderNode } from '../../utils/folderTree';
 import type { Variable, VariableType, VariableValue, AliasType, Library } from '../../types';
@@ -279,10 +281,16 @@ function FilterDropdown({
 // Selection bar component
 function SelectionBar({ 
   count, 
-  onClear 
+  onClear,
+  onRename,
+  onDelete,
+  onDuplicate,
 }: { 
   count: number; 
   onClear: () => void;
+  onRename?: () => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
 }) {
   if (count === 0) return null;
   
@@ -306,13 +314,15 @@ function SelectionBar({
     >
       <span style={{ fontWeight: 500 }}>{count} selected</span>
       <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
-      <button className="btn btn--ghost" style={{ padding: '4px 8px' }}>
+      <button className="btn btn--ghost" style={{ padding: '4px 8px' }} onClick={onRename}>
         <Edit3 className="icon sm" /> Rename
       </button>
-      <button className="btn btn--ghost" style={{ padding: '4px 8px' }}>
-        <Copy className="icon sm" /> Duplicate
-      </button>
-      <button className="btn btn--ghost" style={{ padding: '4px 8px', color: 'var(--red)' }}>
+      {onDuplicate && (
+        <button className="btn btn--ghost" style={{ padding: '4px 8px' }} onClick={onDuplicate}>
+          <Copy className="icon sm" /> Duplicate
+        </button>
+      )}
+      <button className="btn btn--ghost" style={{ padding: '4px 8px', color: 'var(--red)' }} onClick={onDelete}>
         <Trash2 className="icon sm" /> Delete
       </button>
       <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
@@ -346,10 +356,21 @@ export function VariablesView() {
   const setTypeFilter = useAppStore((state) => state.setTypeFilter);
   const setAliasFilter = useAppStore((state) => state.setAliasFilter);
   const clearFilters = useAppStore((state) => state.clearFilters);
+  const renameVariable = useAppStore((state) => state.renameVariable);
   
   const [filterOpen, setFilterOpen] = useState(false);
   const [lastClickedId, setLastClickedId] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
+  
+  // CRUD Modal states
+  const [bulkRenameOpen, setBulkRenameOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [duplicateFolderPath, setDuplicateFolderPath] = useState('');
+  const [duplicateFolderCount, setDuplicateFolderCount] = useState(0);
+  
+  // Inline edit state
+  const [editingVariableId, setEditingVariableId] = useState<string | null>(null);
   
   // Zamykanie filtra po kliknięciu poza nim
   useEffect(() => {
@@ -555,6 +576,57 @@ export function VariablesView() {
   }, [filters.aliasTypes, setAliasFilter]);
   
   const activeFilterCount = filters.types.length + filters.aliasTypes.length;
+  
+  // Handler dla inline rename
+  const handleInlineRename = useCallback((variableId: string, newName: string) => {
+    if (!selectedLibraryId) return { success: false, error: 'No library selected' };
+    const result = renameVariable(selectedLibraryId, variableId, newName);
+    if (result.success) {
+      setEditingVariableId(null);
+    }
+    return result;
+  }, [selectedLibraryId, renameVariable]);
+  
+  // Handler dla double-click na nazwie zmiennej
+  const handleVariableDoubleClick = useCallback((variableId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingVariableId(variableId);
+  }, []);
+  
+  // Handler dla duplicate folder (z context menu lub selection bar)
+  const handleDuplicateFolder = useCallback((folderPath: string, variableCount: number) => {
+    setDuplicateFolderPath(folderPath);
+    setDuplicateFolderCount(variableCount);
+    setDuplicateModalOpen(true);
+  }, []);
+  
+  // Znajdź folder path z zaznaczonych zmiennych (dla duplikacji)
+  const selectedFolderInfo = useMemo(() => {
+    if (selectedVariables.length === 0 || !selectedLibrary) return null;
+    
+    const vars = selectedVariables.map((id) => allVariables[id]).filter(Boolean);
+    if (vars.length === 0) return null;
+    
+    // Sprawdź czy wszystkie zmienne są w tym samym folderze
+    const folders = new Set<string>();
+    for (const v of vars) {
+      const parts = v.name.split('/');
+      if (parts.length > 1) {
+        folders.add(parts.slice(0, -1).join('/'));
+      }
+    }
+    
+    if (folders.size === 1) {
+      const folderPath = Array.from(folders)[0];
+      // Policz wszystkie zmienne w tym folderze
+      const folderVars = Object.values(allVariables).filter(
+        (v) => v.name === folderPath || v.name.startsWith(folderPath + '/')
+      );
+      return { path: folderPath, count: folderVars.length };
+    }
+    
+    return null;
+  }, [selectedVariables, selectedLibrary, allVariables]);
 
   return (
     <>
@@ -574,13 +646,28 @@ export function VariablesView() {
           <div className="toolbar__sep" />
           
           <div className="toolbar__group">
-            <button className="tool-btn" title="Rename" disabled={selectedVariables.length === 0}>
+            <button 
+              className="tool-btn" 
+              title="Rename" 
+              disabled={selectedVariables.length === 0}
+              onClick={() => setBulkRenameOpen(true)}
+            >
               <Edit3 className="icon" />
             </button>
-            <button className="tool-btn" title="Duplicate" disabled={selectedVariables.length === 0}>
+            <button 
+              className="tool-btn" 
+              title="Duplicate folder" 
+              disabled={!selectedFolderInfo}
+              onClick={() => selectedFolderInfo && handleDuplicateFolder(selectedFolderInfo.path, selectedFolderInfo.count)}
+            >
               <Copy className="icon" />
             </button>
-            <button className="tool-btn" title="Delete" disabled={selectedVariables.length === 0}>
+            <button 
+              className="tool-btn" 
+              title="Delete" 
+              disabled={selectedVariables.length === 0}
+              onClick={() => setDeleteModalOpen(true)}
+            >
               <Trash2 className="icon" />
             </button>
           </div>
@@ -738,6 +825,7 @@ export function VariablesView() {
                     
                     const variable = row.variable!;
                     const isSelected = selectedVariables.includes(row.id);
+                    const isEditing = editingVariableId === row.id;
                     
                     return (
                       <tr 
@@ -757,17 +845,26 @@ export function VariablesView() {
                           <div 
                             className="var-cell" 
                             style={{ paddingLeft: `${32 + row.depth * 20}px` }}
+                            onDoubleClick={(e) => handleVariableDoubleClick(row.id, e)}
                           >
                             <div className="type-badge">
                               <TypeIcon type={variable.resolvedType} />
                             </div>
-                            <span className="var-cell__name">
-                              {searchQuery ? (
-                                <HighlightText text={row.name} highlight={searchQuery} />
-                              ) : (
-                                row.name
-                              )}
-                            </span>
+                            {isEditing ? (
+                              <InlineEdit
+                                value={row.name}
+                                onSave={(newName) => handleInlineRename(row.id, newName)}
+                                onCancel={() => setEditingVariableId(null)}
+                              />
+                            ) : (
+                              <span className="var-cell__name">
+                                {searchQuery ? (
+                                  <HighlightText text={row.name} highlight={searchQuery} />
+                                ) : (
+                                  row.name
+                                )}
+                              </span>
+                            )}
                           </div>
                         </td>
                         {modes.map((mode) => (
@@ -789,10 +886,40 @@ export function VariablesView() {
           )}
         </div>
         
-        <SelectionBar count={selectedVariables.length} onClear={clearSelection} />
+        <SelectionBar 
+          count={selectedVariables.length} 
+          onClear={clearSelection}
+          onRename={() => setBulkRenameOpen(true)}
+          onDelete={() => setDeleteModalOpen(true)}
+          onDuplicate={selectedFolderInfo ? () => handleDuplicateFolder(selectedFolderInfo.path, selectedFolderInfo.count) : undefined}
+        />
       </main>
       
       {detailsPanelOpen && <DetailsPanel />}
+      
+      {/* CRUD Modals */}
+      <BulkRenameModal
+        isOpen={bulkRenameOpen}
+        onClose={() => setBulkRenameOpen(false)}
+        variableIds={selectedVariables}
+        libraryId={selectedLibraryId || ''}
+      />
+      
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        variableIds={selectedVariables}
+        libraryId={selectedLibraryId || ''}
+      />
+      
+      <DuplicateFolderModal
+        isOpen={duplicateModalOpen}
+        onClose={() => setDuplicateModalOpen(false)}
+        folderPath={duplicateFolderPath}
+        libraryId={selectedLibraryId || ''}
+        collectionId={selectedCollectionId || ''}
+        variableCount={duplicateFolderCount}
+      />
     </>
   );
 }
