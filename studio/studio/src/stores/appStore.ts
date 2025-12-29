@@ -1,0 +1,557 @@
+import { create } from 'zustand';
+import type { 
+  Library, 
+  UIState, 
+  Snapshot,
+  DisconnectedLibrary,
+  VariableType,
+  AliasType
+} from '../types';
+
+interface AppState {
+  // Dane
+  libraries: Library[];
+  snapshots: Snapshot[];
+  disconnectedLibraries: DisconnectedLibrary[];
+  
+  // UI State
+  ui: UIState;
+  
+  // Historia (UNDO/REDO)
+  history: {
+    past: any[];
+    future: any[];
+  };
+  
+  // Akcje - Libraries
+  addLibrary: (library: Library) => void;
+  removeLibrary: (id: string) => void;
+  clearLibraries: () => void;
+  
+  // Akcje - CRUD
+  renameVariable: (libraryId: string, variableId: string, newName: string) => { success: boolean; error?: string };
+  bulkRename: (libraryId: string, variableIds: string[], match: string, replace: string, useRegex: boolean) => { 
+    success: boolean; 
+    renamed: number; 
+    conflicts: string[];
+  };
+  deleteVariables: (libraryId: string, variableIds: string[]) => { deleted: number; brokenAliases: string[] };
+  duplicateFolder: (libraryId: string, collectionId: string, folderPath: string) => { success: boolean; newFolderPath?: string };
+  
+  // Akcje - UI
+  setActiveView: (view: UIState['activeView']) => void;
+  selectLibrary: (id: string | null) => void;
+  selectCollection: (id: string | null) => void;
+  toggleFolder: (folderId: string) => void;
+  setExpandedFolders: (folderIds: string[]) => void;
+  expandAllFolders: () => void;
+  collapseAllFolders: () => void;
+  toggleVariable: (variableId: string) => void;
+  selectVariables: (variableIds: string[]) => void;
+  addToSelection: (variableIds: string[]) => void;
+  selectAllVariables: (variableIds: string[]) => void;
+  clearSelection: () => void;
+  toggleDetailsPanel: () => void;
+  setSearchQuery: (query: string) => void;
+  setTypeFilter: (types: VariableType[]) => void;
+  setAliasFilter: (types: AliasType[]) => void;
+  clearFilters: () => void;
+  
+  // Akcje - Snapshots
+  createSnapshot: (name: string, description?: string) => void;
+  restoreSnapshot: (id: string) => void;
+  deleteSnapshot: (id: string) => void;
+  
+  // Akcje - UNDO/REDO
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+}
+
+const initialUIState: UIState = {
+  activeView: 'variables',
+  selectedLibraryId: null,
+  selectedCollectionId: null,
+  expandedFolders: [],
+  selectedVariables: [],
+  detailsPanelOpen: true,
+  filters: {
+    types: [],
+    aliasTypes: [],
+  },
+  searchQuery: '',
+};
+
+export const useAppStore = create<AppState>()((set, get) => ({
+  // Początkowy stan
+  libraries: [],
+  snapshots: [],
+  disconnectedLibraries: [],
+  ui: initialUIState,
+  history: {
+    past: [],
+    future: [],
+  },
+  
+  // Implementacje akcji
+  addLibrary: (library) => set((state) => {
+    const newLibraries = [...state.libraries, library];
+    
+    // Sortuj: REZZON (główna) na górze, potem R4-* w kolejności numerycznej
+    newLibraries.sort((a, b) => {
+      // Główna biblioteka zawsze na górze
+      if (a.isMain && !b.isMain) return -1;
+      if (!a.isMain && b.isMain) return 1;
+      
+      // Dla bibliotek R4-* sortuj numerycznie
+      const aMatch = a.name.match(/^(\d+)-/);
+      const bMatch = b.name.match(/^(\d+)-/);
+      
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+      }
+      
+      // Fallback: alfabetycznie
+      return a.name.localeCompare(b.name);
+    });
+    
+    return {
+      libraries: newLibraries,
+      ui: {
+        ...state.ui,
+        selectedLibraryId: state.ui.selectedLibraryId || library.id,
+      },
+    };
+  }),
+  
+  removeLibrary: (id) => set((state) => ({
+    libraries: state.libraries.filter((l) => l.id !== id),
+    ui: {
+      ...state.ui,
+      selectedLibraryId: state.ui.selectedLibraryId === id ? null : state.ui.selectedLibraryId,
+    },
+  })),
+  
+  clearLibraries: () => set({
+    libraries: [],
+    snapshots: [],
+    ui: initialUIState,
+  }),
+  
+  setActiveView: (view) => set((state) => ({
+    ui: { ...state.ui, activeView: view },
+  })),
+  
+  selectLibrary: (id) => set((state) => {
+    // Znajdź bibliotekę i jej pierwszą kolekcję
+    const library = state.libraries.find((l) => l.id === id);
+    const firstCollectionId = library 
+      ? Object.keys(library.file.variableCollections)[0] || null 
+      : null;
+    
+    return {
+      ui: { 
+        ...state.ui, 
+        selectedLibraryId: id,
+        selectedCollectionId: firstCollectionId, // Auto-wybór pierwszej kolekcji
+        expandedFolders: [],
+        selectedVariables: [],
+      },
+    };
+  }),
+  
+  selectCollection: (id) => set((state) => ({
+    ui: { 
+      ...state.ui, 
+      selectedCollectionId: id,
+      expandedFolders: [],
+      selectedVariables: [],
+    },
+  })),
+  
+  toggleFolder: (folderId) => set((state) => {
+    const expanded = [...state.ui.expandedFolders];
+    const idx = expanded.indexOf(folderId);
+    if (idx >= 0) {
+      expanded.splice(idx, 1);
+    } else {
+      expanded.push(folderId);
+    }
+    return { ui: { ...state.ui, expandedFolders: expanded } };
+  }),
+  
+  setExpandedFolders: (folderIds) => set((state) => ({
+    ui: { ...state.ui, expandedFolders: folderIds },
+  })),
+  
+  expandAllFolders: () => set((state) => {
+    return { ui: { ...state.ui, expandedFolders: ['__all__'] } };
+  }),
+  
+  collapseAllFolders: () => set((state) => ({
+    ui: { ...state.ui, expandedFolders: [] },
+  })),
+  
+  toggleVariable: (variableId) => set((state) => {
+    const selected = [...state.ui.selectedVariables];
+    const idx = selected.indexOf(variableId);
+    if (idx >= 0) {
+      selected.splice(idx, 1);
+    } else {
+      selected.push(variableId);
+    }
+    return { ui: { ...state.ui, selectedVariables: selected } };
+  }),
+  
+  selectVariables: (variableIds) => set((state) => ({
+    ui: { ...state.ui, selectedVariables: variableIds },
+  })),
+  
+  addToSelection: (variableIds) => set((state) => {
+    const newSelection = [...state.ui.selectedVariables];
+    for (const id of variableIds) {
+      if (!newSelection.includes(id)) {
+        newSelection.push(id);
+      }
+    }
+    return { ui: { ...state.ui, selectedVariables: newSelection } };
+  }),
+  
+  selectAllVariables: (variableIds) => set((state) => ({
+    ui: { ...state.ui, selectedVariables: variableIds },
+  })),
+  
+  clearSelection: () => set((state) => ({
+    ui: { ...state.ui, selectedVariables: [] },
+  })),
+  
+  toggleDetailsPanel: () => set((state) => ({
+    ui: { ...state.ui, detailsPanelOpen: !state.ui.detailsPanelOpen },
+  })),
+  
+  setSearchQuery: (query) => set((state) => ({
+    ui: { ...state.ui, searchQuery: query },
+  })),
+  
+  setTypeFilter: (types) => set((state) => ({
+    ui: { 
+      ...state.ui, 
+      filters: { ...state.ui.filters, types } 
+    },
+  })),
+  
+  setAliasFilter: (types) => set((state) => ({
+    ui: { 
+      ...state.ui, 
+      filters: { ...state.ui.filters, aliasTypes: types } 
+    },
+  })),
+  
+  clearFilters: () => set((state) => ({
+    ui: { 
+      ...state.ui, 
+      filters: { types: [], aliasTypes: [] },
+      searchQuery: '',
+    },
+  })),
+  
+  createSnapshot: (name, description) => set((state) => {
+    const variableCount = state.libraries.reduce((acc, lib) => 
+      acc + Object.keys(lib.file.variables || {}).length, 0);
+    
+    return {
+      snapshots: [
+        ...state.snapshots,
+        {
+          id: crypto.randomUUID(),
+          name,
+          description,
+          createdAt: new Date().toISOString(),
+          type: 'manual',
+          variableCount,
+          aliasCount: 0,
+          data: {
+            libraries: JSON.parse(JSON.stringify(state.libraries)),
+          },
+        },
+      ],
+    };
+  }),
+  
+  restoreSnapshot: (id) => set((state) => {
+    const snapshot = state.snapshots.find((s) => s.id === id);
+    if (!snapshot) return state;
+    return {
+      libraries: JSON.parse(JSON.stringify(snapshot.data.libraries)),
+    };
+  }),
+  
+  deleteSnapshot: (id) => set((state) => ({
+    snapshots: state.snapshots.filter((s) => s.id !== id),
+  })),
+  
+  // CRUD - Rename single variable
+  renameVariable: (libraryId, variableId, newName) => {
+    const state = get();
+    const library = state.libraries.find((l) => l.id === libraryId);
+    if (!library) return { success: false, error: 'Library not found' };
+    
+    const variable = library.file.variables[variableId];
+    if (!variable) return { success: false, error: 'Variable not found' };
+    
+    // Pobierz folder path z nazwy
+    const pathParts = variable.name.split('/');
+    pathParts.pop(); // usuń nazwę zmiennej
+    const folderPath = pathParts.join('/');
+    
+    // Walidacja nazwy
+    if (!newName.trim()) return { success: false, error: 'Name cannot be empty' };
+    if (newName.includes('/')) return { success: false, error: 'Name cannot contain /' };
+    
+    // Nowa pełna ścieżka
+    const newFullPath = folderPath ? `${folderPath}/${newName}` : newName;
+    
+    // Sprawdź duplikaty
+    const existingVar = Object.values(library.file.variables).find(
+      (v) => v.name === newFullPath && v.id !== variableId
+    );
+    if (existingVar) return { success: false, error: `Variable "${newFullPath}" already exists` };
+    
+    // Wykonaj rename
+    set((s) => {
+      const libs = [...s.libraries];
+      const libIdx = libs.findIndex((l) => l.id === libraryId);
+      if (libIdx < 0) return s;
+      
+      const updatedLib = { ...libs[libIdx] };
+      updatedLib.file = { ...updatedLib.file };
+      updatedLib.file.variables = { ...updatedLib.file.variables };
+      updatedLib.file.variables[variableId] = {
+        ...updatedLib.file.variables[variableId],
+        name: newFullPath,
+      };
+      
+      libs[libIdx] = updatedLib;
+      return { libraries: libs };
+    });
+    
+    return { success: true };
+  },
+  
+  // CRUD - Bulk rename
+  bulkRename: (libraryId, variableIds, match, replace, useRegex) => {
+    const state = get();
+    const library = state.libraries.find((l) => l.id === libraryId);
+    if (!library) return { success: false, renamed: 0, conflicts: [] };
+    
+    const conflicts: string[] = [];
+    const renames: { id: string; oldName: string; newName: string }[] = [];
+    
+    // Przygotuj regex lub string
+    let regex: RegExp;
+    try {
+      regex = useRegex ? new RegExp(match, 'g') : new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    } catch (e) {
+      return { success: false, renamed: 0, conflicts: ['Invalid regex pattern'] };
+    }
+    
+    // Oblicz nowe nazwy i sprawdź konflikty
+    for (const varId of variableIds) {
+      const variable = library.file.variables[varId];
+      if (!variable) continue;
+      
+      const newName = variable.name.replace(regex, replace);
+      if (newName === variable.name) continue; // Bez zmian
+      
+      // Sprawdź duplikaty (nie licząc zmiennych które też są w operacji)
+      const existingVar = Object.values(library.file.variables).find(
+        (v) => v.name === newName && v.id !== varId && !variableIds.includes(v.id)
+      );
+      
+      // Sprawdź też czy nie będzie kolizji między zmiennymi w operacji
+      const internalConflict = renames.find((r) => r.newName === newName);
+      
+      if (existingVar || internalConflict) {
+        conflicts.push(`${variable.name} → ${newName}`);
+      } else {
+        renames.push({ id: varId, oldName: variable.name, newName });
+      }
+    }
+    
+    if (conflicts.length > 0) {
+      return { success: false, renamed: 0, conflicts };
+    }
+    
+    if (renames.length === 0) {
+      return { success: true, renamed: 0, conflicts: [] };
+    }
+    
+    // Wykonaj rename
+    set((s) => {
+      const libs = [...s.libraries];
+      const libIdx = libs.findIndex((l) => l.id === libraryId);
+      if (libIdx < 0) return s;
+      
+      const updatedLib = { ...libs[libIdx] };
+      updatedLib.file = { ...updatedLib.file };
+      updatedLib.file.variables = { ...updatedLib.file.variables };
+      
+      for (const { id, newName } of renames) {
+        updatedLib.file.variables[id] = {
+          ...updatedLib.file.variables[id],
+          name: newName,
+        };
+      }
+      
+      libs[libIdx] = updatedLib;
+      return { libraries: libs };
+    });
+    
+    return { success: true, renamed: renames.length, conflicts: [] };
+  },
+  
+  // CRUD - Delete
+  deleteVariables: (libraryId, variableIds) => {
+    const state = get();
+    const library = state.libraries.find((l) => l.id === libraryId);
+    if (!library) return { deleted: 0, brokenAliases: [] };
+    
+    const brokenAliases: string[] = [];
+    
+    // Znajdź aliasy które zostaną broken
+    for (const [varId, variable] of Object.entries(library.file.variables)) {
+      if (variableIds.includes(varId)) continue; // Ta zmienna jest usuwana
+      
+      for (const value of Object.values(variable.valuesByMode || {})) {
+        if (value.type === 'VARIABLE_ALIAS' && value.variableId && variableIds.includes(value.variableId)) {
+          brokenAliases.push(variable.name);
+          break;
+        }
+      }
+    }
+    
+    // Usuń zmienne
+    set((s) => {
+      const libs = [...s.libraries];
+      const libIdx = libs.findIndex((l) => l.id === libraryId);
+      if (libIdx < 0) return s;
+      
+      const updatedLib = { ...libs[libIdx] };
+      updatedLib.file = { ...updatedLib.file };
+      updatedLib.file.variables = { ...updatedLib.file.variables };
+      updatedLib.file.variableCollections = { ...updatedLib.file.variableCollections };
+      
+      // Usuń zmienne
+      for (const varId of variableIds) {
+        delete updatedLib.file.variables[varId];
+      }
+      
+      // Aktualizuj variableIds w kolekcjach
+      for (const collId of Object.keys(updatedLib.file.variableCollections)) {
+        const coll = updatedLib.file.variableCollections[collId];
+        updatedLib.file.variableCollections[collId] = {
+          ...coll,
+          variableIds: coll.variableIds.filter((id) => !variableIds.includes(id)),
+        };
+      }
+      
+      // Aktualizuj count
+      updatedLib.variableCount = Object.keys(updatedLib.file.variables).length;
+      
+      libs[libIdx] = updatedLib;
+      
+      // Wyczyść selekcję
+      return { 
+        libraries: libs,
+        ui: { ...s.ui, selectedVariables: s.ui.selectedVariables.filter((id) => !variableIds.includes(id)) },
+      };
+    });
+    
+    return { deleted: variableIds.length, brokenAliases };
+  },
+  
+  // CRUD - Duplicate folder
+  duplicateFolder: (libraryId, collectionId, folderPath) => {
+    const state = get();
+    const library = state.libraries.find((l) => l.id === libraryId);
+    if (!library) return { success: false };
+    
+    const collection = library.file.variableCollections[collectionId];
+    if (!collection) return { success: false };
+    
+    // Znajdź wszystkie zmienne w tym folderze
+    const folderVariables = Object.values(library.file.variables).filter(
+      (v) => v.name === folderPath || v.name.startsWith(folderPath + '/')
+    );
+    
+    if (folderVariables.length === 0) return { success: false };
+    
+    // Generuj nową nazwę folderu (folder → folder 2, folder 2 → folder 3, etc.)
+    let newFolderPath = folderPath + ' 2';
+    let suffix = 2;
+    while (Object.values(library.file.variables).some((v) => 
+      v.name === newFolderPath || v.name.startsWith(newFolderPath + '/')
+    )) {
+      suffix++;
+      newFolderPath = folderPath + ' ' + suffix;
+    }
+    
+    // Stwórz kopie zmiennych
+    const newVariableIds: string[] = [];
+    
+    set((s) => {
+      const libs = [...s.libraries];
+      const libIdx = libs.findIndex((l) => l.id === libraryId);
+      if (libIdx < 0) return s;
+      
+      const updatedLib = { ...libs[libIdx] };
+      updatedLib.file = { ...updatedLib.file };
+      updatedLib.file.variables = { ...updatedLib.file.variables };
+      updatedLib.file.variableCollections = { ...updatedLib.file.variableCollections };
+      
+      for (const original of folderVariables) {
+        const newId = crypto.randomUUID();
+        const newName = original.name.replace(folderPath, newFolderPath);
+        
+        updatedLib.file.variables[newId] = {
+          ...original,
+          id: newId,
+          name: newName,
+          // Aliasy w kopii wskazują na ORYGINAŁY
+          valuesByMode: { ...original.valuesByMode },
+        };
+        
+        newVariableIds.push(newId);
+      }
+      
+      // Dodaj nowe ID do kolekcji
+      updatedLib.file.variableCollections[collectionId] = {
+        ...updatedLib.file.variableCollections[collectionId],
+        variableIds: [...updatedLib.file.variableCollections[collectionId].variableIds, ...newVariableIds],
+      };
+      
+      updatedLib.variableCount = Object.keys(updatedLib.file.variables).length;
+      
+      libs[libIdx] = updatedLib;
+      return { libraries: libs };
+    });
+    
+    return { success: true, newFolderPath };
+  },
+  
+  undo: () => set((state) => {
+    if (state.history.past.length === 0) return state;
+    // TODO: Implementacja UNDO
+    return state;
+  }),
+  
+  redo: () => set((state) => {
+    if (state.history.future.length === 0) return state;
+    // TODO: Implementacja REDO
+    return state;
+  }),
+  
+  canUndo: () => get().history.past.length > 0,
+  canRedo: () => get().history.future.length > 0,
+}));
