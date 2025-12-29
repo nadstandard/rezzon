@@ -1,13 +1,13 @@
-# REZZON Studio – Roadmapa implementacji v2
+# REZZON Studio – Roadmapa implementacji v3
 
-**Status:** v0.2.0 (Faza 2 zakończona)
-**Data:** 2025-12-24
+**Status:** v0.3.0 (Checkpoint #1 zakończony)
+**Data:** 2025-12-29
 
 ---
 
 ## ✅ ZREALIZOWANE
 
-### Faza 1 – Szkielet (DONE)
+### Faza 1 – Szkielet (DONE) ✅
 - [x] Vite + React + TypeScript setup
 - [x] CSS z makiet (design-system.css)
 - [x] Layout (Header, Sidebar, Main, Panel, Statusbar)
@@ -15,7 +15,7 @@
 - [x] Zustand store z podstawowymi akcjami
 - [x] TypeScript types dla Figma Variables
 
-### Faza 2 – Import i wyświetlanie (DONE)
+### Faza 2 – Import i wyświetlanie (DONE z bugami)
 - [x] Parser JSON z eksportu Figma Variables
 - [x] Modal importu z drag & drop
 - [x] Walidacja plików przed importem
@@ -23,60 +23,96 @@
 - [x] Hierarchia folderów w tabeli
 - [x] Expand/Collapse folderów
 - [x] Ikony typów (FLOAT, STRING, BOOLEAN, COLOR)
-- [x] Wyświetlanie wartości (kolory z podglądem, aliasy)
+- [x] Wyświetlanie wartości liczbowych i boolean
+- [x] Wyświetlanie aliasów internal
 - [x] Clear Workspace z modalem potwierdzenia
+- [ ] ⚠️ Wyświetlanie wartości COLOR (BUG 2.12.1)
+- [ ] ⚠️ Wyświetlanie aliasów external (BUG 2.14.1)
+
+### Faza 3 – Selekcja + Search + Filtry (DONE z bugami)
+- [x] Checkbox w wierszach zmiennych
+- [x] Checkbox "select all" w headerze tabeli (z indeterminate)
+- [x] Floating selection bar ("X selected" + akcje)
+- [x] Kliknięcie na wiersz toggle'uje zaznaczenie
+- [x] Live search w headerze
+- [x] Filtrowanie wyników w tabeli
+- [x] Podświetlanie dopasowań (highlight)
+- [x] Empty state "No variables match"
+- [x] Dropdown filtrów w toolbarze
+- [x] Filtry by type: Number / Boolean / String / Color
+- [x] Filtry by alias: No alias / Internal / External / Broken
+- [x] Kombinowanie filtrów (AND logic)
+- [x] Badge z liczbą aktywnych filtrów
+- [x] Liczniki przy każdej opcji filtra
+- [x] Zamykanie dropdown po kliknięciu poza
+- [x] Przycisk "Clear all"
+- [x] Details Panel toggle
+- [x] Details Panel: Name, Path, Type, Alias target, Values per mode
+- [x] Multi-select → podsumowanie
+- [x] Empty state "Select a variable"
+- [ ] ⚠️ Checkbox folderów nie działa (BUG 3.1.1)
+- [ ] ⚠️ Select All tylko dla rozwiniętych folderów (BUG 3.1.2)
+- [ ] ⚠️ Shift+click nie zaznacza zakresu (BUG 3.1.4)
+- [ ] ⚠️ Brak drzewa folderów w sidebarze (BUG 3.1.8)
+
+---
+
+## 🐛 BUGI Z CHECKPOINTU #1
+
+### 🔴 BLOCKERY (naprawić przed Fazą 4)
+
+| ID | Opis | Faza |
+|----|------|------|
+| 2.12.1 | Wartości COLOR wyświetlają się jako "-" zamiast podglądu koloru + HEX | 2 |
+| 2.14.1 | Aliasy external nie działają — pokazują ID lub "unknown" zamiast nazwy | 2 |
+
+### 🟠 FUNKCJONALNE (naprawić przed MVP)
+
+| ID | Opis | Faza |
+|----|------|------|
+| 2.6.1 | Niespójny i rozstrzelony widok tabeli folderów | 2 |
+| 2.6.2 | Wybranie biblioteki nie wybiera automatycznie pierwszej kolekcji | 2 |
+| 2.10.1 | Foldery sortowane alfabetycznie zamiast kolejności z Figmy | 2 |
+| 3.1.1 | Checkbox folderów nie działa (nie zaznacza zmiennych wewnątrz) | 3 |
+| 3.1.2 | Select All zaznacza tylko zmienne w rozwiniętych folderach | 3 |
+| 3.1.4 | Shift+click nie zaznacza zakresu | 3 |
+| 3.1.8 | Brak drzewa folderów w sidebarze (sekcja FOLDERS pusta) | 3 |
+
+### 🟡 WIZUALNE (do Fazy 12)
+
+| ID | Opis | Faza |
+|----|------|------|
+| 2.1.1 | Kolejność bibliotek towarzyszących (4,3,2,1,5 zamiast 1,2,3,4,5) | 2 |
+| 2.4.1 | Brak rozróżnienia ikon biblioteki głównej vs towarzyszących | 2 |
+| 3.2.5 | Brak możliwości ograniczenia zakresu wyszukiwania do folderu | 3 |
+| 3.4.3a | Niespójna interpunkcja w ścieżce Path (spacja tylko przy Collection) | 3 |
+
+### 🟢 FEATURE REQUESTS
+
+| ID | Opis | Faza |
+|----|------|------|
+| 3.4.3b | Przycisk Copy przy Path w Details Panel | 3 |
+
+---
+
+## 🔧 FAZA 3.5 – Naprawy blockerów (Est. 1-2 dni)
+
+### Przed przejściem do Fazy 4 naprawić:
+
+#### 🔴 BUG 2.12.1 – Wartości COLOR
+- [ ] Parser poprawnie odczytuje wartości RGBA z JSON
+- [ ] Komórka wyświetla kwadracik z kolorem + wartość HEX
+- [ ] Obsługa przezroczystości (alpha)
+
+#### 🔴 BUG 2.14.1 – Aliasy external
+- [ ] Parser rozpoznaje aliasy do zewnętrznych bibliotek
+- [ ] Wyświetlanie nazwy zmiennej zamiast ID
+- [ ] Rozróżnienie wizualne: internal (zielone) vs external (pomarańczowe)
+- [ ] Obsługa "broken" aliasów (czerwone)
 
 ---
 
 ## 🔄 BLOK 1: Core MVP
-
-### Faza 3 – Selekcja + Search + Filtry (Est. 2-3 dni)
-
-#### 3.1 Checkboxy i selekcja
-- [ ] Checkbox w wierszach (folder, zmienna)
-- [ ] Checkbox "select all" w headerze tabeli
-- [ ] Multi-select (Shift+click dla zakresu)
-- [ ] Sync checkboxów: sidebar folders ↔ tabela
-- [ ] Floating selection bar ("X selected" + akcje)
-
-#### 3.2 Wyszukiwanie
-- [ ] Live search w headerze
-- [ ] Filtrowanie wyników w tabeli
-- [ ] Podświetlanie dopasowań
-- [ ] Zakres wyszukiwania (wybrany folder)
-
-#### 3.3 Filtry
-- [ ] Dropdown w toolbarze
-- [ ] Filtr by type: All / Number / Boolean / String / Color
-- [ ] Filtr by alias: All / No alias / Internal / External / Broken
-- [ ] Kombinowanie filtrów (AND logic)
-- [ ] Badge z liczbą aktywnych filtrów
-
-#### 3.4 Details Panel – pełna implementacja
-- [ ] Pełna zawartość: Name, Path, Type, Alias target, Resolved values
-- [ ] Kliknięcie na zmienną → pokazuje w panelu
-- [ ] Multi-select → pokazuje podsumowanie
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #1                                      │
-├─────────────────────────────────────────────────────────────┤
-│  Zakres: Selekcja, search, filtry                           │
-│  Cel: Sprawdzić czy interakcje działają płynnie             │
-│                                                             │
-│  Checklistka:                                               │
-│  □ Zaznaczanie pojedyncze i multi-select                    │
-│  □ Search filtruje wyniki live                              │
-│  □ Filtry działają osobno i łącznie                         │
-│  □ Details panel pokazuje poprawne dane                     │
-│  □ Sync sidebar ↔ tabela                                    │
-│                                                             │
-│  🎨 UI feedback: TAK – zgłoś drobne uwagi wizualne          │
-│     (zostaną zebrane, ale NIE blokują dalszej pracy)        │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
 
 ### Faza 4 – Operacje CRUD (Est. 3-4 dni)
 
@@ -341,10 +377,12 @@
 - [ ] Toast notifications
 - [ ] Animacje
 
-#### 12.5 🎨 UI Fixes
-- [ ] Wszystkie zebrane uwagi z poprzednich checkpointów
-- [ ] Przegląd spójności wizualnej
-- [ ] Responsywność (opcjonalne)
+#### 12.5 🎨 UI Fixes z Checkpointu #1
+- [ ] BUG 2.1.1: Kolejność bibliotek towarzyszących
+- [ ] BUG 2.4.1: Ikony biblioteki głównej vs towarzyszących
+- [ ] BUG 3.2.5: Zakres wyszukiwania do folderu
+- [ ] BUG 3.4.3a: Interpunkcja w ścieżce Path
+- [ ] FR 3.4.3b: Przycisk Copy przy Path
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -366,61 +404,24 @@
 
 ---
 
-## 📋 STRATEGIA ZBIERANIA FEEDBACKU UI
-
-### Kiedy zgłaszać uwagi?
-
-| Typ uwagi | Kiedy zgłaszać | Kiedy naprawiać |
-|-----------|----------------|-----------------|
-| 🔴 **Blocker** (nie można kontynuować) | NATYCHMIAST | NATYCHMIAST |
-| 🟠 **Funkcjonalne** (działa źle) | Na checkpoincie | Przed kolejną fazą |
-| 🟡 **Wizualne** (wygląda źle) | Na checkpoincie | Faza 12 (Polish) |
-| 🟢 **Nice-to-have** (pomysły) | Kiedykolwiek | Backlog |
-
-### Jak zgłaszać?
-
-Najlepiej jako lista:
-```
-## UI Feedback – Checkpoint #X
-
-### 🟠 Funkcjonalne
-- Checkbox nie zmienia stanu po kliknięciu
-- Filter badge nie znika po reset
-
-### 🟡 Wizualne
-- Za mały padding w headerze tabeli
-- Kolor hover na przyciskach za jasny
-- Ikona "Folder" powinna być wypełniona
-
-### 🟢 Nice-to-have
-- Może dodać animację przy expand?
-```
-
-### Rekomendacja
-
-**Zgłaszaj uwagi na bieżąco** (zapisuj je), ale **nie blokuj pracy** na drobnych wizualnych problemach. Faza 12 jest specjalnie zarezerwowana na:
-1. Naprawę wszystkich zebranych uwag UI
-2. Spójny przegląd całości
-3. Dopracowanie detali
-
-Wyjątek: Jeśli coś jest **tak złe wizualnie, że utrudnia testowanie funkcjonalności** – naprawiamy od razu.
-
----
-
 ## 📊 PODSUMOWANIE
 
-| Blok | Fazy | Estymacja | Checkpointy |
-|------|------|-----------|-------------|
-| **MVP** | 3, 4, 5, 8 | 10-14 dni | #1, #2, #3, #4 |
-| **Safety** | 6, 7, 9 | 6-8 dni | #5 |
-| **Polish** | 10, 11, 12 | 4-6 dni | #6 |
+| Blok | Fazy | Estymacja | Checkpointy | Status |
+|------|------|-----------|-------------|--------|
+| **Naprawy** | 3.5 | 1-2 dni | - | 🔄 NEXT |
+| **MVP** | 4, 5, 8 | 8-11 dni | #2, #3, #4 | ⏳ |
+| **Safety** | 6, 7, 9 | 6-8 dni | #5 | ⏳ |
+| **Polish** | 10, 11, 12 | 4-6 dni | #6 | ⏳ |
 
-**Łącznie:** ~20-28 dni roboczych
+**Łącznie:** ~19-27 dni roboczych
 
 ---
 
 ## 🎯 NASTĘPNY KROK
 
-**Faza 3: Selekcja + Search + Filtry**
+**Faza 3.5: Naprawy blockerów**
 
-Po zakończeniu → Test Checkpoint #1 z feedbackiem UI.
+1. BUG 2.12.1 – Wartości COLOR
+2. BUG 2.14.1 – Aliasy external
+
+Po naprawie → przejście do Fazy 4 (CRUD).
