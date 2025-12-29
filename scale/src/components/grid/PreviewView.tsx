@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
+import { generateColumnTokensWithModifiers } from '../../engine/generator';
 
 export function PreviewView() {
-  const { styles, baseParameters, computedParameters } = useGridStore();
+  const { 
+    styles, 
+    baseParameters, 
+    computedParameters,
+    modifiers,
+    viewports,
+    selectedViewportId,
+  } = useGridStore();
 
   const [filters, setFilters] = useState({
     layer: 'column',
@@ -14,9 +22,9 @@ export function PreviewView() {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Generate sample tokens for preview
-  const generateSampleTokens = () => {
-    const tokens: {
+  // Generate tokens using real engine
+  const tokens = useMemo(() => {
+    const result: {
       path: string;
       name: string;
       baseName: string;
@@ -24,106 +32,84 @@ export function PreviewView() {
       values: Record<string, number>;
     }[] = [];
 
-    // For each column from 1 to 12
-    for (let col = 1; col <= 12; col++) {
-      const baseName = `v-col-${col}`;
+    // Get selected viewport name for path
+    const selectedVp = viewports.find(vp => vp.id === selectedViewportId);
+    const vpName = selectedVp?.name.toLowerCase() ?? 'desktop';
 
-      // Base token
-      const baseValues: Record<string, number> = {};
-      styles.forEach((style) => {
-        const colWidth = computedParameters.find((p) => p.name === 'column-width')?.values[style.id] ?? 0;
-        const gutter = baseParameters.find((p) => p.name === 'gutter-width')?.values[style.id] ?? 0;
-        baseValues[style.id] = Math.round(colWidth * col + gutter * (col - 1));
+    // Build tokens for each style
+    styles.forEach((style) => {
+      // Build context for this style
+      const baseValues = {
+        viewport: baseParameters.find(p => p.name === 'viewport')?.values[style.id] ?? 0,
+        gutter: baseParameters.find(p => p.name === 'gutter-width')?.values[style.id] ?? 0,
+        'margin-m': baseParameters.find(p => p.name === 'margin-m')?.values[style.id] ?? 0,
+        'margin-xs': baseParameters.find(p => p.name === 'margin-xs')?.values[style.id] ?? 0,
+        columns: style.columns,
+      };
+
+      const computedValues = {
+        'column-width': computedParameters.find(p => p.name === 'column-width')?.values[style.id] ?? 0,
+        'ingrid': computedParameters.find(p => p.name === 'ingrid')?.values[style.id] ?? 0,
+        'photo-margin': computedParameters.find(p => p.name === 'photo-margin')?.values[style.id] ?? 0,
+        'number-of-gutters': computedParameters.find(p => p.name === 'number-of-gutters')?.values[style.id] ?? 0,
+      };
+
+      const ctx = {
+        styleId: style.id,
+        styleName: style.name,
+        columns: style.columns,
+        base: baseValues,
+        computed: computedValues,
+      };
+
+      // Generate tokens
+      const styleTokens = generateColumnTokensWithModifiers(ctx, modifiers);
+
+      // Merge into result - group by token name
+      styleTokens.forEach(token => {
+        const existingToken = result.find(t => t.name === token.name);
+        if (existingToken) {
+          existingToken.values[style.id] = token.value;
+        } else {
+          // Extract base name (without modifier)
+          const baseName = token.modifier 
+            ? token.name.replace(token.modifier, '')
+            : token.name;
+            
+          result.push({
+            path: `column/${vpName}/`,
+            name: token.name,
+            baseName,
+            modifier: token.modifier,
+            values: { [style.id]: token.value },
+          });
+        }
       });
-
-      tokens.push({
-        path: `column/desktop/`,
-        name: baseName,
-        baseName,
-        values: baseValues,
-      });
-
-      // With modifiers (only for columns 1-11 for -w-half)
-      if (col <= 11) {
-        const halfValues: Record<string, number> = {};
-        styles.forEach((style) => {
-          const colWidth = computedParameters.find((p) => p.name === 'column-width')?.values[style.id] ?? 0;
-          halfValues[style.id] = Math.round(baseValues[style.id] + colWidth / 2);
-        });
-
-        tokens.push({
-          path: `column/desktop/`,
-          name: `${baseName}-w-half`,
-          baseName,
-          modifier: '-w-half',
-          values: halfValues,
-        });
-      }
-
-      // -w-margin
-      const marginValues: Record<string, number> = {};
-      styles.forEach((style) => {
-        const photoMargin = computedParameters.find((p) => p.name === 'photo-margin')?.values[style.id] ?? 0;
-        marginValues[style.id] = Math.round(baseValues[style.id] + photoMargin);
-      });
-
-      tokens.push({
-        path: `column/desktop/`,
-        name: `${baseName}-w-margin`,
-        baseName,
-        modifier: '-w-margin',
-        values: marginValues,
-      });
-
-      // -to-edge
-      const edgeValues: Record<string, number> = {};
-      styles.forEach((style) => {
-        const marginM = baseParameters.find((p) => p.name === 'margin-m')?.values[style.id] ?? 0;
-        edgeValues[style.id] = Math.round(baseValues[style.id] + marginM);
-      });
-
-      tokens.push({
-        path: `column/desktop/`,
-        name: `${baseName}-to-edge`,
-        baseName,
-        modifier: '-to-edge',
-        values: edgeValues,
-      });
-    }
-
-    // Add special tokens
-    const viewport = baseParameters.find((p) => p.name === 'viewport')?.values ?? {};
-
-    tokens.push({
-      path: `column/desktop/`,
-      name: 'v-col-viewport',
-      baseName: 'v-col-viewport',
-      values: viewport as Record<string, number>,
     });
 
-    return tokens;
-  };
-
-  const tokens = generateSampleTokens();
+    return result;
+  }, [styles, baseParameters, computedParameters, modifiers, viewports, selectedViewportId]);
 
   // Filter tokens
-  const filteredTokens = tokens.filter((token) => {
-    // Search filter
-    if (searchQuery && !token.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
+  const filteredTokens = useMemo(() => {
+    return tokens.filter((token) => {
+      // Search filter
+      if (searchQuery && !token.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
 
-    // Modifier filter
-    if (filters.modifier !== 'all') {
-      if (filters.modifier === '(none)' && token.modifier) return false;
-      if (filters.modifier !== '(none)' && token.modifier !== filters.modifier) return false;
-    }
+      // Modifier filter
+      if (filters.modifier !== 'all') {
+        if (filters.modifier === '(none)' && token.modifier) return false;
+        if (filters.modifier !== '(none)' && token.modifier !== filters.modifier) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [tokens, searchQuery, filters.modifier]);
 
   // Limit display for performance
-  const displayedTokens = filteredTokens.slice(0, 20);
+  const displayedTokens = filteredTokens.slice(0, 50);
   const remainingCount = filteredTokens.length - displayedTokens.length;
 
   return (
@@ -152,10 +138,9 @@ export function PreviewView() {
             onChange={(e) => setFilters({ ...filters, viewport: e.target.value })}
           >
             <option value="all">All</option>
-            <option value="desktop">desktop</option>
-            <option value="laptop">laptop</option>
-            <option value="tablet">tablet</option>
-            <option value="mobile">mobile</option>
+            {viewports.map(vp => (
+              <option key={vp.id} value={vp.name.toLowerCase()}>{vp.name.toLowerCase()}</option>
+            ))}
           </select>
         </div>
 
@@ -180,10 +165,9 @@ export function PreviewView() {
           >
             <option value="all">All</option>
             <option value="(none)">(none)</option>
-            <option value="-w-half">-w-half</option>
-            <option value="-w-margin">-w-margin</option>
-            <option value="-to-edge">-to-edge</option>
-            <option value="-1G">-1G</option>
+            {modifiers.map(mod => (
+              <option key={mod.id} value={mod.name}>{mod.name}</option>
+            ))}
           </select>
         </div>
 
@@ -204,7 +188,7 @@ export function PreviewView() {
           Showing <strong>{displayedTokens.length}</strong> of {filteredTokens.length} tokens
         </div>
         <div className="preview-stat">
-          Layer: <strong>{filters.layer}</strong>
+          Total generated: <strong>{tokens.length}</strong>
         </div>
       </div>
 
@@ -235,7 +219,9 @@ export function PreviewView() {
                 </td>
                 {styles.map((style) => (
                   <td key={style.id} className="token-value">
-                    {token.values[style.id] ?? '-'}
+                    {token.values[style.id] !== undefined 
+                      ? Math.round(token.values[style.id] * 100) / 100 
+                      : '-'}
                   </td>
                 ))}
               </tr>

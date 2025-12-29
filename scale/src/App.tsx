@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IconSprites } from './components/Icons';
 import { Header, Sidebar, Statusbar } from './components/layout';
 import { GridEditor } from './components/grid';
+import { useGridStore } from './store';
 
 // Import styles
 import './styles/rezzon-studio-styles.css';
@@ -11,6 +12,12 @@ type Section = 'grid' | 'typography' | 'spacing' | 'radii';
 
 function App() {
   const [activeSection, setActiveSection] = useState<Section>('grid');
+  const recalculateComputed = useGridStore((state) => state.recalculateComputed);
+  
+  // Initial calculation on mount
+  useEffect(() => {
+    recalculateComputed();
+  }, [recalculateComputed]);
 
   return (
     <div className="app app--scale">

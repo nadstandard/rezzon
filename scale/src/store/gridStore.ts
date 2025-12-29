@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { GridStore } from '../types';
+import { recalculateAllComputed } from '../engine/formulas';
+import { generateColumnTokensWithModifiers, countTokens, generateExportData } from '../engine/generator';
 
 // === HELPER: Generate unique ID ===
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -192,13 +194,17 @@ export const useGridStore = create<GridStore>((set, get) => ({
   })),
 
   // === PARAMETER ACTIONS ===
-  updateBaseParameter: (id, styleId, value) => set((state) => ({
-    baseParameters: state.baseParameters.map((bp) =>
-      bp.id === id
-        ? { ...bp, values: { ...bp.values, [styleId]: value } }
-        : bp
-    ),
-  })),
+  updateBaseParameter: (id, styleId, value) => {
+    set((state) => ({
+      baseParameters: state.baseParameters.map((bp) =>
+        bp.id === id
+          ? { ...bp, values: { ...bp.values, [styleId]: value } }
+          : bp
+      ),
+    }));
+    // Auto-recalculate after update
+    get().recalculateComputed();
+  },
 
   addBaseParameter: (param) => set((state) => ({
     baseParameters: [...state.baseParameters, { ...param, id: generateId() }],
@@ -292,18 +298,76 @@ export const useGridStore = create<GridStore>((set, get) => ({
   // === TAB NAVIGATION ===
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  // === RECALCULATION (placeholder) ===
+  // === RECALCULATION ===
   recalculateComputed: () => {
-    // TODO: Implement formula engine
-    console.log('Recalculating computed values...');
+    const state = get();
+    const newComputed = recalculateAllComputed(state.baseParameters, state.styles);
+    
+    // Update output layers with token counts
+    const counts = countTokens(
+      state.viewports,
+      state.styles,
+      state.modifiers,
+      state.responsiveVariants
+    );
+    
+    const outputLayers = [
+      { id: 'ol-1', path: 'grid/column', tokenCount: counts.byLayer['grid/column'] || 0 },
+      { id: 'ol-2', path: 'grid/photo/width', tokenCount: counts.byLayer['grid/photo/width'] || 0 },
+      { id: 'ol-3', path: 'grid/photo/height', tokenCount: counts.byLayer['grid/photo/height'] || 0 },
+    ];
+    
+    set({ 
+      computedParameters: newComputed,
+      outputLayers,
+    });
   },
 
   regenerateTokens: () => {
-    // TODO: Implement token generation
-    console.log('Regenerating tokens...');
+    const state = get();
+    
+    // Generate tokens for preview (simplified - just column tokens for selected viewport)
+    const selectedViewport = state.viewports.find(vp => vp.id === state.selectedViewportId);
+    if (!selectedViewport) return;
+    
+    const tokens = state.styles.flatMap(style => {
+      // Build context for this style
+      const baseValues = {
+        viewport: state.baseParameters.find(p => p.name === 'viewport')?.values[style.id] ?? 0,
+        gutter: state.baseParameters.find(p => p.name === 'gutter-width')?.values[style.id] ?? 0,
+        'margin-m': state.baseParameters.find(p => p.name === 'margin-m')?.values[style.id] ?? 0,
+        'margin-xs': state.baseParameters.find(p => p.name === 'margin-xs')?.values[style.id] ?? 0,
+        columns: state.baseParameters.find(p => p.name === 'number-of-columns')?.values[style.id] ?? 0,
+      };
+      
+      const computedValues = {
+        'column-width': state.computedParameters.find(p => p.name === 'column-width')?.values[style.id] ?? 0,
+        'ingrid': state.computedParameters.find(p => p.name === 'ingrid')?.values[style.id] ?? 0,
+        'photo-margin': state.computedParameters.find(p => p.name === 'photo-margin')?.values[style.id] ?? 0,
+        'number-of-gutters': state.computedParameters.find(p => p.name === 'number-of-gutters')?.values[style.id] ?? 0,
+      };
+      
+      const ctx = {
+        styleId: style.id,
+        styleName: style.name,
+        columns: style.columns,
+        base: baseValues,
+        computed: computedValues,
+      };
+      
+      return generateColumnTokensWithModifiers(ctx, state.modifiers).map(token => ({
+        id: `${style.id}-${token.name}`,
+        name: token.name,
+        baseColumn: parseInt(token.name.match(/\d+/)?.[0] ?? '0'),
+        modifier: token.modifier,
+        values: { [style.id]: token.value },
+      }));
+    });
+    
+    set({ generatedTokens: tokens });
   },
 
-  // === IMPORT/EXPORT (placeholder) ===
+  // === IMPORT/EXPORT ===
   importFromJSON: (json) => {
     console.log('Importing from JSON...', json);
     // TODO: Implement JSON parser
@@ -311,14 +375,32 @@ export const useGridStore = create<GridStore>((set, get) => ({
 
   exportToJSON: () => {
     const state = get();
+    
+    // Generate all tokens for export
+    const exportData = generateExportData(
+      state.viewports,
+      state.styles,
+      state.baseParameters,
+      state.computedParameters,
+      state.modifiers,
+      state.ratioFamilies,
+      state.responsiveVariants
+    );
+    
     return {
-      viewports: state.viewports,
-      styles: state.styles,
-      baseParameters: state.baseParameters,
-      computedParameters: state.computedParameters,
-      modifiers: state.modifiers,
-      ratioFamilies: state.ratioFamilies,
-      responsiveVariants: state.responsiveVariants,
+      // Scale configuration (for re-import)
+      config: {
+        viewports: state.viewports,
+        styles: state.styles,
+        baseParameters: state.baseParameters,
+        computedParameters: state.computedParameters,
+        modifiers: state.modifiers,
+        ratioFamilies: state.ratioFamilies,
+        responsiveVariants: state.responsiveVariants,
+      },
+      // Generated tokens (for Figma)
+      tokens: exportData.tokens,
+      metadata: exportData.metadata,
     };
   },
 }));
