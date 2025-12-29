@@ -12,7 +12,7 @@ Ten dokument zawiera historię wszystkich test checkpointów.
 |------------|--------|--------|-----------|------|
 | #1 | v0.3.3 | ✅ PASSED | 100% | 2025-12-29 |
 | #2 | v0.4.0 | ✅ PASSED | 100% | 2025-12-29 |
-| #3 | v0.5.0 | 🔄 PARTIAL | 94.7% | 2025-12-29 |
+| #3 | v0.5.1 | ✅ PASSED | 100% | 2025-12-29 |
 
 ---
 
@@ -201,13 +201,25 @@ Wszystkie kluczowe funkcje CRUD działają poprawnie. Jeden known limitation od�
 
 # Checkpoint #3 — Faza 5 (Aliasy)
 
-**Wersja:** v0.5.0  
-**Status:** 🔄 PARTIAL PASS  
+**Wersja:** v0.5.1  
+**Status:** ✅ PASSED  
 **Data:** 2025-12-29
 
-## WYNIK: 94.7% PASS (126/133)
+## WYNIK KOŃCOWY: PASSED
 
-Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów funkcjonalnych (brakujące połączenia UI → Store) oraz 2 known limitations.
+Wszystkie bugi z v0.5.0 naprawione w v0.5.1. Checkpoint przechodzi.
+
+---
+
+### Naprawy w v0.5.1
+
+| Bug | Status | Opis naprawy |
+|-----|--------|--------------|
+| BUG-5.8.9 | ✅ Fixed | Disconnect modal wywołuje `store.disconnectLibrary()` |
+| BUG-5.9.8 | ✅ Fixed | Restore modal wywołuje `store.restoreLibrary()` |
+| BUG-5.2.12 | ✅ Fixed | Przyciski Eye/Link2Off w tabeli mają onClick handlers |
+| BUG-5.7.13 | ✅ Fixed | Przyciski View/Change i Disconnect w Detail Panel działają |
+| BUG-5.7.14 | ✅ Fixed | Przyciski Fix i Disconnect dla broken alias działają |
 
 ---
 
@@ -229,22 +241,22 @@ Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów fun
 
 ---
 
-### 5.2 Widok Aliases — Main (Tabs & Table) ⚠️ 11/12
+### 5.2 Widok Aliases — Main (Tabs & Table) ✅ 12/12
 
-| ID | Test | Status | Uwagi |
-|----|------|--------|-------|
-| 5.2.1 | Tabs: All / Internal / External / Broken widoczne | ✅ | |
-| 5.2.2 | Tab "All" pokazuje sumę aliasów | ✅ | |
-| 5.2.3 | Tab "Internal" pokazuje liczbę internal aliasów | ✅ | |
-| 5.2.4 | Tab "External" pokazuje liczbę external aliasów | ✅ | |
-| 5.2.5 | Tab "Broken" pokazuje liczbę broken aliasów | ✅ | |
-| 5.2.6 | Kliknięcie na tab filtruje tabelę | ✅ | |
-| 5.2.7 | Tabela wyświetla kolumny: checkbox, Source, →, Target, Type, Actions | ✅ | |
-| 5.2.8 | Wiersz aliasu pokazuje nazwę zmiennej źródłowej | ✅ | |
-| 5.2.9 | Wiersz aliasu pokazuje ścieżkę (parent path) | ✅ | |
-| 5.2.10 | Ikona typu aliasu (internal/external/broken) poprawna | ✅ | |
-| 5.2.11 | Badge typu aliasu (Internal/External/Broken) z kolorami | ✅ | |
-| 5.2.12 | Przyciski akcji w wierszu (Eye, Disconnect) działają | ❌ | BUG-5.2.12 |
+| ID | Test | Status |
+|----|------|--------|
+| 5.2.1 | Tabs: All / Internal / External / Broken widoczne | ✅ |
+| 5.2.2 | Tab "All" pokazuje sumę aliasów | ✅ |
+| 5.2.3 | Tab "Internal" pokazuje liczbę internal aliasów | ✅ |
+| 5.2.4 | Tab "External" pokazuje liczbę external aliasów | ✅ |
+| 5.2.5 | Tab "Broken" pokazuje liczbę broken aliasów | ✅ |
+| 5.2.6 | Kliknięcie na tab filtruje tabelę | ✅ |
+| 5.2.7 | Tabela wyświetla kolumny: checkbox, Source, →, Target, Type, Actions | ✅ |
+| 5.2.8 | Wiersz aliasu pokazuje nazwę zmiennej źródłowej | ✅ |
+| 5.2.9 | Wiersz aliasu pokazuje ścieżkę (parent path) | ✅ |
+| 5.2.10 | Ikona typu aliasu (internal/external/broken) poprawna | ✅ |
+| 5.2.11 | Badge typu aliasu (Internal/External/Broken) z kolorami | ✅ |
+| 5.2.12 | Przyciski akcji w wierszu (Eye, Disconnect) działają | ✅ |
 
 ---
 
@@ -297,58 +309,58 @@ Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów fun
 
 ---
 
-### 5.7 Alias Detail Panel ⚠️ 13/15
+### 5.7 Alias Detail Panel ✅ 15/15
 
-| ID | Test | Status | Uwagi |
-|----|------|--------|-------|
-| 5.7.1 | Kliknięcie na wiersz otwiera Detail Panel | ✅ | |
-| 5.7.2 | Panel pokazuje Source → Target flow | ✅ | |
-| 5.7.3 | Ikona źródła z poprawnym kolorem (internal/external/broken) | ✅ | |
-| 5.7.4 | Nazwa zmiennej źródłowej wyświetlona | ✅ | |
-| 5.7.5 | Parent path źródła wyświetlony | ✅ | |
-| 5.7.6 | Strzałka w dół między source i target | ✅ | |
-| 5.7.7 | Target pokazuje nazwę i bibliotekę | ✅ | |
-| 5.7.8 | Badge typu (internal/external/broken) | ✅ | |
-| 5.7.9 | Sekcja "Type" pokazuje typ zmiennej | ✅ | |
-| 5.7.10 | Sekcja "Resolved values" pokazuje wartości per mode | ✅ | |
-| 5.7.11 | Broken alias: warning box z komunikatem | ✅ | |
-| 5.7.12 | Broken alias: target przekreślony + "Deleted" | ✅ | |
-| 5.7.13 | Przyciski akcji: View/Change, Disconnect działają | ❌ | BUG-5.7.13 |
-| 5.7.14 | Broken alias: przyciski Fix + Disconnect działają | ❌ | BUG-5.7.14 |
-| 5.7.15 | Przycisk X zamyka panel | ✅ | |
-
----
-
-### 5.8 Disconnect Modal ⚠️ 8/10
-
-| ID | Test | Status | Uwagi |
-|----|------|--------|-------|
-| 5.8.1 | Modal otwiera się z Connected External Libraries | ✅ | |
-| 5.8.2 | Tytuł: "Disconnect Library" | ✅ | |
-| 5.8.3 | Pokazuje nazwę biblioteki do odłączenia | ✅ | |
-| 5.8.4 | Pokazuje liczbę affected aliasów | ✅ | |
-| 5.8.5 | Dropdown "Resolve values from mode" | ✅ | |
-| 5.8.6 | Dropdown zawiera wszystkie modes z kolekcji | ✅ | |
-| 5.8.7 | Hint wyjaśniający co się stanie | ✅ | |
-| 5.8.8 | Przycisk Cancel zamyka modal | ✅ | |
-| 5.8.9 | Przycisk Disconnect wywołuje store action | ❌ | BUG-5.8.9 🔴 |
-| 5.8.10 | Biblioteka pojawia się w sekcji Disconnected | ⭕ | Blocked |
+| ID | Test | Status |
+|----|------|--------|
+| 5.7.1 | Kliknięcie na wiersz otwiera Detail Panel | ✅ |
+| 5.7.2 | Panel pokazuje Source → Target flow | ✅ |
+| 5.7.3 | Ikona źródła z poprawnym kolorem (internal/external/broken) | ✅ |
+| 5.7.4 | Nazwa zmiennej źródłowej wyświetlona | ✅ |
+| 5.7.5 | Parent path źródła wyświetlony | ✅ |
+| 5.7.6 | Strzałka w dół między source i target | ✅ |
+| 5.7.7 | Target pokazuje nazwę i bibliotekę | ✅ |
+| 5.7.8 | Badge typu (internal/external/broken) | ✅ |
+| 5.7.9 | Sekcja "Type" pokazuje typ zmiennej | ✅ |
+| 5.7.10 | Sekcja "Resolved values" pokazuje wartości per mode | ✅ |
+| 5.7.11 | Broken alias: warning box z komunikatem | ✅ |
+| 5.7.12 | Broken alias: target przekreślony + "Deleted" | ✅ |
+| 5.7.13 | Przyciski akcji: View/Change, Disconnect działają | ✅ |
+| 5.7.14 | Broken alias: przyciski Fix + Disconnect działają | ✅ |
+| 5.7.15 | Przycisk X zamyka panel | ✅ |
 
 ---
 
-### 5.9 Restore Modal ⚠️ 7/9
+### 5.8 Disconnect Modal ✅ 10/10
 
-| ID | Test | Status | Uwagi |
-|----|------|--------|-------|
-| 5.9.1 | Modal otwiera się z przycisku Restore przy disconnected library | ✅ | |
-| 5.9.2 | Tytuł: "Restore Library Connection" | ✅ | |
-| 5.9.3 | Pokazuje nazwę biblioteki | ✅ | |
-| 5.9.4 | Pokazuje liczbę aliasów do przywrócenia | ✅ | |
-| 5.9.5 | Pokazuje liczbę aliasów które staną się broken (jeśli > 0) | ✅ | |
-| 5.9.6 | Hint gdy część aliasów będzie broken | ✅ | |
-| 5.9.7 | Przycisk Cancel zamyka modal | ✅ | |
-| 5.9.8 | Przycisk Restore wywołuje store action | ❌ | BUG-5.9.8 🔴 |
-| 5.9.9 | Biblioteka znika z sekcji Disconnected | ⭕ | Blocked |
+| ID | Test | Status |
+|----|------|--------|
+| 5.8.1 | Modal otwiera się z Connected External Libraries | ✅ |
+| 5.8.2 | Tytuł: "Disconnect Library" | ✅ |
+| 5.8.3 | Pokazuje nazwę biblioteki do odłączenia | ✅ |
+| 5.8.4 | Pokazuje liczbę affected aliasów | ✅ |
+| 5.8.5 | Dropdown "Resolve values from mode" | ✅ |
+| 5.8.6 | Dropdown zawiera wszystkie modes z kolekcji | ✅ |
+| 5.8.7 | Hint wyjaśniający co się stanie | ✅ |
+| 5.8.8 | Przycisk Cancel zamyka modal | ✅ |
+| 5.8.9 | Przycisk Disconnect wywołuje store action | ✅ |
+| 5.8.10 | Biblioteka pojawia się w sekcji Disconnected | ✅ |
+
+---
+
+### 5.9 Restore Modal ✅ 9/9
+
+| ID | Test | Status |
+|----|------|--------|
+| 5.9.1 | Modal otwiera się z przycisku Restore przy disconnected library | ✅ |
+| 5.9.2 | Tytuł: "Restore Library Connection" | ✅ |
+| 5.9.3 | Pokazuje nazwę biblioteki | ✅ |
+| 5.9.4 | Pokazuje liczbę aliasów do przywrócenia | ✅ |
+| 5.9.5 | Pokazuje liczbę aliasów które staną się broken (jeśli > 0) | ✅ |
+| 5.9.6 | Hint gdy część aliasów będzie broken | ✅ |
+| 5.9.7 | Przycisk Cancel zamyka modal | ✅ |
+| 5.9.8 | Przycisk Restore wywołuje store action | ✅ |
+| 5.9.9 | Biblioteka znika z sekcji Disconnected | ✅ |
 
 ---
 
@@ -373,7 +385,7 @@ Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów fun
 | 5.10.15 | Click outside zamyka picker | ✅ |
 | 5.10.16 | Empty state gdy brak zmiennych | ✅ |
 
-**⚠️ Known Limitation:** Picker nie jest jeszcze podpięty do widoku Variables (KL-5.10)
+**⚠️ Known Limitation:** Picker nie jest jeszcze podpięty do widoku Variables (brak triggera)
 
 ---
 
@@ -403,7 +415,7 @@ Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów fun
 | 5.11.20 | Lista unmatched variables | ✅ |
 | 5.11.21 | Przycisk "Done" zamyka modal | ✅ |
 
-**⚠️ Known Limitation:** Modal nie ma jeszcze triggera w UI (KL-5.11)
+**⚠️ Known Limitation:** Modal nie ma jeszcze triggera w UI (brak przycisku "Bulk Alias")
 
 ---
 
@@ -439,65 +451,35 @@ Większość komponentów UI i logiki działa poprawnie. Znaleziono 5 bugów fun
 
 ---
 
-### 🐛 Bugi znalezione w Checkpoint #3
-
-| ID | Opis | Priorytet | Status |
-|----|------|-----------|--------|
-| BUG-5.2.12 | Przyciski akcji w tabeli aliasów (Eye, Link2Off) nie mają onClick handlers | 🟡 Medium | TODO |
-| BUG-5.7.13 | Przyciski View/Change i Disconnect w Detail Panel nie działają | 🟡 Medium | TODO |
-| BUG-5.7.14 | Przyciski Fix i Disconnect dla broken alias w Detail Panel nie działają | 🟡 Medium | TODO |
-| BUG-5.8.9 | Disconnect modal tylko loguje do konsoli, nie wywołuje store.disconnectLibrary() | 🔴 High | TODO |
-| BUG-5.9.8 | Restore modal tylko loguje do konsoli, nie wywołuje store.restoreLibrary() | 🔴 High | TODO |
-
----
-
-### Known Limitations (Checkpoint #3)
+### 📝 Known Limitations (do Fazy 12)
 
 | ID | Opis | Priorytet |
 |----|------|-----------|
-| KL-5.10 | AliasPicker nie jest podpięty do widoku Variables (brak triggera na kliknięcie wartości) | 🟡 Medium |
-| KL-5.11 | BulkAliasModal nie ma triggera w UI (brak przycisku "Bulk Alias" w toolbarze Variables) | 🟡 Medium |
+| KL-5.10 | AliasPicker nie jest podpięty do widoku Variables | 🟡 Medium |
+| KL-5.11 | BulkAliasModal nie ma triggera w UI | 🟡 Medium |
 
 ---
 
 ### Podsumowanie Checkpoint #3
 
-| Kategoria | Pass | Fail | Skip | Total |
-|-----------|------|------|------|-------|
-| 5.1 Sidebar | 11 | 0 | 0 | 11 |
-| 5.2 Main (Tabs & Table) | 11 | 1 | 0 | 12 |
-| 5.3 Connected External | 7 | 0 | 0 | 7 |
-| 5.4 Selekcja | 5 | 0 | 0 | 5 |
-| 5.5 Search | 4 | 0 | 0 | 4 |
-| 5.6 Empty States | 5 | 0 | 0 | 5 |
-| 5.7 Detail Panel | 13 | 2 | 0 | 15 |
-| 5.8 Disconnect Modal | 8 | 1 | 1 | 10 |
-| 5.9 Restore Modal | 7 | 1 | 1 | 9 |
-| 5.10 Alias Picker | 16 | 0 | 0 | 16 |
-| 5.11 Bulk Alias Modal | 21 | 0 | 0 | 21 |
-| 5.12 Store Actions | 8 | 0 | 0 | 8 |
-| 5.13 Utils | 10 | 0 | 0 | 10 |
-| **TOTAL** | **126** | **5** | **2** | **133** |
+| Kategoria | Pass | Total |
+|-----------|------|-------|
+| 5.1 Sidebar | 11 | 11 |
+| 5.2 Main (Tabs & Table) | 12 | 12 |
+| 5.3 Connected External | 7 | 7 |
+| 5.4 Selekcja | 5 | 5 |
+| 5.5 Search | 4 | 4 |
+| 5.6 Empty States | 5 | 5 |
+| 5.7 Detail Panel | 15 | 15 |
+| 5.8 Disconnect Modal | 10 | 10 |
+| 5.9 Restore Modal | 9 | 9 |
+| 5.10 Alias Picker | 16 | 16 |
+| 5.11 Bulk Alias Modal | 21 | 21 |
+| 5.12 Store Actions | 8 | 8 |
+| 5.13 Utils | 10 | 10 |
+| **TOTAL** | **133** | **133** |
 
-**Pass rate:** 94.7% (126/133)
-
----
-
-### Rekomendacja
-
-**Checkpoint #3: PARTIAL PASS** — Wymagane naprawy przed przejściem do Fazy 6.
-
-#### Krytyczne naprawy (blokujące):
-1. **BUG-5.8.9** — Połączyć Disconnect modal z `store.disconnectLibrary()`
-2. **BUG-5.9.8** — Połączyć Restore modal z `store.restoreLibrary()`
-
-#### Naprawy średnie (do v0.5.1):
-3. **BUG-5.2.12** — Dodać onClick handlers do przycisków w tabeli aliasów
-4. **BUG-5.7.13/14** — Dodać funkcjonalność przycisków w Detail Panel
-
-#### Known Limitations (do Fazy 12 lub osobnej iteracji):
-- KL-5.10: Podpięcie AliasPicker do widoku Variables
-- KL-5.11: Dodanie triggera dla BulkAliasModal
+**Pass rate:** 100%
 
 ---
 

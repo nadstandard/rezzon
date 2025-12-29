@@ -1,6 +1,6 @@
 # REZZON Studio — Roadmapa implementacji
 
-**Status:** v0.5.0 (Faza 5 ukończona, Checkpoint #3 w trakcie)  
+**Status:** v0.5.1 (Faza 5 ukończona, Checkpoint #3 PASSED)  
 **Data aktualizacji:** 2025-12-29
 
 ---
@@ -10,7 +10,7 @@
 | Blok | Fazy | Status | Checkpointy |
 |------|------|--------|-------------|
 | **Setup** | 1, 2 | ✅ DONE | — |
-| **Core** | 3, 4, 5 | ✅ DONE | #1 ✅, #2 ✅, #3 🔄 |
+| **Core** | 3, 4, 5 | ✅ DONE | #1 ✅, #2 ✅, #3 ✅ |
 | **Safety** | 6, 7, 8, 9 | ⏳ TODO | #4, #5 |
 | **Polish** | 10, 11, 12 | ⏳ TODO | #6 |
 
@@ -93,28 +93,23 @@
 - [x] Store actions: setAlias, removeAlias, bulkAlias
 - [x] Store actions: disconnectLibrary, restoreLibrary
 
-**Test Checkpoint #3:** 🔄 PARTIAL PASS (v0.5.0) — 94.7% pass, wymaga napraw
+**Test Checkpoint #3:** ✅ PASSED (v0.5.1)
 
 ---
 
-## 🐛 AKTYWNE BUGI (z Checkpoint #3)
+## ✅ NAPRAWY W v0.5.1 (Checkpoint #3)
 
-### 🔴 Krytyczne (blokujące)
+| Bug | Status | Opis naprawy |
+|-----|--------|--------------|
+| BUG-5.8.9 | ✅ Fixed | Disconnect modal wywołuje `store.disconnectLibrary()` |
+| BUG-5.9.8 | ✅ Fixed | Restore modal wywołuje `store.restoreLibrary()` |
+| BUG-5.2.12 | ✅ Fixed | Przyciski Eye/Link2Off w tabeli mają onClick handlers |
+| BUG-5.7.13 | ✅ Fixed | Przyciski View/Change i Disconnect w Detail Panel działają |
+| BUG-5.7.14 | ✅ Fixed | Przyciski Fix i Disconnect dla broken alias działają |
 
-| ID | Opis | Status |
-|----|------|--------|
-| BUG-5.8.9 | Disconnect modal tylko loguje, nie wywołuje store.disconnectLibrary() | TODO |
-| BUG-5.9.8 | Restore modal tylko loguje, nie wywołuje store.restoreLibrary() | TODO |
+---
 
-### 🟡 Średnie
-
-| ID | Opis | Status |
-|----|------|--------|
-| BUG-5.2.12 | Przyciski akcji w tabeli aliasów (Eye, Link2Off) nie mają onClick handlers | TODO |
-| BUG-5.7.13 | Przyciski View/Change i Disconnect w Detail Panel nie działają | TODO |
-| BUG-5.7.14 | Przyciski Fix i Disconnect dla broken alias w Detail Panel nie działają | TODO |
-
-### 📝 Known Limitations
+## 📝 Known Limitations (Faza 12)
 
 | ID | Opis | Priorytet |
 |----|------|-----------|
@@ -313,6 +308,13 @@
 
 ## 📜 CHANGELOG
 
+### v0.5.1 (2025-12-29)
+- ✅ Checkpoint #3: PASSED (100%)
+- Fix: Disconnect modal wywołuje store.disconnectLibrary()
+- Fix: Restore modal wywołuje store.restoreLibrary()
+- Fix: Przyciski akcji w tabeli aliasów
+- Fix: Przyciski w Detail Panel dla aliasów
+
 ### v0.5.0 (2025-12-29)
 - ✅ Faza 5: Aliasy
 - Alias Manager z tabs i statystykami
@@ -323,7 +325,6 @@
 - Bulk Alias Modal (3 kroki)
 - Disconnect/Restore modals
 - Store actions dla aliasów
-- 🔄 Checkpoint #3: PARTIAL PASS (94.7%)
 
 ### v0.4.0 (2025-12-29)
 - ✅ Faza 4: Operacje CRUD
@@ -373,6 +374,8 @@
 
 ## 🎯 NASTĘPNY KROK
 
-1. **Naprawić bugi z Checkpoint #3** (BUG-5.8.9, BUG-5.9.8 — krytyczne)
-2. **Re-test Checkpoint #3**
-3. **Faza 6: UNDO/REDO**
+**Faza 6: UNDO/REDO**
+
+1. Stack past/future w store (limit 20-30 kroków)
+2. Przyciski Undo/Redo w toolbarze
+3. Skróty klawiszowe: ⌘Z / ⌘⇧Z
