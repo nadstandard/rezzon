@@ -1,0 +1,474 @@
+/* ============================================
+   REZZON Scale – Design System Styles v0.1.0
+   Extends rezzon-studio-styles.css
+   ============================================ */
+
+/* ==================== SCALE TOKENS ==================== */
+:root {
+  /* Value type colors */
+  --type-base: #3b82f6;        /* Blue - user editable */
+  --type-base-bg: rgba(59, 130, 246, 0.12);
+  --type-computed: #a855f7;    /* Purple - auto-calculated */
+  --type-computed-bg: rgba(168, 85, 247, 0.12);
+  --type-generated: #22c55e;   /* Green - series output */
+  --type-generated-bg: rgba(34, 197, 94, 0.12);
+  
+  /* Scale specific sizing */
+  --scale-sidebar-width: 220px;
+}
+
+/* ==================== SCALE LAYOUT ==================== */
+.app--scale {
+  grid-template-columns: var(--scale-sidebar-width) 1fr;
+}
+
+.app--scale-with-panel {
+  grid-template-columns: var(--scale-sidebar-width) 1fr 300px;
+}
+
+/* ==================== SCALE LOGO ==================== */
+.logo__icon--scale {
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+}
+
+/* ==================== VIEWPORT CARDS ==================== */
+.viewport-card {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viewport-card:hover {
+  border-color: var(--text-muted);
+}
+
+.viewport-card.active {
+  border-color: var(--accent);
+  background: var(--bg-selected);
+}
+
+.viewport-card__size {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 48px;
+}
+
+.viewport-card__name {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.viewport-card__styles {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ==================== MATRIX TABLE ==================== */
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.matrix-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  z-index: 10;
+}
+
+.matrix-table td {
+  padding: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.matrix-table .col-param {
+  width: 180px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.matrix-table .col-style {
+  min-width: 120px;
+}
+
+/* Style header */
+.style-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.style-header__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.style-header__cols {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Parameter row */
+.param-row {
+  cursor: pointer;
+}
+
+.param-row:hover {
+  background: var(--bg-hover);
+}
+
+.param-row.selected {
+  background: var(--bg-selected);
+}
+
+.param-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.param-cell__type {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.param-cell__type--base {
+  background: var(--type-base-bg);
+  color: var(--type-base);
+}
+
+.param-cell__type--computed {
+  background: var(--type-computed-bg);
+  color: var(--type-computed);
+}
+
+.param-cell__type--generated {
+  background: var(--type-generated-bg);
+  color: var(--type-generated);
+}
+
+.param-cell__name {
+  font-size: 12px;
+  color: var(--text);
+  flex: 1;
+}
+
+.param-cell__name--muted {
+  color: var(--text-secondary);
+}
+
+/* Value cell */
+.value-cell {
+  padding: 6px 10px;
+}
+
+.value-input {
+  width: 100%;
+  background: var(--bg-app);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  text-align: right;
+  outline: none;
+  transition: all 0.1s;
+}
+
+.value-input:hover {
+  border-color: var(--border);
+}
+
+.value-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.value-input--readonly {
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.value-input--readonly:hover,
+.value-input--readonly:focus {
+  border-color: transparent;
+  background: transparent;
+}
+
+.value-computed {
+  font-size: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--type-computed);
+  text-align: right;
+  padding: 6px 8px;
+}
+
+.value-generated {
+  font-size: 11px;
+  color: var(--type-generated);
+  text-align: right;
+  padding: 6px 8px;
+}
+
+/* ==================== SECTION DIVIDER ==================== */
+.section-divider {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.section-divider td {
+  padding: 6px 12px;
+}
+
+.section-divider__content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-divider__title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-divider__count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* ==================== GENERATED TOKENS PREVIEW ==================== */
+.tokens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 4px;
+  padding: 8px;
+}
+
+.token-chip {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.token-chip__name {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-chip__value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ==================== LEGEND ==================== */
+.legend {
+  display: flex;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.legend__icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.legend__icon--base {
+  background: var(--type-base-bg);
+  color: var(--type-base);
+}
+
+.legend__icon--computed {
+  background: var(--type-computed-bg);
+  color: var(--type-computed);
+}
+
+.legend__icon--generated {
+  background: var(--type-generated-bg);
+  color: var(--type-generated);
+}
+
+/* ==================== ADD BUTTON ==================== */
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.add-row:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.add-row__icon {
+  width: 20px;
+  height: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== TABS - SCALE SECTIONS ==================== */
+.scale-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+}
+
+.scale-tab {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.1s;
+}
+
+.scale-tab:hover {
+  color: var(--text);
+}
+
+.scale-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* ==================== FORMULA DISPLAY ==================== */
+.formula {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 11px;
+  background: var(--bg-app);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.formula__var {
+  color: var(--type-base);
+}
+
+.formula__op {
+  color: var(--text-muted);
+}
+
+/* ==================== TOOLBAR ADDITIONS ==================== */
+.toolbar__info {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar__info strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.empty-state__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-state__desc {
+  font-size: 12px;
+  max-width: 280px;
+  line-height: 1.5;
+}

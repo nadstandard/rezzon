@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale v0.1.0 – Grid Generators</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="rezzon-studio-styles.css" rel="stylesheet">
+  <link href="rezzon-scale-styles.css" rel="stylesheet">
+  <style>
+    /* Generator-specific styles */
+    .generator-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .generator-panel__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    
+    .generator-panel__header:hover {
+      background: var(--bg-hover);
+    }
+    
+    .generator-panel__chevron {
+      color: var(--text-muted);
+      transition: transform 0.15s;
+    }
+    
+    .generator-panel.expanded .generator-panel__chevron {
+      transform: rotate(90deg);
+    }
+    
+    .generator-panel__title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    
+    .generator-panel__badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+    
+    .generator-panel__actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .generator-panel__body {
+      padding: 14px;
+      display: none;
+    }
+    
+    .generator-panel.expanded .generator-panel__body {
+      display: block;
+    }
+    
+    /* Ratio cards inside responsive */
+    .ratio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+    
+    .ratio-card {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    
+    .ratio-card.disabled {
+      opacity: 0.5;
+    }
+    
+    .ratio-card__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .ratio-card__toggle {
+      width: 36px;
+      height: 20px;
+      background: var(--bg-elevated);
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    
+    .ratio-card__toggle.active {
+      background: var(--accent);
+    }
+    
+    .ratio-card__toggle::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.15s;
+    }
+    
+    .ratio-card__toggle.active::after {
+      transform: translateX(16px);
+    }
+    
+    .ratio-card__name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    
+    .ratio-card__value {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', monospace;
+    }
+    
+    .ratio-card__modifiers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .modifier-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    
+    .modifier-chip:hover {
+      border-color: var(--text-muted);
+    }
+    
+    .modifier-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    
+    .modifier-chip__check {
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Viewport override row */
+    .viewport-override {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      background: var(--bg-elevated);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+    
+    .viewport-override__name {
+      width: 80px;
+      color: var(--text-secondary);
+    }
+    
+    .viewport-override__select {
+      flex: 1;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: var(--text);
+      font-size: 11px;
+    }
+    
+    /* Section header in generators */
+    .gen-section {
+      margin-bottom: 16px;
+    }
+    
+    .gen-section__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    
+    .gen-section__title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      padding: 10px 14px;
+      background: var(--bg-app);
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    
+    .stat-item strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    
+    /* Modifiers list (global) */
+    .modifiers-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .modifier-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    
+    .modifier-row__name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 100px;
+    }
+    
+    .modifier-row__formula {
+      flex: 1;
+      font-size: 11px;
+      font-family: 'SF Mono', monospace;
+      color: var(--text-secondary);
+    }
+    
+    .modifier-row__range {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    /* Ratios list (global) */
+    .ratios-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    
+    .ratio-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    
+    .ratio-row__preview {
+      width: 32px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 3px;
+      opacity: 0.6;
+    }
+    
+    .ratio-row__preview--vertical {
+      width: 24px;
+      height: 32px;
+    }
+    
+    .ratio-row__preview--square {
+      width: 28px;
+      height: 28px;
+    }
+    
+    .ratio-row__preview--panoramic {
+      width: 40px;
+      height: 22px;
+    }
+    
+    .ratio-row__info {
+      flex: 1;
+    }
+    
+    .ratio-row__name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    
+    .ratio-row__value {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Two column layout for main */
+    .generators-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      padding: 16px;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .generators-main {
+      overflow-y: auto;
+    }
+    
+    .generators-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    
+    .generators-sidebar .generator-panel {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app app--scale">
+    <!-- SVG ICONS -->
+    <svg style="display:none">
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol>
+      <symbol id="i-spacing" viewBox="0 0 24 24"><path d="M21 6H3M21 12H3M21 18H3"/></symbol>
+      <symbol id="i-radius" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 12 3 12"/><path d="M12 12V3"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-ul" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+    </svg>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo__icon logo__icon--scale">S</div>
+        <span class="logo__text">REZZON Scale</span>
+      </div>
+      
+      <div class="scale-tabs">
+        <div class="scale-tab active"><svg class="icon sm"><use href="#i-grid"/></svg> Grid</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-type"/></svg> Typography</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-spacing"/></svg> Spacing</div>
+        <div class="scale-tab"><svg class="icon sm"><use href="#i-radius"/></svg> Radii</div>
+      </div>
+      
+      <div class="header__spacer"></div>
+      
+      <div class="header__actions">
+        <button class="btn btn--ghost"><svg class="icon sm"><use href="#i-dl"/></svg>Import</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-ul"/></svg>Export</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR: Same as Matrix -->
+    <aside class="sidebar">
+      <div class="sidebar__scroll">
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Viewports</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="sidebar-item active"><span class="sidebar-item__name">1920 · Desktop</span></div>
+            <div class="sidebar-item"><span class="sidebar-item__name">1366 · Laptop</span></div>
+            <div class="sidebar-item"><span class="sidebar-item__name">768 · Tablet</span></div>
+            <div class="sidebar-item"><span class="sidebar-item__name">390 · Mobile</span></div>
+          </div>
+        </div>
+        
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Statistics</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="summary-card" style="margin:0">
+              <div class="summary-row">
+                <span class="summary-row__label">Total tokens</span>
+                <span class="summary-row__value">2,744</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row__label">Responsive variants</span>
+                <span class="summary-row__value">3</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row__label">Ratios</span>
+                <span class="summary-row__value">5</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row__label">Modifiers</span>
+                <span class="summary-row__value">4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="toolbar">
+        <div class="tabs">
+          <a class="tab" href="rezzon-scale-v0.1.0-grid-matrix.html">Parameters</a>
+          <div class="tab active">Generators</div>
+          <div class="tab">Preview</div>
+        </div>
+        <div class="toolbar__spacer"></div>
+        <button class="btn btn--ghost"><svg class="icon sm"><use href="#i-plus"/></svg>Add Responsive Variant</button>
+      </div>
+
+      <div class="generators-layout">
+        <!-- Main: Responsive variants with ratios -->
+        <div class="generators-main">
+          
+          <!-- Responsive: static -->
+          <div class="generator-panel expanded">
+            <div class="generator-panel__header" onclick="togglePanel(this)">
+              <svg class="icon sm generator-panel__chevron"><use href="#i-chev-r"/></svg>
+              <span class="generator-panel__title">static</span>
+              <span class="generator-panel__badge">5 ratios · 980 tokens</span>
+              <div class="generator-panel__actions">
+                <button class="action-btn"><svg class="icon sm"><use href="#i-edit"/></svg></button>
+                <button class="action-btn action-btn--danger"><svg class="icon sm"><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+            <div class="generator-panel__body">
+              <div class="gen-section">
+                <div class="gen-section__header">
+                  <span class="gen-section__title">Ratios & Modifiers</span>
+                  <button class="btn btn--ghost" style="padding:4px 8px;font-size:11px"><svg class="icon xs"><use href="#i-plus"/></svg>Add Ratio</button>
+                </div>
+                <div class="ratio-grid">
+                  <!-- horizontal -->
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">horizontal</span>
+                      <span class="ratio-card__value">4:3</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-1G</div>
+                    </div>
+                  </div>
+                  
+                  <!-- vertical -->
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">vertical</span>
+                      <span class="ratio-card__value">3:4</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-1G</div>
+                    </div>
+                  </div>
+                  
+                  <!-- square -->
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">square</span>
+                      <span class="ratio-card__value">1:1</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-1G</div>
+                    </div>
+                  </div>
+                  
+                  <!-- panoramic-high -->
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">panoramic-high</span>
+                      <span class="ratio-card__value">16:9</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-to-edge</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-1G</div>
+                    </div>
+                  </div>
+                  
+                  <!-- panoramic-low -->
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">panoramic-low</span>
+                      <span class="ratio-card__value">16:5</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-to-edge</div>
+                      <div class="modifier-chip" onclick="toggleChip(this)"><span class="modifier-chip__check"></span>-1G</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Responsive: to-tab-6-col -->
+          <div class="generator-panel expanded">
+            <div class="generator-panel__header" onclick="togglePanel(this)">
+              <svg class="icon sm generator-panel__chevron"><use href="#i-chev-r"/></svg>
+              <span class="generator-panel__title">to-tab-6-col</span>
+              <span class="generator-panel__badge">3 ratios · 588 tokens</span>
+              <div class="generator-panel__actions">
+                <button class="action-btn"><svg class="icon sm"><use href="#i-edit"/></svg></button>
+                <button class="action-btn action-btn--danger"><svg class="icon sm"><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+            <div class="generator-panel__body">
+              <!-- Viewport overrides -->
+              <div class="gen-section">
+                <div class="gen-section__header">
+                  <span class="gen-section__title">Viewport Behavior</span>
+                </div>
+                <div class="viewport-override">
+                  <span class="viewport-override__name">1920 Desktop</span>
+                  <select class="viewport-override__select">
+                    <option>— (inherit)</option>
+                    <option>6 columns</option>
+                    <option>12 columns</option>
+                  </select>
+                </div>
+                <div class="viewport-override">
+                  <span class="viewport-override__name">1366 Laptop</span>
+                  <select class="viewport-override__select">
+                    <option>— (inherit)</option>
+                    <option>6 columns</option>
+                    <option>12 columns</option>
+                  </select>
+                </div>
+                <div class="viewport-override">
+                  <span class="viewport-override__name">768 Tablet</span>
+                  <select class="viewport-override__select">
+                    <option>— (inherit)</option>
+                    <option selected>6 columns</option>
+                    <option>12 columns</option>
+                  </select>
+                </div>
+                <div class="viewport-override">
+                  <span class="viewport-override__name">390 Mobile</span>
+                  <select class="viewport-override__select">
+                    <option>— (inherit)</option>
+                    <option>2 columns</option>
+                    <option selected>6 columns</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="gen-section">
+                <div class="gen-section__header">
+                  <span class="gen-section__title">Ratios & Modifiers</span>
+                </div>
+                <div class="ratio-grid">
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">horizontal</span>
+                      <span class="ratio-card__value">4:3</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                    </div>
+                  </div>
+                  
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">vertical</span>
+                      <span class="ratio-card__value">3:4</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                    </div>
+                  </div>
+                  
+                  <div class="ratio-card">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle active" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">square</span>
+                      <span class="ratio-card__value">1:1</span>
+                    </div>
+                    <div class="ratio-card__modifiers">
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-half</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-w-margin</div>
+                      <div class="modifier-chip active" onclick="toggleChip(this)"><span class="modifier-chip__check"><svg class="icon xs"><use href="#i-check"/></svg></span>-to-edge</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Disabled ratios -->
+                  <div class="ratio-card disabled">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">panoramic-high</span>
+                      <span class="ratio-card__value">16:9</span>
+                    </div>
+                  </div>
+                  
+                  <div class="ratio-card disabled">
+                    <div class="ratio-card__header">
+                      <div class="ratio-card__toggle" onclick="toggleRatio(this)"></div>
+                      <span class="ratio-card__name">panoramic-low</span>
+                      <span class="ratio-card__value">16:5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Responsive: to-mobile-6-col (collapsed) -->
+          <div class="generator-panel">
+            <div class="generator-panel__header" onclick="togglePanel(this)">
+              <svg class="icon sm generator-panel__chevron"><use href="#i-chev-r"/></svg>
+              <span class="generator-panel__title">to-mobile-6-col</span>
+              <span class="generator-panel__badge">3 ratios · 588 tokens</span>
+              <div class="generator-panel__actions">
+                <button class="action-btn"><svg class="icon sm"><use href="#i-edit"/></svg></button>
+                <button class="action-btn action-btn--danger"><svg class="icon sm"><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+            <div class="generator-panel__body">
+              <!-- content hidden when collapsed -->
+            </div>
+          </div>
+
+        </div>
+        
+        <!-- Sidebar: Global definitions -->
+        <div class="generators-sidebar">
+          <!-- Modifiers definition -->
+          <div class="generator-panel expanded">
+            <div class="generator-panel__header" onclick="togglePanel(this)">
+              <svg class="icon sm generator-panel__chevron"><use href="#i-chev-r"/></svg>
+              <span class="generator-panel__title">Modifiers</span>
+              <span class="generator-panel__badge">4</span>
+            </div>
+            <div class="generator-panel__body">
+              <div class="modifiers-list">
+                <div class="modifier-row">
+                  <span class="modifier-row__name">-w-half</span>
+                  <span class="modifier-row__formula">+ col-width/2</span>
+                  <span class="modifier-row__range">1–11</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <span class="modifier-row__name">-w-margin</span>
+                  <span class="modifier-row__formula">+ photo-margin</span>
+                  <span class="modifier-row__range">1–12</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <span class="modifier-row__name">-to-edge</span>
+                  <span class="modifier-row__formula">+ margin-m</span>
+                  <span class="modifier-row__range">1–12</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <span class="modifier-row__name">-1G</span>
+                  <span class="modifier-row__formula">+ gutter</span>
+                  <span class="modifier-row__range">1–11</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+              </div>
+              <div class="add-row" style="margin-top:8px">
+                <div class="add-row__icon"><svg class="icon xs"><use href="#i-plus"/></svg></div>
+                <span>Add modifier</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Ratios definition -->
+          <div class="generator-panel expanded">
+            <div class="generator-panel__header" onclick="togglePanel(this)">
+              <svg class="icon sm generator-panel__chevron"><use href="#i-chev-r"/></svg>
+              <span class="generator-panel__title">Ratio Families</span>
+              <span class="generator-panel__badge">5</span>
+            </div>
+            <div class="generator-panel__body">
+              <div class="modifiers-list">
+                <div class="modifier-row">
+                  <div class="ratio-row__preview"></div>
+                  <span class="modifier-row__name">horizontal</span>
+                  <span class="modifier-row__formula">4:3</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <div class="ratio-row__preview ratio-row__preview--vertical"></div>
+                  <span class="modifier-row__name">vertical</span>
+                  <span class="modifier-row__formula">3:4</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <div class="ratio-row__preview ratio-row__preview--square"></div>
+                  <span class="modifier-row__name">square</span>
+                  <span class="modifier-row__formula">1:1</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <div class="ratio-row__preview ratio-row__preview--panoramic"></div>
+                  <span class="modifier-row__name">panoramic-high</span>
+                  <span class="modifier-row__formula">16:9</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+                <div class="modifier-row">
+                  <div class="ratio-row__preview ratio-row__preview--panoramic"></div>
+                  <span class="modifier-row__name">panoramic-low</span>
+                  <span class="modifier-row__formula">16:5</span>
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                </div>
+              </div>
+              <div class="add-row" style="margin-top:8px">
+                <div class="add-row__icon"><svg class="icon xs"><use href="#i-plus"/></svg></div>
+                <span>Add ratio family</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- STATUSBAR -->
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>3 responsive variants</div>
+      <div class="status-item">5 ratios</div>
+      <div class="status-item">4 modifiers</div>
+      <div class="status-item">2,744 tokens</div>
+      <div class="statusbar__spacer"></div>
+    </footer>
+  </div>
+
+  <script>
+    function togglePanel(header) {
+      header.closest('.generator-panel').classList.toggle('expanded');
+    }
+    
+    function toggleRatio(toggle) {
+      toggle.classList.toggle('active');
+      toggle.closest('.ratio-card').classList.toggle('disabled');
+    }
+    
+    function toggleChip(chip) {
+      chip.classList.toggle('active');
+      const check = chip.querySelector('.modifier-chip__check');
+      if (chip.classList.contains('active')) {
+        check.innerHTML = '<svg class="icon xs"><use href="#i-check"/></svg>';
+      } else {
+        check.innerHTML = '';
+      }
+    }
+  </script>
+</body>
+</html>
