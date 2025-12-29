@@ -25,7 +25,8 @@ import { useAppStore } from '../../stores/appStore';
 import { VariablesSidebar } from '../../components/layout/VariablesSidebar';
 import { DetailsPanel } from '../../components/layout/DetailsPanel';
 import { buildFolderTree, flattenTree, getAllFolderIds } from '../../utils/folderTree';
-import type { Variable, VariableType, VariableValue, AliasType } from '../../types';
+import type { FolderNode } from '../../utils/folderTree';
+import type { Variable, VariableType, VariableValue, AliasType, Library } from '../../types';
 
 // Ikona dla typu zmiennej
 function TypeIcon({ type }: { type: VariableType }) {
@@ -91,10 +92,11 @@ function getAliasType(variable: Variable, allVariables: Record<string, Variable>
 }
 
 // Komponent dla komórki wartości
-function ValueCell({ value, type, allVariables }: { 
+function ValueCell({ value, type, allVariables, allLibraries }: { 
   value: VariableValue | undefined; 
   type: VariableType;
   allVariables: Record<string, Variable>;
+  allLibraries?: Library[];
 }) {
   if (!value) {
     return <span className="val-text">-</span>;
@@ -102,18 +104,40 @@ function ValueCell({ value, type, allVariables }: {
   
   if (value.type === 'VARIABLE_ALIAS' && value.variableId) {
     const targetVar = allVariables[value.variableId];
-    const targetName = targetVar?.name.split('/').pop() || 'unknown';
-    const isExternal = !targetVar;
     
-    if (isExternal || !targetVar) {
+    // Sprawdź czy to external alias (zmienna nie istnieje w bieżącej bibliotece)
+    if (!targetVar) {
+      // Spróbuj znaleźć w innych bibliotekach
+      let externalTargetName = value.variableName || value.variableId;
+      let externalLibName = value.collectionName || '';
+      
+      // Szukaj w innych bibliotekach
+      if (allLibraries) {
+        for (const lib of allLibraries) {
+          const foundVar = lib.file.variables[value.variableId];
+          if (foundVar) {
+            externalTargetName = foundVar.name.split('/').pop() || foundVar.name;
+            externalLibName = lib.name;
+            break;
+          }
+        }
+      }
+      
+      // Formatuj nazwę dla external
+      const displayName = externalLibName 
+        ? `${externalLibName}/${externalTargetName}` 
+        : externalTargetName;
+      
       return (
         <div className="val-alias val-alias--external">
           <ExternalLink className="icon sm" />
-          <span className="val-alias__path">{targetName}</span>
+          <span className="val-alias__path">{displayName}</span>
         </div>
       );
     }
     
+    // Internal alias
+    const targetName = targetVar.name.split('/').pop() || targetVar.name;
     return (
       <div className="val-alias val-alias--internal">
         <ArrowRight className="icon sm" />
@@ -122,8 +146,10 @@ function ValueCell({ value, type, allVariables }: {
     );
   }
   
+  // Wartość bezpośrednia
   const formatted = formatValue(value, type);
   
+  // Specjalna obsługa kolorów z podglądem
   if (type === 'COLOR' && value.value && typeof value.value === 'object' && 'r' in value.value) {
     const { r, g, b, a = 1 } = value.value;
     const color = `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${a})`;
@@ -411,10 +437,16 @@ export function VariablesView() {
   // Wszystkie folder IDs
   const allFolderIds = useMemo(() => getAllFolderIds(folderTree), [folderTree]);
   
-  // Wszystkie visible variable IDs
-  const visibleVariableIds = useMemo(() => 
+  // Wszystkie ID zmiennych w kolejności wizualnej (jak w tabeli)
+  const visibleVariableIdsInOrder = useMemo(() => 
     rows.filter((r) => r.type === 'variable').map((r) => r.id),
     [rows]
+  );
+  
+  // Wszystkie ID zmiennych po filtrach (dla Select All - włącznie ze zwiniętymi folderami)
+  const allFilteredVariableIds = useMemo(() => 
+    filteredVariables.map((v) => v.id),
+    [filteredVariables]
   );
   
   // Pobierz modes
@@ -429,38 +461,82 @@ export function VariablesView() {
     setExpandedFolders([]);
   }, [setExpandedFolders]);
   
-  // Select all checkbox logic
-  const allSelected = visibleVariableIds.length > 0 && 
-    visibleVariableIds.every((id) => selectedVariables.includes(id));
-  const someSelected = visibleVariableIds.some((id) => selectedVariables.includes(id));
+  // Select all checkbox logic - używamy WSZYSTKICH zmiennych po filtrach
+  const allSelected = allFilteredVariableIds.length > 0 && 
+    allFilteredVariableIds.every((id) => selectedVariables.includes(id));
+  const someSelected = allFilteredVariableIds.some((id) => selectedVariables.includes(id));
   
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
       clearSelection();
     } else {
-      selectVariables(visibleVariableIds);
+      // Zaznacz WSZYSTKIE zmienne w kolekcji (po filtrach), nie tylko widoczne
+      selectVariables(allFilteredVariableIds);
     }
-  }, [allSelected, visibleVariableIds, selectVariables, clearSelection]);
+  }, [allSelected, allFilteredVariableIds, selectVariables, clearSelection]);
   
-  // Row click with shift support
+  // Folder checkbox - zaznacza wszystkie zmienne w folderze
+  const handleFolderSelect = useCallback((folder: FolderNode) => {
+    // Zbierz wszystkie zmienne w tym folderze i podfolderach
+    const collectVariableIds = (node: FolderNode): string[] => {
+      const ids = node.variables.map((v) => v.id);
+      for (const child of node.children) {
+        ids.push(...collectVariableIds(child));
+      }
+      return ids;
+    };
+    
+    const folderVariableIds = collectVariableIds(folder);
+    const allFolderSelected = folderVariableIds.every((id) => selectedVariables.includes(id));
+    
+    if (allFolderSelected) {
+      // Odznacz wszystkie z tego folderu
+      selectVariables(selectedVariables.filter((id) => !folderVariableIds.includes(id)));
+    } else {
+      // Zaznacz wszystkie z tego folderu
+      selectVariables([...new Set([...selectedVariables, ...folderVariableIds])]);
+    }
+  }, [selectedVariables, selectVariables]);
+  
+  // Sprawdź stan checkboxa folderu
+  const getFolderCheckState = useCallback((folder: FolderNode): 'checked' | 'indeterminate' | 'unchecked' => {
+    const collectVariableIds = (node: FolderNode): string[] => {
+      const ids = node.variables.map((v) => v.id);
+      for (const child of node.children) {
+        ids.push(...collectVariableIds(child));
+      }
+      return ids;
+    };
+    
+    const folderVariableIds = collectVariableIds(folder);
+    if (folderVariableIds.length === 0) return 'unchecked';
+    
+    const selectedCount = folderVariableIds.filter((id) => selectedVariables.includes(id)).length;
+    if (selectedCount === 0) return 'unchecked';
+    if (selectedCount === folderVariableIds.length) return 'checked';
+    return 'indeterminate';
+  }, [selectedVariables]);
+  
+  // Row click with shift support - używamy wizualnej kolejności dla range selection
   const handleRowClick = useCallback((id: string, isVariable: boolean, e: React.MouseEvent) => {
     if (!isVariable) return;
     
     if (e.shiftKey && lastClickedId) {
-      // Shift+click - select range
-      const startIdx = visibleVariableIds.indexOf(lastClickedId);
-      const endIdx = visibleVariableIds.indexOf(id);
+      // Shift+click - select range (używamy wizualnej kolejności)
+      const startIdx = visibleVariableIdsInOrder.indexOf(lastClickedId);
+      const endIdx = visibleVariableIdsInOrder.indexOf(id);
       if (startIdx !== -1 && endIdx !== -1) {
         const start = Math.min(startIdx, endIdx);
         const end = Math.max(startIdx, endIdx);
-        const rangeIds = visibleVariableIds.slice(start, end + 1);
+        const rangeIds = visibleVariableIdsInOrder.slice(start, end + 1);
         selectVariables([...new Set([...selectedVariables, ...rangeIds])]);
       }
+      setLastClickedId(id);
     } else {
       toggleVariable(id);
       setLastClickedId(id);
     }
-  }, [lastClickedId, visibleVariableIds, selectedVariables, selectVariables, toggleVariable]);
+  }, [lastClickedId, visibleVariableIdsInOrder, selectedVariables, selectVariables, toggleVariable]);
   
   // Toggle type filter
   const handleTypeFilterChange = useCallback((type: VariableType) => {
@@ -617,8 +693,9 @@ export function VariablesView() {
                   </tr>
                 ) : (
                   rows.map((row) => {
-                    if (row.type === 'folder') {
+                    if (row.type === 'folder' && row.folder) {
                       const isExpanded = isExpandAll || expandedFolders.includes(row.id);
+                      const folderCheckState = getFolderCheckState(row.folder);
                       
                       return (
                         <tr 
@@ -631,7 +708,11 @@ export function VariablesView() {
                         >
                           <td>
                             <div className="table__check-cell">
-                              <div className="checkbox" />
+                              <Checkbox 
+                                checked={folderCheckState === 'checked'}
+                                indeterminate={folderCheckState === 'indeterminate'}
+                                onChange={() => handleFolderSelect(row.folder!)}
+                              />
                             </div>
                           </td>
                           <td colSpan={1 + modes.length}>
@@ -695,6 +776,7 @@ export function VariablesView() {
                               value={variable.valuesByMode?.[mode.modeId]} 
                               type={variable.resolvedType}
                               allVariables={allVariables}
+                              allLibraries={libraries}
                             />
                           </td>
                         ))}

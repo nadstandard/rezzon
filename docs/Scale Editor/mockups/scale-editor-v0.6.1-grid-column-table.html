@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale Editor v0.6.1 – Grid (Column Table)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="scale-editor-styles.css" rel="stylesheet">
+  <style>
+    /* Grid Editor specific styles */
+    
+    /* Folder tree */
+    .folder-tree {
+      padding: 0;
+    }
+    
+    .folder-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      color: var(--text-secondary);
+      transition: all 0.1s;
+    }
+    
+    .folder-item:hover { background: var(--bg-hover); color: var(--text); }
+    .folder-item.active { background: var(--bg-selected); color: var(--text); }
+    
+    .folder-item__chevron {
+      width: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+    
+    .folder-item__chevron.expanded svg { transform: rotate(90deg); }
+    
+    .folder-item__icon { color: var(--text-muted); }
+    .folder-item.active .folder-item__icon { color: var(--accent); }
+    
+    .folder-item__name { flex: 1; font-size: 12px; }
+    
+    .folder-item__badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .folder-item__badge--config { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
+    .folder-item__badge--auto { background: var(--green-bg); color: var(--green); }
+    .folder-item__badge--user { background: var(--orange-bg); color: var(--orange); }
+    
+    .folder-item__count {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    
+    .folder-children {
+      padding-left: 22px;
+    }
+    
+    /* Table header bar */
+    .table-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .table-header-bar__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .table-header-bar__badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--green-bg);
+      color: var(--green);
+      font-weight: 600;
+    }
+    
+    .table-header-bar__count {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+    
+    /* Token table */
+    .token-table-wrap {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    
+    .token-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      z-index: 10;
+    }
+    
+    .token-table th.col-token { width: 220px; }
+    .token-table th.col-value { width: 100px; text-align: right; }
+    
+    .token-table td {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text);
+    }
+    
+    .token-table td.col-value {
+      text-align: right;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      color: var(--green);
+    }
+    
+    .token-table tr:hover {
+      background: var(--bg-hover);
+    }
+    
+    /* Token name styling */
+    .token-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .token-name__base {
+      color: var(--text);
+    }
+    
+    .token-name__variant {
+      color: var(--orange);
+    }
+    
+    /* Group header row */
+    .token-table tr.group-header td {
+      background: var(--bg-elevated);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 8px 16px;
+    }
+    
+    /* Viewport headers */
+    .viewport-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SVG ICONS -->
+    <svg style="display:none">
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-typo" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
+      <symbol id="i-spacing" viewBox="0 0 24 24"><path d="M21 6H3M21 12H3M21 18H3"/></symbol>
+      <symbol id="i-radius" viewBox="0 0 24 24"><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7m0-18H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7m0-18v18"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-ul" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-columns" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18M15 3v18"/></symbol>
+      <symbol id="i-margin" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18"/></symbol>
+      <symbol id="i-container" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><rect width="10" height="10" x="7" y="7" rx="1"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+      <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></symbol>
+      <symbol id="i-tablet" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></symbol>
+    </svg>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo__icon">S</div>
+        <span class="logo__text">REZZON<span class="logo__sub">Scale Editor</span></span>
+      </div>
+      <nav class="nav">
+        <a class="nav__item active" href="#">
+          <svg class="icon"><use href="#i-grid"/></svg>Grid
+        </a>
+        <a class="nav__item" href="#">
+          <svg class="icon"><use href="#i-typo"/></svg>Typography
+        </a>
+        <a class="nav__item" href="#">
+          <svg class="icon"><use href="#i-spacing"/></svg>Spacing
+        </a>
+        <a class="nav__item" href="#">
+          <svg class="icon"><use href="#i-radius"/></svg>Radius
+        </a>
+      </nav>
+      <div class="header__spacer"></div>
+      <div class="header__actions">
+        <button class="btn btn--ghost"><svg class="icon sm"><use href="#i-dl"/></svg>Import</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-ul"/></svg>Export</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__scroll">
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Folders</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="folder-tree">
+              <!-- BASE -->
+              <div class="folder-item">
+                <span class="folder-item__chevron"></span>
+                <svg class="icon folder-item__icon"><use href="#i-settings"/></svg>
+                <span class="folder-item__name">BASE</span>
+                <span class="folder-item__badge folder-item__badge--config">config</span>
+              </div>
+              
+              <!-- column (auto) - ACTIVE -->
+              <div class="folder-item active">
+                <span class="folder-item__chevron"></span>
+                <svg class="icon folder-item__icon"><use href="#i-columns"/></svg>
+                <span class="folder-item__name">column</span>
+                <span class="folder-item__badge folder-item__badge--auto">auto</span>
+                <span class="folder-item__count">192</span>
+              </div>
+              
+              <!-- margin (auto) -->
+              <div class="folder-item">
+                <span class="folder-item__chevron"></span>
+                <svg class="icon folder-item__icon"><use href="#i-margin"/></svg>
+                <span class="folder-item__name">margin</span>
+                <span class="folder-item__badge folder-item__badge--auto">auto</span>
+                <span class="folder-item__count">56</span>
+              </div>
+              
+              <!-- container (user parent) -->
+              <div class="folder-item">
+                <span class="folder-item__chevron expanded"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-container"/></svg>
+                <span class="folder-item__name">container</span>
+                <span class="folder-item__badge folder-item__badge--user">user</span>
+              </div>
+              <div class="folder-children">
+                <div class="folder-item">
+                  <span class="folder-item__chevron"></span>
+                  <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                  <span class="folder-item__name">card</span>
+                  <span class="folder-item__count">24</span>
+                </div>
+                <div class="folder-item">
+                  <span class="folder-item__chevron"></span>
+                  <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                  <span class="folder-item__name">modal</span>
+                  <span class="folder-item__count">16</span>
+                </div>
+              </div>
+              
+              <!-- photo (user parent) -->
+              <div class="folder-item">
+                <span class="folder-item__chevron expanded"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-image"/></svg>
+                <span class="folder-item__name">photo</span>
+                <span class="folder-item__badge folder-item__badge--user">user</span>
+              </div>
+              <div class="folder-children">
+                <div class="folder-item">
+                  <span class="folder-item__chevron"></span>
+                  <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                  <span class="folder-item__name">hero</span>
+                  <span class="folder-item__count">48</span>
+                </div>
+                <div class="folder-item">
+                  <span class="folder-item__chevron"></span>
+                  <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                  <span class="folder-item__name">thumbnail</span>
+                  <span class="folder-item__count">32</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add folder button -->
+        <div class="sidebar__section">
+          <div class="sidebar__content" style="padding-top: 8px;">
+            <button class="btn btn--ghost" style="width: 100%; justify-content: center;">
+              <svg class="icon sm"><use href="#i-plus"/></svg>Add Folder
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- Table header bar -->
+      <div class="table-header-bar">
+        <div class="table-header-bar__title">
+          <svg class="icon"><use href="#i-columns"/></svg>
+          column
+          <span class="table-header-bar__badge">auto-generated</span>
+        </div>
+        <span class="table-header-bar__count">192 tokens</span>
+      </div>
+
+      <!-- Token table -->
+      <div class="token-table-wrap">
+        <table class="token-table">
+          <thead>
+            <tr>
+              <th class="col-token">Token</th>
+              <th class="col-value">
+                <div class="viewport-header">
+                  <svg class="icon sm"><use href="#i-monitor"/></svg>
+                  Desktop
+                </div>
+              </th>
+              <th class="col-value">
+                <div class="viewport-header">
+                  <svg class="icon sm"><use href="#i-laptop"/></svg>
+                  Laptop
+                </div>
+              </th>
+              <th class="col-value">
+                <div class="viewport-header">
+                  <svg class="icon sm"><use href="#i-tablet"/></svg>
+                  Tablet
+                </div>
+              </th>
+              <th class="col-value">
+                <div class="viewport-header">
+                  <svg class="icon sm"><use href="#i-phone"/></svg>
+                  Mobile
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Base columns -->
+            <tr class="group-header"><td colspan="5">Base Columns</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span></span></td>
+              <td class="col-value">104</td>
+              <td class="col-value">88</td>
+              <td class="col-value">36</td>
+              <td class="col-value">73</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-2</span></span></td>
+              <td class="col-value">232</td>
+              <td class="col-value">196</td>
+              <td class="col-value">92</td>
+              <td class="col-value">165</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-3</span></span></td>
+              <td class="col-value">360</td>
+              <td class="col-value">304</td>
+              <td class="col-value">148</td>
+              <td class="col-value">258</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-4</span></span></td>
+              <td class="col-value">488</td>
+              <td class="col-value">412</td>
+              <td class="col-value">204</td>
+              <td class="col-value">350</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-5</span></span></td>
+              <td class="col-value">616</td>
+              <td class="col-value">520</td>
+              <td class="col-value">260</td>
+              <td class="col-value">350</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span></span></td>
+              <td class="col-value">744</td>
+              <td class="col-value">628</td>
+              <td class="col-value">316</td>
+              <td class="col-value">350</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-12</span></span></td>
+              <td class="col-value">1512</td>
+              <td class="col-value">1276</td>
+              <td class="col-value">652</td>
+              <td class="col-value">350</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-viewport</span></span></td>
+              <td class="col-value">1920</td>
+              <td class="col-value">1366</td>
+              <td class="col-value">768</td>
+              <td class="col-value">390</td>
+            </tr>
+
+            <!-- -w-half variants -->
+            <tr class="group-header"><td colspan="5">Variants: -w-half</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__variant">-w-half</span></span></td>
+              <td class="col-value">180</td>
+              <td class="col-value">152</td>
+              <td class="col-value">74</td>
+              <td class="col-value">130</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-2</span><span class="token-name__variant">-w-half</span></span></td>
+              <td class="col-value">308</td>
+              <td class="col-value">260</td>
+              <td class="col-value">130</td>
+              <td class="col-value">222</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-3</span><span class="token-name__variant">-w-half</span></span></td>
+              <td class="col-value">436</td>
+              <td class="col-value">368</td>
+              <td class="col-value">186</td>
+              <td class="col-value">315</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span><span class="token-name__variant">-w-half</span></span></td>
+              <td class="col-value">820</td>
+              <td class="col-value">692</td>
+              <td class="col-value">354</td>
+              <td class="col-value">350</td>
+            </tr>
+
+            <!-- -1g variants -->
+            <tr class="group-header"><td colspan="5">Variants: -1g</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__variant">-1g</span></span></td>
+              <td class="col-value">128</td>
+              <td class="col-value">108</td>
+              <td class="col-value">56</td>
+              <td class="col-value">93</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-2</span><span class="token-name__variant">-1g</span></span></td>
+              <td class="col-value">256</td>
+              <td class="col-value">216</td>
+              <td class="col-value">112</td>
+              <td class="col-value">185</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span><span class="token-name__variant">-1g</span></span></td>
+              <td class="col-value">768</td>
+              <td class="col-value">648</td>
+              <td class="col-value">336</td>
+              <td class="col-value">370</td>
+            </tr>
+
+            <!-- -2g variants -->
+            <tr class="group-header"><td colspan="5">Variants: -2g</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__variant">-2g</span></span></td>
+              <td class="col-value">152</td>
+              <td class="col-value">128</td>
+              <td class="col-value">76</td>
+              <td class="col-value">113</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span><span class="token-name__variant">-2g</span></span></td>
+              <td class="col-value">792</td>
+              <td class="col-value">668</td>
+              <td class="col-value">356</td>
+              <td class="col-value">390</td>
+            </tr>
+
+            <!-- -w-margin variants -->
+            <tr class="group-header"><td colspan="5">Variants: -w-margin</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__variant">-w-margin</span></span></td>
+              <td class="col-value">284</td>
+              <td class="col-value">113</td>
+              <td class="col-value">74</td>
+              <td class="col-value">77</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span><span class="token-name__variant">-w-margin</span></span></td>
+              <td class="col-value">924</td>
+              <td class="col-value">653</td>
+              <td class="col-value">354</td>
+              <td class="col-value">354</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-viewport</span><span class="token-name__variant">-w-margin</span></span></td>
+              <td class="col-value">1872</td>
+              <td class="col-value">1326</td>
+              <td class="col-value">728</td>
+              <td class="col-value">358</td>
+            </tr>
+
+            <!-- -to-edge variants -->
+            <tr class="group-header"><td colspan="5">Variants: -to-edge</td></tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-1</span><span class="token-name__variant">-to-edge</span></span></td>
+              <td class="col-value">308</td>
+              <td class="col-value">133</td>
+              <td class="col-value">94</td>
+              <td class="col-value">93</td>
+            </tr>
+            <tr>
+              <td><span class="token-name"><span class="token-name__base">v-col-6</span><span class="token-name__variant">-to-edge</span></span></td>
+              <td class="col-value">948</td>
+              <td class="col-value">673</td>
+              <td class="col-value">374</td>
+              <td class="col-value">370</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- STATUSBAR -->
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>3,590 variables</div>
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>R4-Grid loaded</div>
+      <div class="statusbar__spacer"></div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>S</kbd> Export</div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>Z</kbd> Undo</div>
+    </footer>
+  </div>
+</body>
+</html>

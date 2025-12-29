@@ -33,6 +33,9 @@ interface FigmaExportVariable {
 interface FigmaExportValue {
   type: string;
   value?: any;
+  // Color fields
+  hex?: string;
+  rgba?: { r: number; g: number; b: number; a: number };
   // Alias fields
   collectionName?: string;
   collectionId?: string;
@@ -66,7 +69,40 @@ function convertValue(figmaValue: FigmaExportValue): VariableValue {
     return {
       type: 'VARIABLE_ALIAS',
       variableId: figmaValue.variableId,
+      // Zachowujemy dodatkowe info o aliasie dla external
+      variableName: figmaValue.variableName,
+      collectionName: figmaValue.collectionName,
     };
+  }
+  
+  // Dla kolorów - Figma eksportuje jako { type: "COLOR", hex: "#...", rgba: { r, g, b, a } }
+  if (figmaValue.type === 'COLOR') {
+    // Preferuj rgba jeśli dostępne (osobne pole, nie w value!)
+    if (figmaValue.rgba) {
+      return {
+        type: 'DIRECT',
+        value: figmaValue.rgba,
+      };
+    }
+    // Fallback na hex (osobne pole)
+    if (figmaValue.hex) {
+      const hex = figmaValue.hex.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const a = hex.length === 8 ? parseInt(hex.substring(6, 8), 16) / 255 : 1;
+      return {
+        type: 'DIRECT',
+        value: { r, g, b, a },
+      };
+    }
+    // Stary format - value jako obiekt RGBA
+    if (figmaValue.value && typeof figmaValue.value === 'object' && 'r' in figmaValue.value) {
+      return {
+        type: 'DIRECT',
+        value: figmaValue.value,
+      };
+    }
   }
   
   return {
@@ -119,7 +155,10 @@ export function parseFigmaVariablesFile(jsonContent: string, fileName: string): 
   
   // Określ czy to główna biblioteka
   const libraryName = data.fileName || fileName.replace('.json', '');
-  const isMain = libraryName.toUpperCase() === 'REZZON' || !libraryName.startsWith('R4-');
+  // Główna biblioteka to REZZON (bez prefiksu numerycznego i bez R4-)
+  // Biblioteki towarzyszące: 1-R4-Grid, 2-R4-Spacing, R4-Color, etc.
+  const isMain = libraryName.toUpperCase() === 'REZZON' || 
+    (libraryName.toUpperCase().includes('REZZON') && !libraryName.match(/^\d+-/) && !libraryName.startsWith('R4-'));
   
   // Policz zmienne
   const variableCount = Object.keys(variables).length;
