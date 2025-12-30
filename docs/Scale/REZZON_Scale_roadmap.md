@@ -1,209 +1,166 @@
 # REZZON Scale – Roadmapa implementacji
 
-**Status:** Faza 0.1 (Briefing Grid zakończony)
-**Data:** 2025-12-29
+**Status:** v0.2.6 – Generators View funkcjonalny  
+**Data aktualizacji:** 2025-12-30
 
 ---
 
 ## ✅ ZREALIZOWANE
 
-### Faza 0.1 – Grid Briefing (DONE)
-- [x] Wywiad: macierz viewport × styl
-- [x] Wywiad: typy wartości (#, ƒ, =)
-- [x] Wywiad: formuły base/computed
-- [x] Wywiad: modyfikatory
-- [x] Wywiad: photo/ratios
-- [x] Wywiad: warianty responsywne
-- [x] Wywiad: warstwy output
+### Faza 0 – Briefing & Mockupy (DONE)
+
+- [x] Grid Briefing kompletny (macierz, formuły, modyfikatory, ratios, responsive)
 - [x] Analiza Excel R4_1_GRID.xlsx
-- [x] Briefing v2 zapisany
+- [x] Analiza JSON 1-R4-Grid_2025-12-18.json
+- [x] HTML Mockupy Grid (Parameters, Generators, Preview)
+- [x] Wspólny CSS (rezzon-scale-styles.css)
 
----
+### Faza 1 – Szkielet React (DONE)
 
-## 🔄 BLOK 0: BRIEFING (wywiady)
+- [x] Vite + React 19 + TypeScript setup
+- [x] CSS z mockupów (import stylów)
+- [x] Layout (Header, Sidebar, Statusbar)
+- [x] Routing (tabs: Parameters / Generators / Preview)
+- [x] Zustand store z demo danymi
+- [x] TypeScript types dla Grid
 
-### Faza 0.2 – Typography Briefing
-- [ ] Wywiad pytanie po pytaniu
-- [ ] Analiza danych (jeśli są)
-- [ ] Briefing zapisany
+### Faza 2 – Grid Core (DONE)
 
-### Faza 0.3 – Spacing Briefing
-- [ ] Wywiad pytanie po pytaniu
-- [ ] Analiza danych (jeśli są)
-- [ ] Briefing zapisany
+#### 2.1 Parameters View
+- [x] Sidebar: lista viewportów z CRUD (add/edit/delete)
+- [x] Macierz: style jako kolumny z CRUD (add/edit/delete)
+- [x] Sekcje: Base / Computed / Generated
+- [x] Inline editing base values
+- [x] Auto-przeliczanie computed (Formula Engine)
+- [x] Auto-generowanie tokenów (v-col-1...n)
 
-### Faza 0.4 – Radii Briefing
-- [ ] Wywiad pytanie po pytaniu
-- [ ] Analiza danych (jeśli są)
-- [ ] Briefing zapisany
+#### 2.2 Formula Engine (`src/engine/formulas.ts`)
+- [x] `buildContext()` – buduje kontekst z base parameters
+- [x] `calculateComputed()` – oblicza computed values
+- [x] `recalculateAllComputed()` – przelicza wszystkie computed
+- [x] Auto-recalculation przy zmianie base parameter
+
+#### 2.3 Token Generator (`src/engine/generator.ts`)
+- [x] `generateColumnTokens()` – v-col-1...n, v-full, v-col-viewport
+- [x] `applyModifier()` – aplikuje formułę modyfikatora
+- [x] `generateColumnTokensWithModifiers()` – tokeny z modyfikatorami
+- [x] `generatePhotoWidthTokens()` – w-col-X
+- [x] `generatePhotoHeightTokens()` – h-col-X z ratio
+- [x] `generateExportData()` – kompletne dane eksportu
+- [x] `countTokens()` – zlicza tokeny per warstwa
+
+#### 2.4 Generators View
+- [x] Panel Modifiers z CRUD (add/edit/delete)
+- [x] Panel Ratio Families z CRUD (add/edit/delete)
+- [x] Panel Responsive Variants z CRUD (add/edit/delete)
+- [x] Ratio cards per variant (toggle on/off)
+- [x] Modifier chips per ratio (checkboxy)
+- [x] **Viewport Behaviors** – column override per viewport
+
+#### 2.5 Preview View
+- [x] Tabela tokenów z wartościami per style
+- [x] Pełna lista tokenów (bez truncacji)
+- [x] Filtry: layer, viewport
+- [x] Search
+
+#### 2.6 UI Polish (v0.2.5-v0.2.6)
+- [x] Left-aligned values (Figma Variables style)
+- [x] Smooth opacity transitions for hover actions
+- [x] Compact layout (smaller cards, tighter spacing)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #0                                      │
+│  🧪 TEST CHECKPOINT #1 – PASSED                             │
 ├─────────────────────────────────────────────────────────────┤
-│  Zakres: Wszystkie briefingi                                │
-│  Cel: Potwierdzić pełen zakres aplikacji przed mockupami   │
-│                                                             │
-│  Checklistka:                                               │
-│  □ Grid briefing kompletny                                  │
-│  □ Typography briefing kompletny                            │
-│  □ Spacing briefing kompletny                               │
-│  □ Radii briefing kompletny                                 │
-│  □ Zasada elastyczności potwierdzona dla wszystkich sekcji │
-│                                                             │
-│  ⚠️  DECISION POINT: Kolejność mockupów                     │
+│  Zakres: Parameters + Formuły                               │
+│  ☑ Macierz renderuje się poprawnie                         │
+│  ☑ Edycja base przelicza computed                          │
+│  ☑ Generated tokeny się aktualizują                         │
+│  ☑ CRUD viewportów/stylów działa                           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  🧪 TEST CHECKPOINT #2 – PASSED                             │
+├─────────────────────────────────────────────────────────────┤
+│  Zakres: Generators działa                                  │
+│  ☑ CRUD modifiers                                           │
+│  ☑ CRUD ratio families                                      │
+│  ☑ CRUD responsive variants                                 │
+│  ☑ Toggle ratios per variant                                │
+│  ☑ Toggle modifiers per ratio                               │
+│  ☑ Viewport behaviors (column override)                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔄 BLOK 1: HTML MOCKUPY
+## 🔄 W TOKU
 
-### Faza 1.1 – Grid Mockup
-- [ ] Layout główny (nawigacja sekcji)
-- [ ] Macierz viewport × styl
-- [ ] Edycja base values
-- [ ] Widok computed/generated
-- [ ] UI modyfikatorów
-- [ ] UI ratio families
-- [ ] UI wariantów responsywnych
-- [ ] Preview wygenerowanych tokenów
+### Faza 3 – Import/Export (Est. 1-2 dni)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #1                                      │
-├─────────────────────────────────────────────────────────────┤
-│  Zakres: Grid mockup                                        │
-│  Cel: Walidacja UI przed implementacją                     │
-│                                                             │
-│  Checklistka:                                               │
-│  □ Macierz czytelna i edytowalna                           │
-│  □ Typy wartości (#, ƒ, =) rozróżnialne                    │
-│  □ Modyfikatory definiowalne                                │
-│  □ Ratios definiowalne                                      │
-│  □ Responsywność definiowalna                               │
-│  □ Preview tokenów działa                                   │
-│                                                             │
-│  🎨 UI feedback: TAK                                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Faza 1.2 – Typography Mockup
-- [ ] (zakres z briefingu)
-
-### Faza 1.3 – Spacing Mockup
-- [ ] (zakres z briefingu)
-
-### Faza 1.4 – Radii Mockup
-- [ ] (zakres z briefingu)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #2                                      │
-├─────────────────────────────────────────────────────────────┤
-│  Zakres: Wszystkie mockupy                                  │
-│  Cel: Spójność UI między sekcjami                          │
-│                                                             │
-│  Checklistka:                                               │
-│  □ Wspólny design system                                    │
-│  □ Nawigacja między sekcjami                                │
-│  □ Spójne wzorce interakcji                                 │
-│                                                             │
-│  ⚠️  DECISION POINT: Gotowe do React?                       │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔄 BLOK 2: REACT IMPLEMENTACJA
-
-### Faza 2.1 – Szkielet
-- [ ] Vite + React + TypeScript
-- [ ] CSS z mockupów (rezzon-scale-styles.css)
-- [ ] Layout + routing (Grid / Typography / Spacing / Radii)
-- [ ] Zustand store z podstawowymi akcjami
-- [ ] TypeScript types
-
-### Faza 2.2 – Grid Core
-- [ ] Parser/import danych (JSON/Excel)
-- [ ] Macierz viewport × styl (reaktywna)
-- [ ] Edycja inline base values
-- [ ] Computed values (auto-przeliczanie)
-- [ ] Generated tokens (seria v-col-1...n)
-
-### Faza 2.3 – Grid Generators
-- [ ] Modyfikatory (UI definiowania + logika generowania)
-- [ ] Ratio families (UI + logika)
-- [ ] Warianty responsywne (UI + logika)
-- [ ] Warstwy output (column, container, photo)
-- [ ] Preview wygenerowanych tokenów
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #3                                      │
-├─────────────────────────────────────────────────────────────┤
-│  Zakres: Grid działa end-to-end                            │
-│  Cel: Import → Edycja → Generowanie → Preview              │
-│                                                             │
-│  Checklistka:                                               │
-│  □ Import danych działa                                     │
-│  □ Edycja base przelicza computed                          │
-│  □ Modyfikatory generują tokeny                             │
-│  □ Ratios generują photo tokens                             │
-│  □ Responsywność działa                                     │
-│  □ Preview pokazuje wszystkie tokeny                        │
-│                                                             │
-│  🎨 UI feedback: TAK                                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Faza 2.4 – Typography Core
-- [ ] (implementacja wg briefingu)
-
-### Faza 2.5 – Spacing Core
-- [ ] (implementacja wg briefingu)
-
-### Faza 2.6 – Radii Core
-- [ ] (implementacja wg briefingu)
-
-### Faza 2.7 – Eksport
-- [ ] Format JSON (Figma Variables + Scale metadata)
+- [ ] Import JSON Scale session
+- [ ] Modal importu z drag & drop
+- [ ] Format eksportu zgodny z Figma Variables API
+- [ ] Metadane Scale w description (do re-importu)
 - [ ] Walidacja przed eksportem
-- [ ] Download pliku
-- [ ] Import sesji (ponowna edycja)
+- [ ] Modal eksportu z podsumowaniem
+
+### Faza 4 – Preview Polish (Est. 1 dzień)
+
+- [ ] Sidebar: warstwy z licznikami (live update)
+- [ ] Podświetlanie modyfikatorów w nazwach
+- [ ] Wszystkie warstwy (photo/width, photo/height)
+- [ ] Filtry: responsive, modifier
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #4 – MVP                                │
+│  🧪 TEST CHECKPOINT #3 – GRID MVP                           │
 ├─────────────────────────────────────────────────────────────┤
-│  Zakres: Pełna aplikacja                                    │
-│  Cel: Produkcyjne użycie z prawdziwymi danymi REZZON       │
+│  Zakres: Pełny flow Grid                                    │
+│  Cel: Tworzenie → Edycja → Generowanie → Eksport           │
 │                                                             │
 │  Checklistka:                                               │
-│  □ Grid kompletny                                           │
-│  □ Typography kompletny                                     │
-│  □ Spacing kompletny                                        │
-│  □ Radii kompletny                                          │
-│  □ Eksport do Figmy działa (Portal importuje)              │
-│  □ Import sesji działa (ponowna edycja)                    │
-│  □ Test z prawdziwymi danymi REZZON (~3.5k tokenów grid)   │
+│  □ Import sesji działa                                      │
+│  □ Edycja parameters                                        │
+│  □ Konfiguracja generators                                  │
+│  □ Preview pokazuje wszystko                                │
+│  □ Eksport do Figmy (Portal importuje)                     │
+│  □ Re-import sesji działa                                   │
 │                                                             │
 │  🎨 UI feedback: PEŁNY PRZEGLĄD                            │
-│                                                             │
-│  ⚠️  DECISION POINT: MVP wystarczający?                     │
+│  ⚠️  DECISION POINT: Grid MVP wystarczający?                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔄 BLOK 3: POLISH
+## 📋 BLOK 2: POZOSTAŁE SEKCJE
 
-### Faza 3.1 – Persystencja
+### Faza 5 – Typography
+- [ ] Briefing (wywiad)
+- [ ] Mockupy HTML
+- [ ] Implementacja React
+
+### Faza 6 – Spacing
+- [ ] Briefing (wywiad)
+- [ ] Mockupy HTML
+- [ ] Implementacja React
+
+### Faza 7 – Radii
+- [ ] Briefing (wywiad)
+- [ ] Mockupy HTML
+- [ ] Implementacja React
+
+---
+
+## 📋 BLOK 3: POLISH
+
+### Faza 8 – Persystencja
 - [ ] IndexedDB (Dexie.js)
 - [ ] Auto-save przy zmianach
 - [ ] Restore stanu przy starcie
 
-### Faza 3.2 – UX Polish
+### Faza 9 – UX Polish
 - [ ] Skróty klawiszowe
 - [ ] Tooltips
 - [ ] Empty states
@@ -211,55 +168,49 @@
 - [ ] Error states
 - [ ] Toast notifications
 
-### Faza 3.3 – Optymalizacje
+### Faza 10 – Optymalizacje
 - [ ] Wirtualizacja (jeśli potrzebna)
 - [ ] React.memo
 - [ ] Debounce
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #5 – FINAL                              │
+│  🧪 TEST CHECKPOINT #4 – FINAL                              │
 ├─────────────────────────────────────────────────────────────┤
 │  Zakres: Produkcja                                          │
 │  Cel: Gotowe do codziennego użytku                         │
 │                                                             │
 │  Checklistka:                                               │
+│  □ Wszystkie sekcje działają                                │
 │  □ Pełny flow z prawdziwymi danymi                          │
-│  □ Wszystkie edge cases                                     │
 │  □ Performance OK                                           │
 │  □ UI spójne i dopracowane                                  │
 │  □ Brak błędów w konsoli                                    │
-│                                                             │
-│  🎨 UI feedback: OSTATECZNE POPRAWKI                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 STRATEGIA ZBIERANIA FEEDBACKU
+## 📊 PODSUMOWANIE POSTĘPU
 
-| Typ uwagi | Kiedy zgłaszać | Kiedy naprawiać |
-|-----------|----------------|-----------------|
-| 🔴 **Blocker** | NATYCHMIAST | NATYCHMIAST |
-| 🟠 **Funkcjonalne** | Na checkpoincie | Przed kolejną fazą |
-| 🟡 **Wizualne** | Na checkpoincie | Faza 3.2 (Polish) |
-| 🟢 **Nice-to-have** | Kiedykolwiek | Backlog |
+| Blok | Fazy | Status |
+|------|------|--------|
+| **Briefing & Mockupy** | 0 | ✅ DONE |
+| **Szkielet React** | 1 | ✅ DONE |
+| **Grid Core** | 2.1–2.6 | ✅ DONE |
+| **Import/Export** | 3 | 🔄 TODO |
+| **Preview Polish** | 4 | 🔄 Częściowo |
+| **Typography** | 5 | ☐ TODO |
+| **Spacing** | 6 | ☐ TODO |
+| **Radii** | 7 | ☐ TODO |
+| **Polish** | 8–10 | ☐ TODO |
 
----
-
-## 📊 PODSUMOWANIE
-
-| Blok | Fazy | Opis |
-|------|------|------|
-| **Briefing** | 0.1–0.4 | Wywiady dla Grid, Typography, Spacing, Radii |
-| **Mockupy** | 1.1–1.4 | HTML mockupy wszystkich sekcji |
-| **React** | 2.1–2.7 | Implementacja + eksport |
-| **Polish** | 3.1–3.3 | Persystencja, UX, optymalizacje |
+**Szacowany postęp Grid MVP:** ~75%
 
 ---
 
 ## 🎯 NASTĘPNY KROK
 
-**Faza 0.2: Typography Briefing**
+**Faza 3: Import/Export** – funkcjonalność importu sesji + dopracowanie eksportu
 
-Wywiad pytanie po pytaniu.
+Lub alternatywnie: **UI Polish session** – przegląd całości przed kontynuacją

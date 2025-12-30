@@ -9,30 +9,58 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.2.0  
-**Faza:** React implementacja (Silnik formuł + Generator tokenów done)
+**Wersja:** 0.2.6  
+**Faza:** Grid MVP (~75% complete)
 
 ## Funkcjonalności
 
 ### ✅ Zaimplementowane
 
-- **Parameters View** – macierz viewport × style z inline editing
-- **Silnik formuł** – automatyczne przeliczanie computed values
-- **Generator tokenów** – generowanie v-col-X, w-col-X, h-col-X z modyfikatorami
-- **Preview View** – podgląd tokenów z filtrami
-- **Eksport JSON** – pobieranie konfiguracji + wygenerowanych tokenów
+**Parameters View**
+- Macierz viewport × style z inline editing
+- CRUD viewportów (add/edit/delete)
+- CRUD stylów (add/edit/delete)
+- Sekcje: Base / Computed / Generated
+
+**Formula Engine**
+- Automatyczne przeliczanie computed values
+- Auto-recalculation przy zmianie base parameters
+
+**Token Generator**
+- Generowanie v-col-X, w-col-X, h-col-X
+- Aplikowanie modyfikatorów
+- Eksport JSON
+
+**Generators View**
+- CRUD Modifiers (name, formula, range, full variant)
+- CRUD Ratio Families (name, ratio A:B, enabled)
+- CRUD Responsive Variants (name, description)
+- Toggle ratios per variant
+- Toggle modifiers per ratio
+- **Viewport Behaviors** – column override per viewport
+
+**Preview View**
+- Tabela wszystkich tokenów z wartościami per style
+- Filtry: layer, viewport
+- Search
+
+**UI**
+- Dark mode (Figma-inspired)
+- Left-aligned values
+- Smooth hover transitions
+- Compact layout
 
 ### 🔄 W toku
 
-- Generators View – konfiguracja responsive/ratio/modifiers
-- Import JSON
-- CRUD viewportów/stylów
+- Import JSON (sesji Scale)
+- Format eksportu zgodny z Figma Variables API
+- Preview polish (liczniki, podświetlanie)
 
 ### ☐ Planowane
 
 - Sekcje: Typography, Spacing, Radii
 - Persystencja (IndexedDB)
-- Format zgodny z Figma Variables API
+- Skróty klawiszowe
 
 ## Uruchomienie
 
@@ -57,7 +85,6 @@ src/
 ├── types/
 │   └── grid.ts          # TypeScript interfaces
 ├── styles/
-│   ├── rezzon-studio-styles.css
 │   └── rezzon-scale-styles.css
 └── App.tsx
 ```
@@ -85,9 +112,9 @@ v-full-to-edge = viewport
 
 ## Dokumentacja
 
-- `REZZON_Scale_roadmap_v3.md` – plan implementacji
+- `REZZON_Scale_roadmap.md` – plan implementacji
+- `REZZON_Scale_briefing.md` – pełny briefing Grid
 - `CHANGELOG.md` – historia zmian
-- `/mnt/user-data/uploads/REZZON_Scale_briefing_v3.md` – pełny briefing
 
 ## Technologie
 
