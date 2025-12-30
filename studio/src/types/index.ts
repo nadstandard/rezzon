@@ -76,6 +76,7 @@ export interface DisconnectedLibrary {
     targetVar: string;
     modeId: string;
   }[];
+  aliasCount?: number;
 }
 
 export interface Snapshot {

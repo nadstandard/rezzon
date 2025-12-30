@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZZON Scale v0.3.0 — Generators (Folders Architecture)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+/* ============================================
+   REZZON Scale — Design System Styles v0.3.0
+   Generators with Folder Architecture
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-app: #1a1a1a;
+  --bg-surface: #242424;
+  --bg-elevated: #2e2e2e;
+  --bg-hover: #333333;
+  --bg-selected: rgba(99, 102, 241, 0.15);
+  
+  /* Borders */
+  --border: #3a3a3a;
+  --border-subtle: #2e2e2e;
+  
+  /* Text */
+  --text: #f5f5f5;
+  --text-secondary: #a1a1a1;
+  --text-muted: #666666;
+  
+  /* Accent */
+  --accent: #6366f1;
+  --accent-hover: #5558e3;
+  
+  /* Semantic */
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.12);
+  --orange: #f59e0b;
+  --orange-bg: rgba(245, 158, 11, 0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.12);
+  --blue: #3b82f6;
+  --blue-bg: rgba(59, 130, 246, 0.12);
+  --purple: #a855f7;
+  --purple-bg: rgba(168, 85, 247, 0.12);
+  
+  /* Sizing */
+  --sidebar-width: 220px;
+  --folders-width: 260px;
+  --config-width: 320px;
+  --header-height: 44px;
+  --statusbar-height: 32px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-app);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Icons */
+svg.icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+svg.icon.sm { width: 14px; height: 14px; }
+svg.icon.xs { width: 12px; height: 12px; }
+svg.icon.lg { width: 20px; height: 20px; }
+
+/* Layout */
+.app {
+  display: grid;
+  grid-template-rows: var(--header-height) 1fr var(--statusbar-height);
+  grid-template-columns: var(--sidebar-width) 1fr;
+  height: 100vh;
+}
+
+/* ==================== HEADER ==================== */
+.header {
+  grid-column: 1 / -1;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+  margin-right: 8px;
+}
+
+.logo__icon {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.logo__text { font-weight: 600; font-size: 13px; }
+
+/* Navigation */
+.nav { display: flex; gap: 4px; }
+
+.nav__item {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.nav__item:hover { color: var(--text); background: var(--bg-hover); }
+.nav__item.active { color: var(--text); background: var(--bg-elevated); }
+
+.header__spacer { flex: 1; }
+
+.header__actions { display: flex; gap: 8px; margin-left: 8px; }
+
+/* Buttons */
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn--ghost:hover { background: var(--bg-hover); color: var(--text); }
+
+.btn--primary { background: var(--accent); color: white; }
+.btn--primary:hover { background: var(--accent-hover); }
+
+.btn--block { width: 100%; justify-content: center; }
+
+/* Action buttons */
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.action-btn:hover { background: var(--bg-elevated); color: var(--text); }
+.action-btn--danger:hover { background: var(--red-bg); color: var(--red); }
+
+/* ==================== SIDEBAR ==================== */
+.sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar__scroll { flex: 1; overflow-y: auto; }
+
+.sidebar__section { border-bottom: 1px solid var(--border); }
+.sidebar__section:last-child { border-bottom: none; }
+
+.sidebar__header {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar__header:hover { background: var(--bg-hover); }
+
+.sidebar__chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.sidebar__section.collapsed .sidebar__chevron { transform: rotate(-90deg); }
+.sidebar__section.collapsed .sidebar__content { display: none; }
+
+.sidebar__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.sidebar__content { padding: 0 8px 8px; }
+
+/* Viewport cards */
+.viewport-card {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viewport-card:hover { border-color: var(--text-muted); }
+.viewport-card.active { border-color: var(--accent); background: var(--bg-selected); }
+
+.viewport-card__size {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 48px;
+}
+
+.viewport-card__name {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.viewport-card__count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+.main {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+/* Toolbar/Tabs */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.tabs { display: flex; gap: 4px; }
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.1s;
+}
+
+.tab:hover { color: var(--text); background: var(--bg-hover); }
+.tab.active { color: var(--text); background: var(--bg-elevated); }
+
+.toolbar__spacer { flex: 1; }
+
+/* ==================== GENERATORS LAYOUT ==================== */
+.generators-layout {
+  display: grid;
+  grid-template-columns: var(--folders-width) 1fr var(--config-width);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Folders Tree Panel */
+.folders-panel {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.folders-panel__header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.folders-panel__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.folders-panel__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* Folder Tree Items */
+.folder-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.1s;
+  position: relative;
+}
+
+.folder-item:hover { background: var(--bg-hover); }
+.folder-item.active { background: var(--bg-selected); }
+.folder-item.active .folder-item__icon { color: var(--accent); }
+
+.folder-item__indent {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.folder-item__chevron {
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.folder-item.expanded .folder-item__chevron { transform: rotate(90deg); }
+
+.folder-item__icon { color: var(--text-secondary); }
+
+.folder-item__name {
+  font-size: 12px;
+  color: var(--text);
+  flex: 1;
+}
+
+.folder-item__count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.folder-item__actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.folder-item:hover .folder-item__actions { opacity: 1; }
+
+.folder-item__actions .action-btn {
+  width: 20px;
+  height: 20px;
+}
+
+/* Add folder button */
+.add-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin: 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+.add-folder-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-selected);
+}
+
+/* ==================== TOKEN PREVIEW PANEL ==================== */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-panel__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-panel__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.preview-panel__stats {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.preview-panel__stat strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.preview-panel__scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-app);
+}
+
+/* Token Preview Table */
+.token-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.token-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.token-preview-table th.col-value {
+  text-align: left;
+  min-width: 70px;
+}
+
+.token-preview-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+}
+
+.token-preview-table tr:hover { background: var(--bg-hover); }
+
+.token-name {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--text);
+}
+
+.token-name__modifier { color: var(--accent); }
+.token-name__ratio { color: var(--purple); }
+
+.token-value {
+  text-align: left;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--text-secondary);
+}
+
+/* Section header in preview */
+.preview-section {
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-section__count {
+  font-weight: 400;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* ==================== CONFIG PANEL ==================== */
+.config-panel {
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.config-panel__header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.config-panel__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Config Sections */
+.config-section {
+  margin-bottom: 20px;
+}
+
+.config-section__title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+/* Form inputs */
+.config-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.config-input:focus { border-color: var(--accent); }
+.config-input::placeholder { color: var(--text-muted); }
+
+.config-input--mono {
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.config-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.config-row .config-input { flex: 1; }
+
+.config-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Toggle row */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-app);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.toggle-row__label {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.toggle-row__desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.toggle {
+  width: 36px;
+  height: 20px;
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.toggle.active { background: var(--accent); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.15s;
+}
+
+.toggle.active::after { transform: translateX(16px); }
+
+/* Checkbox list */
+.checkbox-list {
+  background: var(--bg-app);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.checkbox-item:last-child { border-bottom: none; }
+.checkbox-item:hover { background: var(--bg-hover); }
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-muted);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.1s;
+}
+
+.checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox.checked svg { color: white; }
+
+.checkbox-item__name {
+  font-size: 12px;
+  color: var(--text);
+  flex: 1;
+}
+
+.checkbox-item__meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'SF Mono', monospace;
+}
+
+/* Ratio preview boxes */
+.ratio-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ratio-preview {
+  width: 24px;
+  height: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.ratio-preview--vertical { width: 18px; height: 24px; }
+.ratio-preview--square { width: 20px; height: 20px; }
+.ratio-preview--panoramic { width: 28px; height: 14px; }
+
+/* Prefix inputs */
+.prefix-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.prefix-field {
+  background: var(--bg-app);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.prefix-field__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prefix-field__input {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'SF Mono', monospace;
+  outline: none;
+}
+
+.prefix-field__input:focus { border-color: var(--accent); }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.empty-state__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.empty-state__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  line-height: 1.5;
+}
+
+/* ==================== GLOBAL DEFINITIONS PANEL ==================== */
+.globals-panel {
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.globals-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.globals-section:last-child { border-bottom: none; }
+
+.globals-section__header {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.globals-section__header:hover { background: var(--bg-hover); }
+
+.globals-section__chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.globals-section.collapsed .globals-section__chevron { transform: rotate(-90deg); }
+.globals-section.collapsed .globals-section__body { display: none; }
+
+.globals-section__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex: 1;
+}
+
+.globals-section__badge {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.globals-section__body { padding: 0 10px 10px; }
+
+/* Global list items */
+.global-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-app);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.global-item:hover { background: var(--bg-elevated); }
+
+.global-item__name {
+  font-weight: 500;
+  color: var(--text);
+  min-width: 70px;
+}
+
+.global-item__meta {
+  flex: 1;
+  color: var(--text-muted);
+  font-family: 'SF Mono', monospace;
+  font-size: 10px;
+}
+
+.global-item__actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.global-item:hover .global-item__actions { opacity: 1; }
+
+.global-item__actions .action-btn {
+  width: 20px;
+  height: 20px;
+}
+
+/* Add row */
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: all 0.1s;
+}
+
+.add-row:hover { background: var(--bg-hover); color: var(--text); }
+
+.add-row__icon {
+  width: 18px;
+  height: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ratio preview in globals */
+.ratio-preview-mini {
+  width: 18px;
+  height: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+/* ==================== STATUSBAR ==================== */
+.statusbar {
+  grid-column: 1 / -1;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  gap: 20px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-dot--ok { background: var(--green); }
+.status-dot--warn { background: var(--orange); }
+
+.statusbar__spacer { flex: 1; }
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shortcut kbd {
+  padding: 2px 5px;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ==================== MODAL ==================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.modal__header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal__title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.modal__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__close:hover { background: var(--bg-hover); color: var(--text); }
+
+.modal__body { padding: 20px; }
+
+.modal__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.modal__input,
+.modal__select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+  margin-bottom: 16px;
+}
+
+.modal__input:focus,
+.modal__select:focus { border-color: var(--accent); }
+
+.modal__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+.modal__footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SVG Icons -->
+    <svg style="display:none">
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16Z"/></symbol>
+      <symbol id="i-folder-plus" viewBox="0 0 24 24"><path d="M12 10v6M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+      <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></symbol>
+      <symbol id="i-tablet" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></symbol>
+      <symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+      <symbol id="i-ratio" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 12h20"/></symbol>
+    </svg>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo__icon">S</div>
+        <span class="logo__text">REZZON Scale</span>
+      </div>
+      <nav class="nav">
+        <a class="nav__item" href="#"><svg class="icon"><use href="#i-grid"/></svg>Grid</a>
+        <a class="nav__item" href="#"><svg class="icon"><use href="#i-layers"/></svg>Typography</a>
+        <a class="nav__item" href="#"><svg class="icon"><use href="#i-box"/></svg>Spacing</a>
+        <a class="nav__item" href="#"><svg class="icon"><use href="#i-ratio"/></svg>Radii</a>
+      </nav>
+      <div class="header__spacer"></div>
+      <div class="header__actions">
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-download"/></svg>Export</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__scroll">
+        <!-- Viewports Section -->
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Viewports</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="viewport-card active">
+              <svg class="icon"><use href="#i-monitor"/></svg>
+              <span class="viewport-card__size">1920</span>
+              <span class="viewport-card__name">Desktop</span>
+              <span class="viewport-card__count">12 col</span>
+            </div>
+            <div class="viewport-card">
+              <svg class="icon"><use href="#i-laptop"/></svg>
+              <span class="viewport-card__size">1366</span>
+              <span class="viewport-card__name">Laptop</span>
+              <span class="viewport-card__count">12 col</span>
+            </div>
+            <div class="viewport-card">
+              <svg class="icon"><use href="#i-tablet"/></svg>
+              <span class="viewport-card__size">768</span>
+              <span class="viewport-card__name">Tablet</span>
+              <span class="viewport-card__count">6 col</span>
+            </div>
+            <div class="viewport-card">
+              <svg class="icon"><use href="#i-smartphone"/></svg>
+              <span class="viewport-card__size">390</span>
+              <span class="viewport-card__name">Mobile</span>
+              <span class="viewport-card__count">2 col</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Definitions -->
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Modifiers</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="global-item">
+              <span class="global-item__name">-w-half</span>
+              <span class="global-item__meta">val + col/2</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">-w-margin</span>
+              <span class="global-item__meta">val + p-margin</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">-to-edge</span>
+              <span class="global-item__meta">val + margin-m</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">-1G</span>
+              <span class="global-item__meta">val + gutter</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">-2G</span>
+              <span class="global-item__meta">val + 2×gutter</span>
+            </div>
+            <div class="add-row" onclick="openModal('modifierModal')">
+              <div class="add-row__icon"><svg class="icon xs"><use href="#i-plus"/></svg></div>
+              <span>Add modifier</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Ratio Families</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="global-item">
+              <div class="ratio-preview-mini" style="aspect-ratio:4/3"></div>
+              <span class="global-item__name">horizontal</span>
+              <span class="global-item__meta">4:3</span>
+            </div>
+            <div class="global-item">
+              <div class="ratio-preview-mini" style="aspect-ratio:3/4;width:14px;height:18px"></div>
+              <span class="global-item__name">vertical</span>
+              <span class="global-item__meta">3:4</span>
+            </div>
+            <div class="global-item">
+              <div class="ratio-preview-mini" style="aspect-ratio:1/1;width:16px;height:16px"></div>
+              <span class="global-item__name">square</span>
+              <span class="global-item__meta">1:1</span>
+            </div>
+            <div class="global-item">
+              <div class="ratio-preview-mini" style="aspect-ratio:16/9;width:22px;height:12px"></div>
+              <span class="global-item__name">panoramic-high</span>
+              <span class="global-item__meta">16:9</span>
+            </div>
+            <div class="add-row" onclick="openModal('ratioModal')">
+              <div class="add-row__icon"><svg class="icon xs"><use href="#i-plus"/></svg></div>
+              <span>Add ratio family</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar__section">
+          <div class="sidebar__header">
+            <svg class="icon xs sidebar__chevron"><use href="#i-chev-d"/></svg>
+            <span class="sidebar__title">Responsive Variants</span>
+          </div>
+          <div class="sidebar__content">
+            <div class="global-item">
+              <span class="global-item__name">static</span>
+              <span class="global-item__meta">no changes</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">to-tab-6-col</span>
+              <span class="global-item__meta">Tab→6, Mob→2</span>
+            </div>
+            <div class="global-item">
+              <span class="global-item__name">to-mobile-6-col</span>
+              <span class="global-item__meta">Mob→6</span>
+            </div>
+            <div class="add-row" onclick="openModal('variantModal')">
+              <div class="add-row__icon"><svg class="icon xs"><use href="#i-plus"/></svg></div>
+              <span>Add variant</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- Toolbar with Tabs -->
+      <div class="toolbar">
+        <div class="tabs">
+          <div class="tab"><svg class="icon sm"><use href="#i-grid"/></svg>Parameters</div>
+          <div class="tab active"><svg class="icon sm"><use href="#i-sliders"/></svg>Generators</div>
+          <div class="tab"><svg class="icon sm"><use href="#i-eye"/></svg>Preview</div>
+        </div>
+        <div class="toolbar__spacer"></div>
+      </div>
+
+      <!-- Generators Layout -->
+      <div class="generators-layout">
+        <!-- Folders Tree Panel -->
+        <div class="folders-panel">
+          <div class="folders-panel__header">
+            <span class="folders-panel__title">Output Folders</span>
+            <button class="action-btn" onclick="openModal('folderModal')">
+              <svg class="icon sm"><use href="#i-plus"/></svg>
+            </button>
+          </div>
+          <div class="folders-panel__scroll">
+            <div class="folder-tree">
+              <!-- Root folders -->
+              <div class="folder-item expanded">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">column</span>
+                <span class="folder-item__count">288</span>
+              </div>
+
+              <div class="folder-item">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">container</span>
+                <span class="folder-item__count">392</span>
+              </div>
+
+              <div class="folder-item">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">margin</span>
+                <span class="folder-item__count">120</span>
+              </div>
+
+              <div class="folder-item expanded">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">photo</span>
+                <span class="folder-item__count">2744</span>
+              </div>
+
+              <!-- Nested folders -->
+              <div class="folder-item active" style="padding-left: 28px;">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">width</span>
+                <span class="folder-item__count">480</span>
+                <div class="folder-item__actions">
+                  <button class="action-btn"><svg class="icon xs"><use href="#i-edit"/></svg></button>
+                  <button class="action-btn action-btn--danger"><svg class="icon xs"><use href="#i-trash"/></svg></button>
+                </div>
+              </div>
+
+              <div class="folder-item" style="padding-left: 28px;">
+                <span class="folder-item__chevron"><svg class="icon xs"><use href="#i-chev-r"/></svg></span>
+                <svg class="icon folder-item__icon"><use href="#i-folder"/></svg>
+                <span class="folder-item__name">height</span>
+                <span class="folder-item__count">2264</span>
+              </div>
+            </div>
+
+            <button class="add-folder-btn" onclick="openModal('folderModal')">
+              <svg class="icon sm"><use href="#i-folder-plus"/></svg>
+              Add output folder
+            </button>
+          </div>
+        </div>
+
+        <!-- Token Preview Panel -->
+        <div class="preview-panel">
+          <div class="preview-panel__header">
+            <span class="preview-panel__title">Generated Tokens — photo/width</span>
+            <div class="preview-panel__stats">
+              <span><strong>480</strong> tokens</span>
+              <span><strong>4</strong> viewports</span>
+              <span><strong>3</strong> variants</span>
+            </div>
+          </div>
+          <div class="preview-panel__scroll">
+            <!-- Desktop section -->
+            <div class="preview-section">
+              <svg class="icon sm"><use href="#i-monitor"/></svg>
+              desktop / static
+              <span class="preview-section__count">40 tokens</span>
+            </div>
+            <table class="token-preview-table">
+              <thead>
+                <tr>
+                  <th>Token Name</th>
+                  <th class="col-value">CROSS</th>
+                  <th class="col-value">CIRCLE</th>
+                  <th class="col-value">TRIANGLE</th>
+                  <th class="col-value">SQUARE</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="token-name">w-col-1</span></td>
+                  <td class="token-value">104</td>
+                  <td class="token-value">108</td>
+                  <td class="token-value">112</td>
+                  <td class="token-value">116</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-1<span class="token-name__modifier">-w-half</span></span></td>
+                  <td class="token-value">156</td>
+                  <td class="token-value">162</td>
+                  <td class="token-value">168</td>
+                  <td class="token-value">174</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-1<span class="token-name__modifier">-w-margin</span></span></td>
+                  <td class="token-value">132</td>
+                  <td class="token-value">136</td>
+                  <td class="token-value">140</td>
+                  <td class="token-value">144</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-1<span class="token-name__modifier">-to-edge</span></span></td>
+                  <td class="token-value">168</td>
+                  <td class="token-value">172</td>
+                  <td class="token-value">176</td>
+                  <td class="token-value">180</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-2</span></td>
+                  <td class="token-value">232</td>
+                  <td class="token-value">240</td>
+                  <td class="token-value">248</td>
+                  <td class="token-value">256</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-2<span class="token-name__modifier">-w-half</span></span></td>
+                  <td class="token-value">284</td>
+                  <td class="token-value">294</td>
+                  <td class="token-value">304</td>
+                  <td class="token-value">314</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-3</span></td>
+                  <td class="token-value">360</td>
+                  <td class="token-value">372</td>
+                  <td class="token-value">384</td>
+                  <td class="token-value">396</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-full</span></td>
+                  <td class="token-value">1792</td>
+                  <td class="token-value">1792</td>
+                  <td class="token-value">1792</td>
+                  <td class="token-value">1792</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-full<span class="token-name__modifier">-w-margin</span></span></td>
+                  <td class="token-value">1848</td>
+                  <td class="token-value">1848</td>
+                  <td class="token-value">1848</td>
+                  <td class="token-value">1848</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-full<span class="token-name__modifier">-to-edge</span></span></td>
+                  <td class="token-value">1920</td>
+                  <td class="token-value">1920</td>
+                  <td class="token-value">1920</td>
+                  <td class="token-value">1920</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- to-tab-6-col section -->
+            <div class="preview-section">
+              <svg class="icon sm"><use href="#i-monitor"/></svg>
+              desktop / to-tab-6-col
+              <span class="preview-section__count">40 tokens</span>
+            </div>
+            <table class="token-preview-table">
+              <tbody>
+                <tr>
+                  <td><span class="token-name">w-col-1</span></td>
+                  <td class="token-value">104</td>
+                  <td class="token-value">108</td>
+                  <td class="token-value">112</td>
+                  <td class="token-value">116</td>
+                </tr>
+                <tr>
+                  <td><span class="token-name">w-col-1<span class="token-name__modifier">-w-half</span></span></td>
+                  <td class="token-value">156</td>
+                  <td class="token-value">162</td>
+                  <td class="token-value">168</td>
+                  <td class="token-value">174</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Config Panel -->
+        <div class="config-panel">
+          <div class="config-panel__header">
+            <span class="config-panel__title">photo/width</span>
+            <button class="action-btn action-btn--danger">
+              <svg class="icon sm"><use href="#i-trash"/></svg>
+            </button>
+          </div>
+          <div class="config-panel__scroll">
+            <!-- Path & Prefix -->
+            <div class="config-section">
+              <div class="config-section__title">Output Path</div>
+              <input type="text" class="config-input config-input--mono" value="photo/{viewport}/width/{responsive}">
+              <div style="font-size:10px;color:var(--text-muted);margin-top:-6px;margin-bottom:12px">
+                Variables: {viewport}, {responsive}, {ratio}
+              </div>
+              
+              <label class="config-label">Token Prefix</label>
+              <input type="text" class="config-input config-input--mono" value="w-col-">
+            </div>
+
+            <!-- Modifiers -->
+            <div class="config-section">
+              <div class="config-section__title">Modifiers</div>
+              <div class="checkbox-list">
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">-w-half</span>
+                  <span class="checkbox-item__meta">1–11</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">-w-margin</span>
+                  <span class="checkbox-item__meta">1–12, full</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">-to-edge</span>
+                  <span class="checkbox-item__meta">1–12, full</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox"></div>
+                  <span class="checkbox-item__name">-1G</span>
+                  <span class="checkbox-item__meta">1–11</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox"></div>
+                  <span class="checkbox-item__name">-2G</span>
+                  <span class="checkbox-item__meta">1–10</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Responsive Variants -->
+            <div class="config-section">
+              <div class="config-section__title">Responsive Variants</div>
+              <div class="checkbox-list">
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">static</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">to-tab-6-col</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox checked"><svg class="icon xs"><use href="#i-check"/></svg></div>
+                  <span class="checkbox-item__name">to-mobile-6-col</span>
+                </div>
+                <div class="checkbox-item">
+                  <div class="checkbox"></div>
+                  <span class="checkbox-item__name">to-tab-12-col</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ratio Options -->
+            <div class="config-section">
+              <div class="config-section__title">Ratio Options</div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-row__label">Multiply by ratio</div>
+                  <div class="toggle-row__desc">Generate height subfolder per ratio</div>
+                </div>
+                <div class="toggle"></div>
+              </div>
+            </div>
+
+            <!-- Height Generation -->
+            <div class="config-section">
+              <div class="config-section__title">Height Generation</div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-row__label">Generate height</div>
+                  <div class="toggle-row__desc">Calculate height = width × ratio</div>
+                </div>
+                <div class="toggle"></div>
+              </div>
+
+              <div class="prefix-row" style="opacity:0.5;pointer-events:none">
+                <div class="prefix-field">
+                  <div class="prefix-field__label">
+                    <svg class="icon xs"><use href="#i-image"/></svg>
+                    Width prefix
+                  </div>
+                  <input type="text" class="prefix-field__input" value="w-col-">
+                </div>
+                <div class="prefix-field">
+                  <div class="prefix-field__label">
+                    <svg class="icon xs"><use href="#i-image"/></svg>
+                    Height prefix
+                  </div>
+                  <input type="text" class="prefix-field__input" value="h-col-">
+                </div>
+              </div>
+            </div>
+
+            <!-- Ratio selection (disabled since "Multiply by ratio" is off) -->
+            <div class="config-section" style="opacity:0.5;pointer-events:none">
+              <div class="config-section__title">Ratios</div>
+              <div class="checkbox-list">
+                <div class="checkbox-item ratio-checkbox-item">
+                  <div class="checkbox"></div>
+                  <div class="ratio-preview" style="aspect-ratio:4/3"></div>
+                  <span class="checkbox-item__name">horizontal</span>
+                  <span class="checkbox-item__meta">4:3</span>
+                </div>
+                <div class="checkbox-item ratio-checkbox-item">
+                  <div class="checkbox"></div>
+                  <div class="ratio-preview ratio-preview--vertical"></div>
+                  <span class="checkbox-item__name">vertical</span>
+                  <span class="checkbox-item__meta">3:4</span>
+                </div>
+                <div class="checkbox-item ratio-checkbox-item">
+                  <div class="checkbox"></div>
+                  <div class="ratio-preview ratio-preview--square"></div>
+                  <span class="checkbox-item__name">square</span>
+                  <span class="checkbox-item__meta">1:1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- STATUSBAR -->
+    <footer class="statusbar">
+      <div class="status-item"><span class="status-dot status-dot--ok"></span>3,544 tokens</div>
+      <div class="status-item"><span class="status-dot status-dot--warn"></span>5 output folders</div>
+      <div class="statusbar__spacer"></div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>S</kbd> Save</div>
+      <div class="shortcut"><kbd>⌘</kbd><kbd>E</kbd> Export</div>
+    </footer>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Add Folder Modal -->
+  <div class="modal-overlay" id="folderModal">
+    <div class="modal">
+      <div class="modal__header">
+        <span class="modal__title">Add Output Folder</span>
+        <button class="modal__close" onclick="closeModal('folderModal')"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="modal__body">
+        <label class="modal__label">Folder Name</label>
+        <input type="text" class="modal__input" placeholder="e.g. photo/mosaic">
+        <p class="modal__hint">Use "/" to create nested folders</p>
+
+        <label class="modal__label">Token Prefix</label>
+        <input type="text" class="modal__input" placeholder="e.g. mosaic-" style="font-family:'SF Mono',monospace">
+        <p class="modal__hint">Prefix for generated tokens (e.g. mosaic-1, mosaic-2)</p>
+
+        <label class="modal__label">Parent Folder (optional)</label>
+        <select class="modal__select">
+          <option value="">— Root level —</option>
+          <option value="column">column</option>
+          <option value="container">container</option>
+          <option value="photo">photo</option>
+          <option value="photo/width">photo/width</option>
+          <option value="photo/height">photo/height</option>
+        </select>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeModal('folderModal')">Cancel</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-plus"/></svg>Add Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Modifier Modal -->
+  <div class="modal-overlay" id="modifierModal">
+    <div class="modal">
+      <div class="modal__header">
+        <span class="modal__title">Add Modifier</span>
+        <button class="modal__close" onclick="closeModal('modifierModal')"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="modal__body">
+        <label class="modal__label">Modifier Name</label>
+        <input type="text" class="modal__input" placeholder="e.g. -w-half">
+        
+        <label class="modal__label">Formula</label>
+        <select class="modal__select">
+          <option>value + column-width / 2</option>
+          <option>value + gutter</option>
+          <option>value + 2 × gutter</option>
+          <option>value + margin-m</option>
+          <option>value + photo-margin</option>
+        </select>
+
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <label class="modal__label">Apply from</label>
+            <input type="number" class="modal__input" value="1" min="1" max="12">
+          </div>
+          <div style="flex:1">
+            <label class="modal__label">Apply to</label>
+            <input type="number" class="modal__input" value="11" min="1" max="12">
+          </div>
+        </div>
+
+        <div class="toggle-row" style="margin-top:8px">
+          <div>
+            <div class="toggle-row__label">Has full variant</div>
+            <div class="toggle-row__desc">Also generate -modifier for v-full</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeModal('modifierModal')">Cancel</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-plus"/></svg>Add Modifier</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Ratio Modal -->
+  <div class="modal-overlay" id="ratioModal">
+    <div class="modal">
+      <div class="modal__header">
+        <span class="modal__title">Add Ratio Family</span>
+        <button class="modal__close" onclick="closeModal('ratioModal')"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="modal__body">
+        <label class="modal__label">Name</label>
+        <input type="text" class="modal__input" placeholder="e.g. panoramic-wide">
+        
+        <div style="display:flex;gap:12px;align-items:end">
+          <div style="flex:1">
+            <label class="modal__label">Ratio A</label>
+            <input type="number" class="modal__input" value="16" min="1" max="99">
+          </div>
+          <div style="padding-bottom:18px;color:var(--text-muted);font-size:16px;font-weight:600">:</div>
+          <div style="flex:1">
+            <label class="modal__label">Ratio B</label>
+            <input type="number" class="modal__input" value="5" min="1" max="99">
+          </div>
+        </div>
+        <p class="modal__hint" style="margin-top:8px">Height = Width × (B / A)</p>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeModal('ratioModal')">Cancel</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-plus"/></svg>Add Ratio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Responsive Variant Modal -->
+  <div class="modal-overlay" id="variantModal">
+    <div class="modal">
+      <div class="modal__header">
+        <span class="modal__title">Add Responsive Variant</span>
+        <button class="modal__close" onclick="closeModal('variantModal')"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="modal__body">
+        <label class="modal__label">Name</label>
+        <input type="text" class="modal__input" placeholder="e.g. to-mobile-4col">
+        
+        <label class="modal__label">Description (optional)</label>
+        <input type="text" class="modal__input" placeholder="e.g. Mobile uses 4 columns">
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeModal('variantModal')">Cancel</button>
+        <button class="btn btn--primary"><svg class="icon sm"><use href="#i-plus"/></svg>Add Variant</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openModal(id) { 
+      document.getElementById(id).classList.add('open'); 
+    }
+    
+    function closeModal(id) { 
+      document.getElementById(id).classList.remove('open'); 
+    }
+
+    // Toggle interactions
+    document.querySelectorAll('.toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('active');
+      });
+    });
+
+    // Checkbox interactions
+    document.querySelectorAll('.checkbox-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const checkbox = item.querySelector('.checkbox');
+        checkbox.classList.toggle('checked');
+        if (checkbox.classList.contains('checked')) {
+          checkbox.innerHTML = '<svg class="icon xs"><use href="#i-check"/></svg>';
+        } else {
+          checkbox.innerHTML = '';
+        }
+      });
+    });
+
+    // Folder tree expand/collapse
+    document.querySelectorAll('.folder-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (!e.target.closest('.action-btn')) {
+          document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

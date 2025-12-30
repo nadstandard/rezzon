@@ -261,8 +261,11 @@ export function AliasesView() {
                         <div className="ext-lib-card__count">{ext.aliasCount} aliases</div>
                       </div>
                       <div className="ext-lib-card__actions">
-                        <button className="action-btn"><Eye className="icon sm" /></button>
-                        <button className="action-btn action-btn--danger" onClick={() => handleDisconnect(ext.libraryName, ext.aliasCount)}>
+                        <button 
+                          className="action-btn action-btn--danger" 
+                          onClick={() => handleDisconnect(ext.libraryName, ext.aliasCount)}
+                          title="Disconnect library"
+                        >
                           <Link2Off className="icon sm" />
                         </button>
                       </div>

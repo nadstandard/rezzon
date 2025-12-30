@@ -7,7 +7,7 @@ import type {
   VariableType,
   AliasType
 } from '../types';
-import { resolveAliasValue } from '../utils/aliasUtils';
+import { resolveAliasValue, getAliasType } from '../utils/aliasUtils';
 
 // Typ operacji do UNDO/REDO
 interface HistoryEntry {
@@ -741,6 +741,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   // Aliasy - Disconnect library (WITH UNDO)
   disconnectLibrary: (libraryId, externalLibraryName, resolveModeId) => {
     set((state) => {
+      // Sprawdź czy biblioteka już nie jest odłączona
+      if (state.disconnectedLibraries.some(d => d.libraryName === externalLibraryName)) {
+        console.warn(`Library "${externalLibraryName}" is already disconnected`);
+        return state;
+      }
+      
       const newHistory = saveToHistory(state, 'disconnect', `Disconnect "${externalLibraryName}"`);
       
       const libs = [...state.libraries];
@@ -749,8 +755,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
       
       const library = libs[libIdx];
       const externalLib = libs.find((l) => l.name === externalLibraryName);
+      if (!externalLib) {
+        console.warn(`External library "${externalLibraryName}" not found`);
+        return state;
+      }
       
-      const previousAliases: { sourceVar: string; targetVar: string; modeId: string }[] = [];
+      const previousAliases: { sourceVarId: string; sourceVarName: string; targetVarId: string; targetVarName: string; modeId: string }[] = [];
       
       const updatedLib = { ...library };
       updatedLib.file = { ...updatedLib.file };
@@ -763,20 +773,39 @@ export const useAppStore = create<AppState>()((set, get) => ({
         
         for (const [modeId, value] of Object.entries(variable.valuesByMode)) {
           if (value.type === 'VARIABLE_ALIAS' && value.variableId) {
-            // Sprawdź czy alias jest do external library
-            const isExternal = externalLib?.file.variables[value.variableId];
-            if (isExternal) {
-              // Zapisz poprzedni alias
-              previousAliases.push({
-                sourceVar: variable.name,
-                targetVar: isExternal.name,
-                modeId,
-              });
+            // Sprawdź czy alias jest do external library używając getAliasType
+            const aliasType = getAliasType(value, library, libs);
+            
+            if (aliasType === 'external') {
+              // Znajdź target variable w external library
+              const targetVar = externalLib.file.variables[value.variableId] 
+                || Object.values(externalLib.file.variables).find(v => 
+                    v.id === value.variableId || v.name === value.variableName
+                  );
               
-              // Rozwiąż do wartości z wybranego mode
-              const resolvedValue = isExternal.valuesByMode[resolveModeId];
-              newValuesByMode[modeId] = resolvedValue ? { ...resolvedValue } : { type: 'DIRECT', value: undefined };
-              changed = true;
+              if (targetVar) {
+                // Zapisz poprzedni alias z ID i nazwami
+                previousAliases.push({
+                  sourceVarId: varId,
+                  sourceVarName: variable.name,
+                  targetVarId: targetVar.id,
+                  targetVarName: targetVar.name,
+                  modeId,
+                });
+                
+                // Rozwiąż do wartości z wybranego mode
+                const resolvedValue = targetVar.valuesByMode[resolveModeId];
+                if (resolvedValue && resolvedValue.type !== 'VARIABLE_ALIAS') {
+                  newValuesByMode[modeId] = { ...resolvedValue };
+                } else {
+                  // Jeśli target też jest aliasem, użyj pełnego resolve
+                  const fullyResolved = resolveAliasValue(value, resolveModeId, library, libs);
+                  newValuesByMode[modeId] = fullyResolved.type !== 'VARIABLE_ALIAS' 
+                    ? { ...fullyResolved }
+                    : { type: 'DIRECT', value: undefined };
+                }
+                changed = true;
+              }
             }
           }
         }
@@ -788,12 +817,23 @@ export const useAppStore = create<AppState>()((set, get) => ({
       
       libs[libIdx] = updatedLib;
       
-      // Dodaj do disconnected
+      // Dodaj do disconnected tylko jeśli faktycznie były aliasy
+      if (previousAliases.length === 0) {
+        console.warn(`No aliases found to disconnect for "${externalLibraryName}"`);
+        return state;
+      }
+      
       const disconnected: typeof state.disconnectedLibraries[0] = {
         libraryName: externalLibraryName,
         disconnectedAt: new Date().toISOString(),
         resolvedWithMode: resolveModeId,
-        previousAliases,
+        previousAliases: previousAliases.map(a => ({
+          sourceVar: a.sourceVarId,
+          targetVar: a.targetVarId,
+          modeId: a.modeId,
+        })),
+        // Dodatkowo zachowaj nazwy do wyświetlania
+        aliasCount: previousAliases.length,
       };
       
       return {
@@ -820,29 +860,31 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const libs = [...s.libraries];
       
       for (const prevAlias of disconnected.previousAliases) {
-        // Znajdź source variable
+        // Szukaj source variable po ID (sourceVar teraz zawiera ID)
+        let found = false;
+        
         for (let libIdx = 0; libIdx < libs.length; libIdx++) {
           const lib = libs[libIdx];
-          const sourceVar = Object.values(lib.file.variables).find((v) => v.name === prevAlias.sourceVar);
+          // Szukaj po ID
+          const sourceVar = lib.file.variables[prevAlias.sourceVar];
           
           if (sourceVar) {
-            // Znajdź target variable
-            const targetVar = externalLib?.file.variables 
-              ? Object.values(externalLib.file.variables).find((v) => v.name === prevAlias.targetVar)
-              : null;
+            // Znajdź target variable po ID
+            const targetVar = externalLib?.file.variables[prevAlias.targetVar];
             
             if (targetVar) {
               // Przywróć alias
               const updatedLib = { ...libs[libIdx] };
               updatedLib.file = { ...updatedLib.file };
               updatedLib.file.variables = { ...updatedLib.file.variables };
-              updatedLib.file.variables[sourceVar.id] = {
+              updatedLib.file.variables[prevAlias.sourceVar] = {
                 ...sourceVar,
                 valuesByMode: {
                   ...sourceVar.valuesByMode,
                   [prevAlias.modeId]: {
                     type: 'VARIABLE_ALIAS',
                     variableId: targetVar.id,
+                    variableName: targetVar.name,
                   },
                 },
               };
@@ -851,8 +893,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
             } else {
               broken++;
             }
+            found = true;
             break;
           }
+        }
+        
+        if (!found) {
+          broken++;
         }
       }
       

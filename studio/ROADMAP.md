@@ -1,6 +1,6 @@
 # REZZON Studio – Roadmapa implementacji v2
 
-**Status:** v0.7.1 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
+**Status:** v0.7.2 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
 **Data:** 2025-12-30
 
 ---
@@ -129,6 +129,13 @@
 ---
 
 ## 📋 CHANGELOG
+
+### v0.7.2 (2025-12-30)
+- **FIX:** Disconnect library — używa getAliasType do poprawnej identyfikacji external aliasów
+- **FIX:** Disconnect library — blokuje wielokrotne odłączanie tej samej biblioteki
+- **FIX:** Disconnect library — zapisuje ID zmiennych zamiast nazw (dla restore)
+- **FIX:** Restore library — poprawne przywracanie aliasów po ID
+- **FIX:** Usunięto niedziałającą ikonę Eye przy Connected External Libraries
 
 ### v0.7.1 (2025-12-30)
 - **FIX:** BUG-5.12.5 — Remove alias teraz pokazuje resolved value zamiast "-"
