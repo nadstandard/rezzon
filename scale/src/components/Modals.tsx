@@ -752,6 +752,123 @@ export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: Re
 }
 
 // ============================================
+// FOLDER MODAL
+// ============================================
+
+interface FolderModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: { name: string; path: string; tokenPrefix: string; parentId: string | null }) => void;
+  editData?: { id: string; name: string; path: string; tokenPrefix: string; parentId: string | null } | null;
+  folders: Array<{ id: string; name: string; parentId: string | null }>;
+}
+
+export function FolderModal({ isOpen, onClose, onSave, editData, folders }: FolderModalProps) {
+  const [name, setName] = useState('');
+  const [path, setPath] = useState('');
+  const [tokenPrefix, setTokenPrefix] = useState('');
+  const [parentId, setParentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editData) {
+      setName(editData.name);
+      setPath(editData.path);
+      setTokenPrefix(editData.tokenPrefix);
+      setParentId(editData.parentId);
+    } else {
+      setName('');
+      setPath('');
+      setTokenPrefix('');
+      setParentId(null);
+    }
+  }, [editData, isOpen]);
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onSave({ 
+      name: name.trim(), 
+      path: path.trim(), 
+      tokenPrefix: tokenPrefix.trim(),
+      parentId 
+    });
+    onClose();
+  };
+
+  const isEdit = !!editData;
+
+  // Get available parent folders (exclude self and children if editing)
+  const availableParents = folders.filter(f => {
+    if (!editData) return true;
+    if (f.id === editData.id) return false;
+    // Simple check - could be extended for nested children
+    if (f.parentId === editData.id) return false;
+    return true;
+  });
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Edit Output Folder' : 'Add Output Folder'}
+      footer={
+        <>
+          <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn--primary" onClick={handleSubmit} disabled={!name.trim()}>
+            <Icon name={isEdit ? 'check' : 'plus'} size="sm" />
+            {isEdit ? 'Save' : 'Add Folder'}
+          </button>
+        </>
+      }
+    >
+      <div className="modal__label">Folder Name</div>
+      <input
+        type="text"
+        className="modal__input"
+        placeholder="e.g., column, photo/width"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoFocus
+      />
+
+      <div className="modal__label" style={{ marginTop: 16 }}>Parent Folder</div>
+      <select
+        className="modal__select"
+        value={parentId || ''}
+        onChange={(e) => setParentId(e.target.value || null)}
+      >
+        <option value="">— Root level —</option>
+        {availableParents.filter(f => f.parentId === null).map(f => (
+          <option key={f.id} value={f.id}>{f.name}</option>
+        ))}
+      </select>
+
+      <div className="modal__label" style={{ marginTop: 16 }}>Output Path</div>
+      <input
+        type="text"
+        className="modal__input"
+        style={{ fontFamily: 'SF Mono, Consolas, monospace', fontSize: 11 }}
+        placeholder="{viewport}/{responsive}"
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+      />
+      <p className="modal__hint">
+        Available variables: {'{viewport}'}, {'{responsive}'}, {'{ratio}'}
+      </p>
+
+      <div className="modal__label" style={{ marginTop: 16 }}>Token Prefix</div>
+      <input
+        type="text"
+        className="modal__input"
+        style={{ fontFamily: 'SF Mono, Consolas, monospace', fontSize: 11 }}
+        placeholder="v-col-"
+        value={tokenPrefix}
+        onChange={(e) => setTokenPrefix(e.target.value)}
+      />
+    </Modal>
+  );
+}
+
+// ============================================
 // IMPORT SESSION MODAL
 // ============================================
 

@@ -9,6 +9,7 @@ import type {
   RatioFamily,
   ResponsiveVariant,
   OutputLayer,
+  OutputFolder,
   ScaleSession
 } from '../types';
 import { recalculateAllComputed } from '../engine/formulas';
@@ -27,9 +28,11 @@ const initialState: Omit<GridStore, keyof import('../types').GridActions> = {
   modifiers: [],
   ratioFamilies: [],
   responsiveVariants: [],
+  outputFolders: [],
   outputLayers: [],
   selectedViewportId: null,
   selectedStyleId: null,
+  selectedFolderId: null,
   activeTab: 'parameters',
 };
 
@@ -162,6 +165,69 @@ const createDemoData = (): Partial<GridStore> => ({
     { id: 'ol-3', path: 'grid/photo/width', tokenCount: 384 },
     { id: 'ol-4', path: 'grid/photo/height', tokenCount: 1920 },
   ],
+  outputFolders: [
+    {
+      id: 'of-1',
+      name: 'column',
+      parentId: null,
+      path: 'column/{viewport}',
+      tokenPrefix: 'v-col-',
+      enabledModifiers: ['mod-1', 'mod-2', 'mod-3', 'mod-4'],
+      enabledResponsiveVariants: ['rv-1'],
+      multiplyByRatio: false,
+      enabledRatios: [],
+      generateHeight: false,
+      widthPrefix: '',
+      heightPrefix: '',
+      tokenCount: 192,
+    },
+    {
+      id: 'of-2',
+      name: 'photo',
+      parentId: null,
+      path: '',
+      tokenPrefix: '',
+      enabledModifiers: [],
+      enabledResponsiveVariants: [],
+      multiplyByRatio: false,
+      enabledRatios: [],
+      generateHeight: false,
+      widthPrefix: '',
+      heightPrefix: '',
+      tokenCount: 0,
+    },
+    {
+      id: 'of-3',
+      name: 'width',
+      parentId: 'of-2',
+      path: 'photo/{viewport}/width/{responsive}',
+      tokenPrefix: 'w-col-',
+      enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
+      enabledResponsiveVariants: ['rv-1', 'rv-2'],
+      multiplyByRatio: false,
+      enabledRatios: [],
+      generateHeight: false,
+      widthPrefix: '',
+      heightPrefix: '',
+      tokenCount: 384,
+    },
+    {
+      id: 'of-4',
+      name: 'height',
+      parentId: 'of-2',
+      path: 'photo/{viewport}/height/{responsive}/{ratio}',
+      tokenPrefix: 'h-col-',
+      enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
+      enabledResponsiveVariants: ['rv-1', 'rv-2'],
+      multiplyByRatio: true,
+      enabledRatios: ['rf-1', 'rf-2', 'rf-3'],
+      generateHeight: true,
+      widthPrefix: 'w-col-',
+      heightPrefix: 'h-col-',
+      tokenCount: 1152,
+    },
+  ],
+  selectedFolderId: 'of-1',
   selectedViewportId: 'vp-1',
   activeTab: 'parameters',
 });
@@ -394,6 +460,73 @@ export const useGridStore = create<GridStore>((set, get) => ({
     }),
   })),
 
+  // === OUTPUT FOLDER ACTIONS ===
+  addOutputFolder: (folder) => set((state) => ({
+    outputFolders: [...state.outputFolders, { 
+      ...folder, 
+      id: generateId(),
+      tokenCount: 0,
+    }],
+  })),
+
+  updateOutputFolder: (id, updates) => set((state) => ({
+    outputFolders: state.outputFolders.map((f) =>
+      f.id === id ? { ...f, ...updates } : f
+    ),
+  })),
+
+  removeOutputFolder: (id) => set((state) => {
+    // Also remove any children
+    const childIds = state.outputFolders
+      .filter(f => f.parentId === id)
+      .map(f => f.id);
+    
+    return {
+      outputFolders: state.outputFolders.filter(
+        (f) => f.id !== id && !childIds.includes(f.id)
+      ),
+      selectedFolderId: state.selectedFolderId === id ? null : state.selectedFolderId,
+    };
+  }),
+
+  selectFolder: (id) => set({ selectedFolderId: id }),
+
+  toggleFolderModifier: (folderId, modifierId, enabled) => set((state) => ({
+    outputFolders: state.outputFolders.map((f) => {
+      if (f.id !== folderId) return f;
+      
+      const newModifiers = enabled
+        ? [...f.enabledModifiers, modifierId]
+        : f.enabledModifiers.filter((m) => m !== modifierId);
+      
+      return { ...f, enabledModifiers: newModifiers };
+    }),
+  })),
+
+  toggleFolderResponsive: (folderId, variantId, enabled) => set((state) => ({
+    outputFolders: state.outputFolders.map((f) => {
+      if (f.id !== folderId) return f;
+      
+      const newVariants = enabled
+        ? [...f.enabledResponsiveVariants, variantId]
+        : f.enabledResponsiveVariants.filter((v) => v !== variantId);
+      
+      return { ...f, enabledResponsiveVariants: newVariants };
+    }),
+  })),
+
+  toggleFolderRatio: (folderId, ratioId, enabled) => set((state) => ({
+    outputFolders: state.outputFolders.map((f) => {
+      if (f.id !== folderId) return f;
+      
+      const newRatios = enabled
+        ? [...f.enabledRatios, ratioId]
+        : f.enabledRatios.filter((r) => r !== ratioId);
+      
+      return { ...f, enabledRatios: newRatios };
+    }),
+  })),
+
   // === TAB NAVIGATION ===
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -466,6 +599,50 @@ export const useGridStore = create<GridStore>((set, get) => ({
     set({ generatedTokens: tokens });
   },
 
+  recalculateFolderTokenCounts: () => {
+    const state = get();
+    
+    // Calculate token count for each folder based on its configuration
+    const updatedFolders = state.outputFolders.map(folder => {
+      // Skip parent folders (no path = organizational only)
+      if (!folder.path) {
+        return { ...folder, tokenCount: 0 };
+      }
+      
+      // Base count: columns × viewports × responsive variants
+      const maxColumns = Math.max(...state.styles.map(s => s.columns), 1);
+      const viewportCount = state.viewports.length;
+      const responsiveCount = folder.enabledResponsiveVariants.length || 1;
+      
+      let baseTokens = maxColumns * viewportCount * responsiveCount;
+      
+      // Add modifier tokens
+      const enabledMods = state.modifiers.filter(m => 
+        folder.enabledModifiers.includes(m.id)
+      );
+      
+      let modifierTokens = 0;
+      enabledMods.forEach(mod => {
+        const range = mod.applyTo - mod.applyFrom + 1;
+        modifierTokens += range * viewportCount * responsiveCount;
+        if (mod.hasFullVariant) {
+          modifierTokens += range * viewportCount * responsiveCount; // full variant
+        }
+      });
+      
+      // Multiply by ratios if enabled
+      const ratioMultiplier = folder.multiplyByRatio 
+        ? Math.max(folder.enabledRatios.length, 1) 
+        : 1;
+      
+      const totalTokens = (baseTokens + modifierTokens) * ratioMultiplier;
+      
+      return { ...folder, tokenCount: totalTokens };
+    });
+    
+    set({ outputFolders: updatedFolders });
+  },
+
   // === IMPORT/EXPORT ===
   importFromJSON: (json) => {
     try {
@@ -501,9 +678,11 @@ export const useGridStore = create<GridStore>((set, get) => ({
         modifiers: (data.modifiers as Modifier[]) || [],
         ratioFamilies: (data.ratioFamilies as RatioFamily[]) || [],
         responsiveVariants: (data.responsiveVariants as ResponsiveVariant[]) || [],
+        outputFolders: (data.outputFolders as OutputFolder[]) || [],
         outputLayers: (data.outputLayers as OutputLayer[]) || [],
         selectedViewportId: (data.viewports as Viewport[])?.[0]?.id || null,
         selectedStyleId: null,
+        selectedFolderId: (data.outputFolders as OutputFolder[])?.[0]?.id || null,
         activeTab: 'parameters',
       });
       
@@ -534,6 +713,7 @@ export const useGridStore = create<GridStore>((set, get) => ({
         modifiers: state.modifiers,
         ratioFamilies: state.ratioFamilies,
         responsiveVariants: state.responsiveVariants,
+        outputFolders: state.outputFolders,
         outputLayers: state.outputLayers,
       },
     };

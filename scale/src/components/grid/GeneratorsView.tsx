@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
-import { ModifierModal, RatioModal, ConfirmDeleteModal, ResponsiveVariantModal } from '../Modals';
+import { ModifierModal, RatioModal, ConfirmDeleteModal, ResponsiveVariantModal, FolderModal } from '../Modals';
+import type { OutputFolder } from '../../types';
 
 export function GeneratorsView() {
   const {
-    responsiveVariants,
-    ratioFamilies,
+    outputFolders,
+    selectedFolderId,
     modifiers,
+    ratioFamilies,
+    responsiveVariants,
     viewports,
     styles,
-    toggleRatioInVariant,
-    toggleModifierInRatio,
-    updateViewportBehavior,
+    selectFolder,
+    addOutputFolder,
+    updateOutputFolder,
+    removeOutputFolder,
+    toggleFolderModifier,
+    toggleFolderResponsive,
+    toggleFolderRatio,
     addModifier,
     updateModifier,
     removeModifier,
@@ -20,62 +27,83 @@ export function GeneratorsView() {
     updateRatioFamily,
     removeRatioFamily,
     addResponsiveVariant,
-    updateResponsiveVariant,
     removeResponsiveVariant,
   } = useGridStore();
 
-  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(
-    new Set([responsiveVariants[0]?.id])
-  );
+  // Expanded folders in tree
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['of-2']));
 
-  // Modifier modal state
+  // Modal states
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<OutputFolder | null>(null);
+  const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
+
   const [modifierModalOpen, setModifierModalOpen] = useState(false);
   const [editingModifier, setEditingModifier] = useState<{ id: string; name: string; formula: string; applyFrom: number; applyTo: number; hasFullVariant: boolean } | null>(null);
   const [deleteModifierId, setDeleteModifierId] = useState<string | null>(null);
 
-  // Ratio modal state
   const [ratioModalOpen, setRatioModalOpen] = useState(false);
   const [editingRatio, setEditingRatio] = useState<{ id: string; name: string; ratioA: number; ratioB: number } | null>(null);
   const [deleteRatioId, setDeleteRatioId] = useState<string | null>(null);
 
-  // Responsive Variant modal state
   const [variantModalOpen, setVariantModalOpen] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<{ id: string; name: string; description?: string } | null>(null);
   const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null);
+
+  // Get selected folder
+  const selectedFolder = outputFolders.find(f => f.id === selectedFolderId);
 
   // Get max columns from styles
   const maxColumns = Math.max(...styles.map(s => s.columns), 12);
 
-  const toggleVariantExpanded = (variantId: string) => {
-    setExpandedVariants((prev) => {
+  // Build folder tree
+  const rootFolders = outputFolders.filter(f => f.parentId === null);
+  const getChildren = (parentId: string) => outputFolders.filter(f => f.parentId === parentId);
+
+  const toggleFolderExpanded = (folderId: string) => {
+    setExpandedFolders(prev => {
       const next = new Set(prev);
-      if (next.has(variantId)) {
-        next.delete(variantId);
+      if (next.has(folderId)) {
+        next.delete(folderId);
       } else {
-        next.add(variantId);
+        next.add(folderId);
       }
       return next;
     });
   };
 
-  const getRatioConfig = (variantId: string, ratioId: string) => {
-    const variant = responsiveVariants.find((rv) => rv.id === variantId);
-    return variant?.ratioConfigs.find((rc) => rc.ratioId === ratioId);
+  // Calculate total tokens
+  const totalTokens = outputFolders.reduce((sum, f) => sum + f.tokenCount, 0);
+
+  // === FOLDER HANDLERS ===
+  const handleAddFolder = (data: { name: string; path: string; tokenPrefix: string; parentId: string | null }) => {
+    addOutputFolder({
+      name: data.name,
+      parentId: data.parentId,
+      path: data.path,
+      tokenPrefix: data.tokenPrefix,
+      enabledModifiers: [],
+      enabledResponsiveVariants: [],
+      multiplyByRatio: false,
+      enabledRatios: [],
+      generateHeight: false,
+      widthPrefix: '',
+      heightPrefix: '',
+    });
+    setFolderModalOpen(false);
   };
 
-  // Calculate token count for a variant (simplified)
-  const getTokenCount = (variantId: string) => {
-    const variant = responsiveVariants.find((rv) => rv.id === variantId);
-    if (!variant) return 0;
-    
-    let count = 0;
-    variant.ratioConfigs.forEach((rc) => {
-      if (rc.enabled) {
-        // Base tokens (12 columns) + modifiers
-        count += 12 * (1 + rc.enabledModifiers.length);
-      }
-    });
-    return count * 4; // × 4 viewports
+  const handleEditFolder = (data: { name: string; path: string; tokenPrefix: string; parentId: string | null }) => {
+    if (editingFolder) {
+      updateOutputFolder(editingFolder.id, data);
+      setEditingFolder(null);
+    }
+  };
+
+  const handleDeleteFolder = () => {
+    if (deleteFolderId) {
+      removeOutputFolder(deleteFolderId);
+      setDeleteFolderId(null);
+    }
   };
 
   // === MODIFIER HANDLERS ===
@@ -98,17 +126,6 @@ export function GeneratorsView() {
     }
   };
 
-  const openEditModifier = (mod: typeof modifiers[0]) => {
-    setEditingModifier({
-      id: mod.id,
-      name: mod.name,
-      formula: mod.formula,
-      applyFrom: mod.applyFrom,
-      applyTo: mod.applyTo,
-      hasFullVariant: mod.hasFullVariant,
-    });
-  };
-
   // === RATIO HANDLERS ===
   const handleAddRatio = (data: { name: string; ratioA: number; ratioB: number }) => {
     addRatioFamily(data);
@@ -129,36 +146,15 @@ export function GeneratorsView() {
     }
   };
 
-  const openEditRatio = (ratio: typeof ratioFamilies[0]) => {
-    setEditingRatio({
-      id: ratio.id,
-      name: ratio.name,
-      ratioA: ratio.ratioA,
-      ratioB: ratio.ratioB,
-    });
-  };
-
   // === RESPONSIVE VARIANT HANDLERS ===
   const handleAddVariant = (data: { name: string; description?: string }) => {
-    // Create new variant with default ratioConfigs for all existing ratios
     addResponsiveVariant({
       name: data.name,
       description: data.description,
-      ratioConfigs: ratioFamilies.map(rf => ({
-        ratioId: rf.id,
-        enabled: false,
-        enabledModifiers: [],
-      })),
+      ratioConfigs: [],
       viewportBehaviors: [],
     });
     setVariantModalOpen(false);
-  };
-
-  const handleEditVariant = (data: { name: string; description?: string }) => {
-    if (editingVariant) {
-      updateResponsiveVariant(editingVariant.id, data);
-      setEditingVariant(null);
-    }
   };
 
   const handleDeleteVariant = () => {
@@ -168,212 +164,406 @@ export function GeneratorsView() {
     }
   };
 
-  const openEditVariant = (variant: typeof responsiveVariants[0]) => {
-    setEditingVariant({
-      id: variant.id,
-      name: variant.name,
-      description: variant.description,
-    });
+  // Render folder tree item
+  const renderFolderItem = (folder: OutputFolder, depth: number = 0) => {
+    const children = getChildren(folder.id);
+    const hasChildren = children.length > 0;
+    const isExpanded = expandedFolders.has(folder.id);
+    const isSelected = selectedFolderId === folder.id;
+
+    return (
+      <div key={folder.id}>
+        <div
+          className={`folder-tree-item ${isSelected ? 'active' : ''}`}
+          style={{ paddingLeft: 12 + depth * 16 }}
+          onClick={() => selectFolder(folder.id)}
+        >
+          {hasChildren ? (
+            <button
+              className="folder-tree-item__chevron"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFolderExpanded(folder.id);
+              }}
+            >
+              <Icon name={isExpanded ? 'chev-d' : 'chev-r'} size="xs" />
+            </button>
+          ) : (
+            <span className="folder-tree-item__chevron" />
+          )}
+          <Icon name="folder" size="sm" />
+          <span className="folder-tree-item__name">{folder.name}</span>
+          {folder.tokenCount > 0 && (
+            <span className="folder-tree-item__count">{folder.tokenCount}</span>
+          )}
+          <div className="folder-tree-item__actions">
+            <button
+              className="action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingFolder(folder);
+              }}
+            >
+              <Icon name="edit" size="xs" />
+            </button>
+            <button
+              className="action-btn action-btn--danger"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteFolderId(folder.id);
+              }}
+            >
+              <Icon name="trash" size="xs" />
+            </button>
+          </div>
+        </div>
+        {hasChildren && isExpanded && (
+          <div className="folder-tree-children">
+            {children.map(child => renderFolderItem(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="generators-layout">
-      {/* Main content - Responsive variants */}
-      <div className="generators-main">
-        {/* Add responsive variant button */}
-        <div style={{ padding: '12px 16px' }}>
-          <button className="btn btn--ghost" style={{ width: '100%' }} onClick={() => setVariantModalOpen(true)}>
-            <Icon name="plus" size="sm" />
-            Add Responsive Variant
-          </button>
+    <div className="generators-layout-v2">
+      {/* Left panel - Folder tree */}
+      <div className="folders-panel">
+        <div className="folders-panel__header">
+          <span className="folders-panel__title">Output Folders</span>
+          <span className="folders-panel__count">{totalTokens} tokens</span>
         </div>
+        <div className="folders-panel__content">
+          <div className="folder-tree">
+            {rootFolders.map(folder => renderFolderItem(folder))}
+          </div>
+          <div
+            className="add-row"
+            style={{ margin: '8px 12px' }}
+            onClick={() => setFolderModalOpen(true)}
+          >
+            <div className="add-row__icon">
+              <Icon name="plus" size="xs" />
+            </div>
+            <span>Add output folder</span>
+          </div>
+        </div>
+      </div>
 
-        {responsiveVariants.map((variant) => {
-          const isExpanded = expandedVariants.has(variant.id);
-          const enabledRatios = variant.ratioConfigs.filter((rc) => rc.enabled).length;
-          const tokenCount = getTokenCount(variant.id);
+      {/* Center panel - Preview */}
+      <div className="preview-panel">
+        {selectedFolder ? (
+          <>
+            <div className="preview-panel__header">
+              <div className="preview-panel__title">
+                <Icon name="folder" size="sm" />
+                <span>{selectedFolder.name}</span>
+              </div>
+              <div className="preview-panel__stats">
+                <span className="preview-panel__stat">{selectedFolder.tokenCount} tokens</span>
+                <span className="preview-panel__stat">{selectedFolder.enabledModifiers.length} modifiers</span>
+                <span className="preview-panel__stat">{selectedFolder.enabledResponsiveVariants.length} variants</span>
+              </div>
+            </div>
+            <div className="preview-panel__content">
+              {/* Token preview table */}
+              {viewports.map(vp => (
+                <div key={vp.id} className="preview-section">
+                  <div className="preview-section__header">
+                    <Icon name={vp.icon} size="sm" />
+                    <span>{vp.name}</span>
+                    <span className="preview-section__viewport">{vp.width}px</span>
+                  </div>
+                  <table className="preview-table">
+                    <thead>
+                      <tr>
+                        <th>Token</th>
+                        {styles.map(s => (
+                          <th key={s.id}>{s.name}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Base tokens */}
+                      {Array.from({ length: Math.min(styles[0]?.columns || 12, 4) }, (_, i) => i + 1).map(col => (
+                        <tr key={col}>
+                          <td className="preview-table__token">
+                            <span className="token-name">{selectedFolder.tokenPrefix}{col}</span>
+                          </td>
+                          {styles.map(s => (
+                            <td key={s.id} className="preview-table__value">
+                              {col <= s.columns ? Math.round(130 * col + 24 * (col - 1)) : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                      {/* Modifier tokens preview */}
+                      {selectedFolder.enabledModifiers.slice(0, 2).map(modId => {
+                        const mod = modifiers.find(m => m.id === modId);
+                        if (!mod) return null;
+                        return (
+                          <tr key={modId}>
+                            <td className="preview-table__token">
+                              <span className="token-name">
+                                {selectedFolder.tokenPrefix}1
+                                <span className="token-modifier">{mod.name}</span>
+                              </span>
+                            </td>
+                            {styles.map(s => (
+                              <td key={s.id} className="preview-table__value">
+                                {Math.round(130 + 65)}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                      {selectedFolder.enabledModifiers.length > 2 && (
+                        <tr>
+                          <td colSpan={styles.length + 1} className="preview-table__more">
+                            + {selectedFolder.enabledModifiers.length - 2} more modifiers...
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="preview-panel__empty">
+            <Icon name="folder" size="lg" />
+            <span>Select a folder to see preview</span>
+          </div>
+        )}
+      </div>
 
-          return (
-            <div
-              key={variant.id}
-              className={`generator-panel ${isExpanded ? 'expanded' : ''}`}
-            >
-              <div
-                className="generator-panel__header"
-                onClick={() => toggleVariantExpanded(variant.id)}
-              >
-                <Icon name="chev-r" size="sm" className="generator-panel__chevron" />
-                <span className="generator-panel__title">{variant.name}</span>
-                <span className="generator-panel__badge">
-                  {enabledRatios} ratios · {tokenCount} tokens
-                </span>
-                <div className="generator-panel__actions">
-                  <button className="action-btn" onClick={(e) => { e.stopPropagation(); openEditVariant(variant); }}>
-                    <Icon name="edit" size="sm" />
-                  </button>
-                  <button
-                    className="action-btn action-btn--danger"
-                    onClick={(e) => { e.stopPropagation(); setDeleteVariantId(variant.id); }}
-                    disabled={responsiveVariants.length <= 1}
-                  >
-                    <Icon name="trash" size="sm" />
-                  </button>
+      {/* Right panel - Config */}
+      <div className="config-panel">
+        {selectedFolder ? (
+          <>
+            <div className="config-panel__header">
+              <span className="config-panel__title">Configuration</span>
+            </div>
+            <div className="config-panel__content">
+              {/* Output Path */}
+              <div className="config-group">
+                <label className="config-label">Output Path</label>
+                <input
+                  type="text"
+                  className="config-input config-input--mono"
+                  value={selectedFolder.path}
+                  onChange={(e) => updateOutputFolder(selectedFolder.id, { path: e.target.value })}
+                  placeholder="{viewport}/{responsive}"
+                />
+                <span className="config-hint">Variables: {'{viewport}'}, {'{responsive}'}, {'{ratio}'}</span>
+              </div>
+
+              {/* Token Prefix */}
+              <div className="config-group">
+                <label className="config-label">Token Prefix</label>
+                <input
+                  type="text"
+                  className="config-input config-input--mono"
+                  value={selectedFolder.tokenPrefix}
+                  onChange={(e) => updateOutputFolder(selectedFolder.id, { tokenPrefix: e.target.value })}
+                  placeholder="v-col-"
+                />
+              </div>
+
+              {/* Modifiers */}
+              <div className="config-group">
+                <label className="config-label">Modifiers</label>
+                <div className="config-checkboxes">
+                  {modifiers.map(mod => (
+                    <label key={mod.id} className="config-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedFolder.enabledModifiers.includes(mod.id)}
+                        onChange={(e) => toggleFolderModifier(selectedFolder.id, mod.id, e.target.checked)}
+                      />
+                      <span className="config-checkbox__box">
+                        {selectedFolder.enabledModifiers.includes(mod.id) && (
+                          <Icon name="check" size="xs" />
+                        )}
+                      </span>
+                      <span className="config-checkbox__label">{mod.name}</span>
+                      <span className="config-checkbox__range">{mod.applyFrom}-{mod.applyTo}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
-              {isExpanded && (
-                <div className="generator-panel__body">
-                  {/* Description */}
-                  {variant.description && (
-                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
-                      {variant.description}
-                    </p>
-                  )}
+              {/* Responsive Variants */}
+              <div className="config-group">
+                <label className="config-label">Responsive Variants</label>
+                <div className="config-checkboxes">
+                  {responsiveVariants.map(rv => (
+                    <label key={rv.id} className="config-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedFolder.enabledResponsiveVariants.includes(rv.id)}
+                        onChange={(e) => toggleFolderResponsive(selectedFolder.id, rv.id, e.target.checked)}
+                      />
+                      <span className="config-checkbox__box">
+                        {selectedFolder.enabledResponsiveVariants.includes(rv.id) && (
+                          <Icon name="check" size="xs" />
+                        )}
+                      </span>
+                      <span className="config-checkbox__label">{rv.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-                  {/* Ratios & Modifiers */}
-                  <div className="gen-section">
-                    <div className="gen-section__header">
-                      <span className="gen-section__title">Ratios & Modifiers</span>
-                    </div>
-                    <div className="ratio-grid">
-                      {ratioFamilies.map((ratio) => {
-                        const config = getRatioConfig(variant.id, ratio.id);
-                        const isEnabled = config?.enabled ?? false;
+              {/* Multiply by Ratio toggle */}
+              <div className="config-group">
+                <label className="config-toggle">
+                  <input
+                    type="checkbox"
+                    checked={selectedFolder.multiplyByRatio}
+                    onChange={(e) => updateOutputFolder(selectedFolder.id, { multiplyByRatio: e.target.checked })}
+                  />
+                  <span className="config-toggle__track">
+                    <span className="config-toggle__thumb" />
+                  </span>
+                  <span className="config-toggle__label">Multiply by ratio</span>
+                </label>
+              </div>
 
-                        return (
-                          <div
-                            key={ratio.id}
-                            className={`ratio-card ${!isEnabled ? 'disabled' : ''}`}
-                          >
-                            <div className="ratio-card__header">
-                              <div
-                                className={`ratio-card__toggle ${isEnabled ? 'active' : ''}`}
-                                onClick={() =>
-                                  toggleRatioInVariant(variant.id, ratio.id, !isEnabled)
-                                }
-                              />
-                              <span className="ratio-card__name">{ratio.name}</span>
-                              <span className="ratio-card__value">
-                                {ratio.ratioA}:{ratio.ratioB}
-                              </span>
-                            </div>
-
-                            {isEnabled && (
-                              <div className="ratio-card__modifiers">
-                                {modifiers.map((mod) => {
-                                  const isModEnabled =
-                                    config?.enabledModifiers.includes(mod.id) ?? false;
-                                  return (
-                                    <div
-                                      key={mod.id}
-                                      className={`modifier-chip ${isModEnabled ? 'active' : ''}`}
-                                      onClick={() =>
-                                        toggleModifierInRatio(
-                                          variant.id,
-                                          ratio.id,
-                                          mod.id,
-                                          !isModEnabled
-                                        )
-                                      }
-                                    >
-                                      <span className="modifier-chip__check">
-                                        {isModEnabled && <Icon name="check" size="xs" />}
-                                      </span>
-                                      {mod.name}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Ratios (if multiplyByRatio enabled) */}
+              {selectedFolder.multiplyByRatio && (
+                <div className="config-group config-group--nested">
+                  <label className="config-label">Ratios</label>
+                  <div className="config-checkboxes">
+                    {ratioFamilies.map(ratio => (
+                      <label key={ratio.id} className="config-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedFolder.enabledRatios.includes(ratio.id)}
+                          onChange={(e) => toggleFolderRatio(selectedFolder.id, ratio.id, e.target.checked)}
+                        />
+                        <span className="config-checkbox__box">
+                          {selectedFolder.enabledRatios.includes(ratio.id) && (
+                            <Icon name="check" size="xs" />
+                          )}
+                        </span>
+                        <div
+                          className="ratio-preview-small"
+                          style={{ aspectRatio: `${ratio.ratioA}/${ratio.ratioB}` }}
+                        />
+                        <span className="config-checkbox__label">{ratio.name}</span>
+                        <span className="config-checkbox__range">{ratio.ratioA}:{ratio.ratioB}</span>
+                      </label>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  {/* Viewport Behaviors */}
-                  <div className="gen-section" style={{ marginTop: 16 }}>
-                    <div className="gen-section__header">
-                      <span className="gen-section__title">Viewport Behaviors</span>
-                    </div>
-                    <div className="viewport-behaviors">
-                      {viewports.map((vp) => {
-                        const behavior = variant.viewportBehaviors?.find(vb => vb.viewportId === vp.id);
-                        const isOverride = behavior?.behavior === 'override';
-                        const defaultColumns = styles[0]?.columns ?? 12;
-                        const currentColumns = isOverride ? (behavior?.overrideColumns ?? defaultColumns) : defaultColumns;
+              {/* Generate Height toggle */}
+              <div className="config-group">
+                <label className="config-toggle">
+                  <input
+                    type="checkbox"
+                    checked={selectedFolder.generateHeight}
+                    onChange={(e) => updateOutputFolder(selectedFolder.id, { generateHeight: e.target.checked })}
+                  />
+                  <span className="config-toggle__track">
+                    <span className="config-toggle__thumb" />
+                  </span>
+                  <span className="config-toggle__label">Generate height</span>
+                </label>
+              </div>
 
-                        return (
-                          <div key={vp.id} className="viewport-behavior-row">
-                            <div className="viewport-behavior-row__viewport">
-                              <Icon name={vp.icon} size="sm" />
-                              <span>{vp.width}</span>
-                            </div>
-                            <select
-                              className="viewport-behavior-row__select"
-                              value={isOverride ? 'override' : 'inherit'}
-                              onChange={(e) => {
-                                const newBehavior = e.target.value as 'inherit' | 'override';
-                                updateViewportBehavior(variant.id, vp.id, newBehavior, defaultColumns);
-                              }}
-                            >
-                              <option value="inherit">Inherit ({defaultColumns} col)</option>
-                              <option value="override">Override columns</option>
-                            </select>
-                            {isOverride && (
-                              <input
-                                type="number"
-                                className="viewport-behavior-row__columns"
-                                value={currentColumns}
-                                min={1}
-                                max={12}
-                                onChange={(e) => {
-                                  updateViewportBehavior(variant.id, vp.id, 'override', parseInt(e.target.value) || defaultColumns);
-                                }}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Width/Height prefixes (if generateHeight enabled) */}
+              {selectedFolder.generateHeight && (
+                <div className="config-group config-group--nested config-group--row">
+                  <div className="config-field">
+                    <label className="config-label">Width prefix</label>
+                    <input
+                      type="text"
+                      className="config-input config-input--mono"
+                      value={selectedFolder.widthPrefix}
+                      onChange={(e) => updateOutputFolder(selectedFolder.id, { widthPrefix: e.target.value })}
+                      placeholder="w-col-"
+                    />
+                  </div>
+                  <div className="config-field">
+                    <label className="config-label">Height prefix</label>
+                    <input
+                      type="text"
+                      className="config-input config-input--mono"
+                      value={selectedFolder.heightPrefix}
+                      onChange={(e) => updateOutputFolder(selectedFolder.id, { heightPrefix: e.target.value })}
+                      placeholder="h-col-"
+                    />
                   </div>
                 </div>
               )}
             </div>
-          );
-        })}
+          </>
+        ) : (
+          <div className="config-panel__empty">
+            <span>Select a folder to configure</span>
+          </div>
+        )}
       </div>
 
-      {/* Sidebar - Global definitions */}
+      {/* Global definitions sidebar */}
       <div className="generators-sidebar">
-        {/* Modifiers definition */}
-        <div className="generator-panel expanded">
-          <div className="generator-panel__header">
-            <Icon name="chev-r" size="sm" className="generator-panel__chevron" />
-            <span className="generator-panel__title">Modifiers</span>
-            <span className="generator-panel__badge">{modifiers.length}</span>
+        {/* Viewports */}
+        <div className="sidebar-section">
+          <div className="sidebar-section__header">
+            <span className="sidebar-section__title">Viewports</span>
+            <span className="sidebar-section__count">{viewports.length}</span>
           </div>
-          <div className="generator-panel__body">
-            <div className="modifiers-list">
-              {modifiers.map((mod) => (
-                <div key={mod.id} className="modifier-row">
-                  <span className="modifier-row__name">{mod.name}</span>
-                  <span className="modifier-row__formula">{mod.formula}</span>
-                  <span className="modifier-row__range">
-                    {mod.applyFrom}–{mod.applyTo}
-                  </span>
-                  <div className="modifier-row__actions">
-                    <button className="action-btn" onClick={() => openEditModifier(mod)}>
-                      <Icon name="edit" size="xs" />
-                    </button>
-                    <button className="action-btn action-btn--danger" onClick={() => setDeleteModifierId(mod.id)}>
-                      <Icon name="trash" size="xs" />
-                    </button>
-                  </div>
+          <div className="sidebar-section__content">
+            {viewports.map(vp => (
+              <div key={vp.id} className="viewport-card-small">
+                <Icon name={vp.icon} size="sm" />
+                <span className="viewport-card-small__name">{vp.name}</span>
+                <span className="viewport-card-small__width">{vp.width}px</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Modifiers */}
+        <div className="sidebar-section">
+          <div className="sidebar-section__header">
+            <span className="sidebar-section__title">Modifiers</span>
+            <span className="sidebar-section__count">{modifiers.length}</span>
+          </div>
+          <div className="sidebar-section__content">
+            {modifiers.map(mod => (
+              <div key={mod.id} className="modifier-row">
+                <span className="modifier-row__name">{mod.name}</span>
+                <span className="modifier-row__formula">{mod.formula}</span>
+                <div className="modifier-row__actions">
+                  <button
+                    className="action-btn"
+                    onClick={() => setEditingModifier({
+                      id: mod.id,
+                      name: mod.name,
+                      formula: mod.formula,
+                      applyFrom: mod.applyFrom,
+                      applyTo: mod.applyTo,
+                      hasFullVariant: mod.hasFullVariant,
+                    })}
+                  >
+                    <Icon name="edit" size="xs" />
+                  </button>
+                  <button
+                    className="action-btn action-btn--danger"
+                    onClick={() => setDeleteModifierId(mod.id)}
+                  >
+                    <Icon name="trash" size="xs" />
+                  </button>
                 </div>
-              ))}
-            </div>
-            <div className="add-row" style={{ marginTop: 8 }} onClick={() => setModifierModalOpen(true)}>
+              </div>
+            ))}
+            <div className="add-row" onClick={() => setModifierModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
               </div>
@@ -382,39 +572,43 @@ export function GeneratorsView() {
           </div>
         </div>
 
-        {/* Ratios definition */}
-        <div className="generator-panel expanded">
-          <div className="generator-panel__header">
-            <Icon name="chev-r" size="sm" className="generator-panel__chevron" />
-            <span className="generator-panel__title">Ratio Families</span>
-            <span className="generator-panel__badge">{ratioFamilies.length}</span>
+        {/* Ratio Families */}
+        <div className="sidebar-section">
+          <div className="sidebar-section__header">
+            <span className="sidebar-section__title">Ratio Families</span>
+            <span className="sidebar-section__count">{ratioFamilies.length}</span>
           </div>
-          <div className="generator-panel__body">
-            <div className="modifiers-list">
-              {ratioFamilies.map((ratio) => (
-                <div key={ratio.id} className="modifier-row">
-                  <div
-                    className="ratio-row__preview"
-                    style={{
-                      aspectRatio: `${ratio.ratioA}/${ratio.ratioB}`,
-                    }}
-                  />
-                  <span className="modifier-row__name">{ratio.name}</span>
-                  <span className="modifier-row__formula">
-                    {ratio.ratioA}:{ratio.ratioB}
-                  </span>
-                  <div className="modifier-row__actions">
-                    <button className="action-btn" onClick={() => openEditRatio(ratio)}>
-                      <Icon name="edit" size="xs" />
-                    </button>
-                    <button className="action-btn action-btn--danger" onClick={() => setDeleteRatioId(ratio.id)}>
-                      <Icon name="trash" size="xs" />
-                    </button>
-                  </div>
+          <div className="sidebar-section__content">
+            {ratioFamilies.map(ratio => (
+              <div key={ratio.id} className="modifier-row">
+                <div
+                  className="ratio-row__preview"
+                  style={{ aspectRatio: `${ratio.ratioA}/${ratio.ratioB}` }}
+                />
+                <span className="modifier-row__name">{ratio.name}</span>
+                <span className="modifier-row__formula">{ratio.ratioA}:{ratio.ratioB}</span>
+                <div className="modifier-row__actions">
+                  <button
+                    className="action-btn"
+                    onClick={() => setEditingRatio({
+                      id: ratio.id,
+                      name: ratio.name,
+                      ratioA: ratio.ratioA,
+                      ratioB: ratio.ratioB,
+                    })}
+                  >
+                    <Icon name="edit" size="xs" />
+                  </button>
+                  <button
+                    className="action-btn action-btn--danger"
+                    onClick={() => setDeleteRatioId(ratio.id)}
+                  >
+                    <Icon name="trash" size="xs" />
+                  </button>
                 </div>
-              ))}
-            </div>
-            <div className="add-row" style={{ marginTop: 8 }} onClick={() => setRatioModalOpen(true)}>
+              </div>
+            ))}
+            <div className="add-row" onClick={() => setRatioModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
               </div>
@@ -422,9 +616,65 @@ export function GeneratorsView() {
             </div>
           </div>
         </div>
+
+        {/* Responsive Variants */}
+        <div className="sidebar-section">
+          <div className="sidebar-section__header">
+            <span className="sidebar-section__title">Responsive Variants</span>
+            <span className="sidebar-section__count">{responsiveVariants.length}</span>
+          </div>
+          <div className="sidebar-section__content">
+            {responsiveVariants.map(rv => (
+              <div key={rv.id} className="modifier-row">
+                <span className="modifier-row__name">{rv.name}</span>
+                {rv.description && (
+                  <span className="modifier-row__formula">{rv.description}</span>
+                )}
+                <div className="modifier-row__actions">
+                  <button
+                    className="action-btn action-btn--danger"
+                    onClick={() => setDeleteVariantId(rv.id)}
+                  >
+                    <Icon name="trash" size="xs" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="add-row" onClick={() => setVariantModalOpen(true)}>
+              <div className="add-row__icon">
+                <Icon name="plus" size="xs" />
+              </div>
+              <span>Add variant</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* MODALS */}
+      <FolderModal
+        isOpen={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
+        onSave={handleAddFolder}
+        folders={outputFolders}
+      />
+
+      <FolderModal
+        isOpen={!!editingFolder}
+        onClose={() => setEditingFolder(null)}
+        onSave={handleEditFolder}
+        editData={editingFolder}
+        folders={outputFolders}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteFolderId}
+        onClose={() => setDeleteFolderId(null)}
+        onConfirm={handleDeleteFolder}
+        title="Delete Folder"
+        message="Are you sure you want to delete this folder? All child folders will also be deleted."
+        itemName={outputFolders.find(f => f.id === deleteFolderId)?.name || 'folder'}
+      />
+
       <ModifierModal
         isOpen={modifierModalOpen}
         onClose={() => setModifierModalOpen(false)}
@@ -445,7 +695,7 @@ export function GeneratorsView() {
         onClose={() => setDeleteModifierId(null)}
         onConfirm={handleDeleteModifier}
         title="Delete Modifier"
-        message="Are you sure you want to delete this modifier? This action cannot be undone."
+        message="Are you sure you want to delete this modifier?"
         itemName={modifiers.find(m => m.id === deleteModifierId)?.name || 'modifier'}
       />
 
@@ -466,31 +716,23 @@ export function GeneratorsView() {
         isOpen={!!deleteRatioId}
         onClose={() => setDeleteRatioId(null)}
         onConfirm={handleDeleteRatio}
-        title="Delete Ratio Family"
-        message="Are you sure you want to delete this ratio family? This action cannot be undone."
+        title="Delete Ratio"
+        message="Are you sure you want to delete this ratio family?"
         itemName={ratioFamilies.find(r => r.id === deleteRatioId)?.name || 'ratio'}
       />
 
-      {/* Responsive Variant Modals */}
       <ResponsiveVariantModal
         isOpen={variantModalOpen}
         onClose={() => setVariantModalOpen(false)}
         onSave={handleAddVariant}
       />
 
-      <ResponsiveVariantModal
-        isOpen={!!editingVariant}
-        onClose={() => setEditingVariant(null)}
-        onSave={handleEditVariant}
-        editData={editingVariant}
-      />
-
       <ConfirmDeleteModal
         isOpen={!!deleteVariantId}
         onClose={() => setDeleteVariantId(null)}
         onConfirm={handleDeleteVariant}
-        title="Delete Responsive Variant"
-        message="Are you sure you want to delete this responsive variant? All its configurations will be lost."
+        title="Delete Variant"
+        message="Are you sure you want to delete this responsive variant?"
         itemName={responsiveVariants.find(v => v.id === deleteVariantId)?.name || 'variant'}
       />
     </div>

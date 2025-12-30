@@ -89,10 +89,35 @@ export interface ViewportBehavior {
   overrideRatioId?: string;              // if override, which ratio to use
 }
 
-// === OUTPUT LAYER ===
+// === OUTPUT LAYER (legacy - for backwards compatibility) ===
 export interface OutputLayer {
   id: string;
   path: string;                          // e.g., "grid/column", "grid/photo/width"
+  tokenCount: number;
+}
+
+// === OUTPUT FOLDER (new architecture) ===
+export interface OutputFolder {
+  id: string;
+  name: string;                          // e.g., "column", "photo/width"
+  parentId: string | null;               // null = root level
+  path: string;                          // full path e.g., "photo/{viewport}/width/{responsive}"
+  tokenPrefix: string;                   // e.g., "v-col-", "w-col-"
+  
+  // Configuration
+  enabledModifiers: string[];            // modifier IDs to apply
+  enabledResponsiveVariants: string[];   // responsive variant IDs
+  
+  // Ratio options
+  multiplyByRatio: boolean;              // if true, generates subfolder per ratio
+  enabledRatios: string[];               // ratio family IDs (used if multiplyByRatio)
+  
+  // Height generation
+  generateHeight: boolean;               // if true, calculates height = width × ratio
+  widthPrefix: string;                   // e.g., "w-col-" (used if generateHeight)
+  heightPrefix: string;                  // e.g., "h-col-" (used if generateHeight)
+  
+  // Computed (auto-calculated)
   tokenCount: number;
 }
 
@@ -112,12 +137,16 @@ export interface GridState {
   ratioFamilies: RatioFamily[];
   responsiveVariants: ResponsiveVariant[];
   
-  // Output
+  // Output (new architecture)
+  outputFolders: OutputFolder[];
+  
+  // Output (legacy)
   outputLayers: OutputLayer[];
   
   // UI State
   selectedViewportId: string | null;
   selectedStyleId: string | null;
+  selectedFolderId: string | null;
   activeTab: 'parameters' | 'generators' | 'preview';
 }
 
@@ -157,12 +186,22 @@ export interface GridActions {
   toggleModifierInRatio: (variantId: string, ratioId: string, modifierId: string, enabled: boolean) => void;
   updateViewportBehavior: (variantId: string, viewportId: string, behavior: 'inherit' | 'override', overrideColumns?: number) => void;
   
+  // Output folder actions (new)
+  addOutputFolder: (folder: Omit<OutputFolder, 'id' | 'tokenCount'>) => void;
+  updateOutputFolder: (id: string, updates: Partial<OutputFolder>) => void;
+  removeOutputFolder: (id: string) => void;
+  selectFolder: (id: string | null) => void;
+  toggleFolderModifier: (folderId: string, modifierId: string, enabled: boolean) => void;
+  toggleFolderResponsive: (folderId: string, variantId: string, enabled: boolean) => void;
+  toggleFolderRatio: (folderId: string, ratioId: string, enabled: boolean) => void;
+  
   // Tab navigation
   setActiveTab: (tab: 'parameters' | 'generators' | 'preview') => void;
   
   // Recalculation
   recalculateComputed: () => void;
   regenerateTokens: () => void;
+  recalculateFolderTokenCounts: () => void;
   
   // Import/Export
   importFromJSON: (json: unknown) => { success: boolean; errors: string[] };
@@ -182,7 +221,8 @@ export interface ScaleSessionData {
   modifiers: Modifier[];
   ratioFamilies: RatioFamily[];
   responsiveVariants: ResponsiveVariant[];
-  outputLayers: OutputLayer[];
+  outputFolders: OutputFolder[];
+  outputLayers: OutputLayer[]; // legacy
 }
 
 export interface ScaleSession {
