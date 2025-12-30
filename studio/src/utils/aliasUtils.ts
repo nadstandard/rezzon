@@ -1,5 +1,26 @@
 import type { Library, Variable, AliasType, AliasInfo, VariableValue } from '../types';
 
+// Cache dla szybkiego wyszukiwania zmiennych po nazwie
+const nameIndexCache = new WeakMap<Library['file'], Map<string, Variable>>();
+
+function getNameIndex(library: Library): Map<string, Variable> {
+  let index = nameIndexCache.get(library.file);
+  if (!index) {
+    index = new Map();
+    for (const variable of Object.values(library.file.variables)) {
+      // Indeksuj po pełnej nazwie
+      index.set(variable.name, variable);
+      // Indeksuj też po krótkiej nazwie (ostatni segment)
+      const shortName = variable.name.split('/').pop();
+      if (shortName && !index.has(shortName)) {
+        index.set(shortName, variable);
+      }
+    }
+    nameIndexCache.set(library.file, index);
+  }
+  return index;
+}
+
 /**
  * Znajduje zmienną w bibliotece po ID lub po nazwie
  */
@@ -8,24 +29,22 @@ function findVariableInLibrary(
   variableId: string,
   variableName?: string
 ): Variable | undefined {
-  // Najpierw szukaj po ID
+  // Najpierw szukaj po ID (O(1))
   if (library.file.variables[variableId]) {
     return library.file.variables[variableId];
   }
   
-  // Jeśli nie znaleziono po ID, szukaj po nazwie
+  // Jeśli nie znaleziono po ID, szukaj po nazwie używając indeksu (O(1))
   if (variableName) {
-    for (const variable of Object.values(library.file.variables)) {
-      // Porównaj końcową nazwę (bez ścieżki kolekcji)
-      const varShortName = variable.name.split('/').pop();
-      const targetShortName = variableName.split('/').pop();
-      if (varShortName === targetShortName) {
-        return variable;
-      }
-      // Albo pełną nazwę
-      if (variable.name === variableName) {
-        return variable;
-      }
+    const index = getNameIndex(library);
+    // Szukaj po pełnej nazwie
+    if (index.has(variableName)) {
+      return index.get(variableName);
+    }
+    // Szukaj po krótkiej nazwie
+    const shortName = variableName.split('/').pop();
+    if (shortName && index.has(shortName)) {
+      return index.get(shortName);
     }
   }
   

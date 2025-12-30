@@ -7,6 +7,7 @@ import type {
   VariableType,
   AliasType
 } from '../types';
+import { resolveAliasValue } from '../utils/aliasUtils';
 
 // Typ operacji do UNDO/REDO
 interface HistoryEntry {
@@ -665,6 +666,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const variable = libs[libIdx].file.variables[variableId];
       if (!variable) return state;
       
+      const currentValue = variable.valuesByMode[modeId];
+      if (!currentValue || currentValue.type !== 'VARIABLE_ALIAS') {
+        return state; // Nie ma aliasu do usunięcia
+      }
+      
+      // Znajdź resolved value PRZED usunięciem aliasu
+      const resolvedValue = resolveAliasValue(currentValue, modeId, libs[libIdx], libs);
+      
       const varName = variable.name.split('/').pop() || variable.name;
       const newHistory = saveToHistory(state, 'removeAlias', `Remove alias from "${varName}"`);
       
@@ -672,15 +681,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
       updatedLib.file = { ...updatedLib.file };
       updatedLib.file.variables = { ...updatedLib.file.variables };
       
-      // Znajdź resolved value - na razie ustawiamy null/undefined
+      // Ustaw resolved value jako nową wartość
       updatedLib.file.variables[variableId] = {
         ...variable,
         valuesByMode: {
           ...variable.valuesByMode,
-          [modeId]: {
-            type: 'DIRECT',
-            value: undefined,
-          },
+          [modeId]: resolvedValue.type === 'VARIABLE_ALIAS' 
+            ? { type: 'DIRECT', value: undefined } // Broken alias - nie ma co resolvować
+            : resolvedValue,
         },
       };
       

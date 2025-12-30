@@ -25,6 +25,8 @@ import { useAppStore } from '../../stores/appStore';
 import { VariablesSidebar } from '../../components/layout/VariablesSidebar';
 import { DetailsPanel } from '../../components/layout/DetailsPanel';
 import { BulkRenameModal, DeleteModal, DuplicateFolderModal } from '../../components/ui/CrudModals';
+import { BulkAliasModal } from '../../components/ui/AliasModals';
+import { AliasPicker } from '../../components/ui/AliasPicker';
 import { InlineEdit } from '../../components/ui/InlineEdit';
 import { buildFolderTree, flattenTree, getAllFolderIds } from '../../utils/folderTree';
 import type { FolderNode } from '../../utils/folderTree';
@@ -358,6 +360,11 @@ export function VariablesView() {
   const clearFilters = useAppStore((state) => state.clearFilters);
   const renameVariable = useAppStore((state) => state.renameVariable);
   
+  // Alias actions
+  const setAlias = useAppStore((state) => state.setAlias);
+  const removeAlias = useAppStore((state) => state.removeAlias);
+  const bulkAliasAction = useAppStore((state) => state.bulkAlias);
+  
   // UNDO/REDO
   const undo = useAppStore((state) => state.undo);
   const redo = useAppStore((state) => state.redo);
@@ -376,6 +383,18 @@ export function VariablesView() {
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [duplicateFolderPath, setDuplicateFolderPath] = useState('');
   const [duplicateFolderCount, setDuplicateFolderCount] = useState(0);
+  
+  // Bulk Alias Modal state
+  const [bulkAliasOpen, setBulkAliasOpen] = useState(false);
+  
+  // Alias Picker state
+  const [aliasPickerOpen, setAliasPickerOpen] = useState(false);
+  const [aliasPickerTarget, setAliasPickerTarget] = useState<{
+    variableId: string;
+    modeId: string;
+    position: { top: number; left: number };
+    currentAliasId?: string;
+  } | null>(null);
   
   // Inline edit state
   const [editingVariableId, setEditingVariableId] = useState<string | null>(null);
@@ -706,7 +725,12 @@ export function VariablesView() {
           
           <div className="toolbar__sep" />
           
-          <button className="tool-btn" title="Bulk Alias" disabled={selectedVariables.length === 0}>
+          <button 
+            className="tool-btn" 
+            title="Bulk Alias" 
+            disabled={selectedVariables.length === 0}
+            onClick={() => setBulkAliasOpen(true)}
+          >
             <Link className="icon" />
           </button>
           
@@ -909,16 +933,39 @@ export function VariablesView() {
                             )}
                           </div>
                         </td>
-                        {modes.map((mode) => (
-                          <td key={mode.modeId} className="val-cell">
-                            <ValueCell 
-                              value={variable.valuesByMode?.[mode.modeId]} 
-                              type={variable.resolvedType}
-                              allVariables={allVariables}
-                              allLibraries={libraries}
-                            />
-                          </td>
-                        ))}
+                        {modes.map((mode) => {
+                          const cellValue = variable.valuesByMode?.[mode.modeId];
+                          const currentAliasId = cellValue?.type === 'VARIABLE_ALIAS' ? cellValue.variableId : undefined;
+                          
+                          return (
+                            <td 
+                              key={mode.modeId} 
+                              className="val-cell"
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setAliasPickerTarget({
+                                  variableId: row.id,
+                                  modeId: mode.modeId,
+                                  position: { 
+                                    top: rect.bottom + window.scrollY, 
+                                    left: rect.left + window.scrollX 
+                                  },
+                                  currentAliasId,
+                                });
+                                setAliasPickerOpen(true);
+                              }}
+                            >
+                              <ValueCell 
+                                value={cellValue} 
+                                type={variable.resolvedType}
+                                allVariables={allVariables}
+                                allLibraries={libraries}
+                              />
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })
@@ -962,6 +1009,66 @@ export function VariablesView() {
         collectionId={selectedCollectionId || ''}
         variableCount={duplicateFolderCount}
       />
+      
+      {/* Alias Picker */}
+      {aliasPickerTarget && selectedLibrary && (
+        <AliasPicker
+          isOpen={aliasPickerOpen}
+          onClose={() => {
+            setAliasPickerOpen(false);
+            setAliasPickerTarget(null);
+          }}
+          onSelect={(targetVariableId) => {
+            if (selectedLibraryId && aliasPickerTarget) {
+              setAlias(
+                selectedLibraryId,
+                aliasPickerTarget.variableId,
+                aliasPickerTarget.modeId,
+                targetVariableId
+              );
+              setAliasPickerOpen(false);
+              setAliasPickerTarget(null);
+            }
+          }}
+          onRemoveAlias={aliasPickerTarget.currentAliasId ? () => {
+            if (selectedLibraryId && aliasPickerTarget) {
+              removeAlias(
+                selectedLibraryId,
+                aliasPickerTarget.variableId,
+                aliasPickerTarget.modeId
+              );
+              setAliasPickerOpen(false);
+              setAliasPickerTarget(null);
+            }
+          } : undefined}
+          sourceVariable={allVariables[aliasPickerTarget.variableId]}
+          currentAliasId={aliasPickerTarget.currentAliasId}
+          sourceLibrary={selectedLibrary}
+          allLibraries={libraries}
+          position={aliasPickerTarget.position}
+        />
+      )}
+      
+      {/* Bulk Alias Modal */}
+      {selectedLibrary && selectedCollection && (
+        <BulkAliasModal
+          isOpen={bulkAliasOpen}
+          onClose={() => setBulkAliasOpen(false)}
+          onApply={(_targetLibraryId, modeIds, matchResults) => {
+            if (selectedLibraryId) {
+              bulkAliasAction(selectedLibraryId, matchResults, modeIds);
+            }
+          }}
+          sourceLibrary={selectedLibrary}
+          sourceCollection={selectedCollection}
+          sourceFolderPath={selectedFolderInfo?.path || ''}
+          sourceVariables={selectedVariables
+            .map(id => allVariables[id])
+            .filter(Boolean) as Variable[]
+          }
+          allLibraries={libraries}
+        />
+      )}
     </>
   );
 }

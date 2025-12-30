@@ -165,9 +165,36 @@ export interface GridActions {
   regenerateTokens: () => void;
   
   // Import/Export
-  importFromJSON: (json: unknown) => void;
+  importFromJSON: (json: unknown) => { success: boolean; errors: string[] };
   exportToJSON: () => unknown;
+  exportSessionToJSON: () => ScaleSession;
 }
 
 // === FULL STORE TYPE ===
 export type GridStore = GridState & GridActions;
+
+// === SESSION FORMAT (for Import/Export) ===
+export interface ScaleSessionData {
+  viewports: Viewport[];
+  styles: Style[];
+  baseParameters: BaseParameter[];
+  computedParameters: ComputedParameter[];
+  modifiers: Modifier[];
+  ratioFamilies: RatioFamily[];
+  responsiveVariants: ResponsiveVariant[];
+  outputLayers: OutputLayer[];
+}
+
+export interface ScaleSession {
+  version: string;                // "1.0"
+  type: 'scale-session';
+  exportedAt: string;             // ISO date string
+  data: ScaleSessionData;
+}
+
+// === VALIDATION ===
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}

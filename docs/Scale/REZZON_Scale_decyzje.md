@@ -1,6 +1,6 @@
 # REZZON Scale – Decyzje projektowe
 
-**Data kompilacji:** 2025-12-30
+**Data aktualizacji:** 2025-12-30
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Decyzja:** Wszystkie listy są OTWARTE – user może dodawać własne elementy.
 
-Dotyczy: viewportów, stylów, parametrów base, modyfikatorów, ratio families, responsive variants, warstw output.
+Dotyczy: viewportów, stylów, parametrów base, modyfikatorów, ratio families, responsive variants, **folderów output**.
 
 Scale nie hardcoduje żadnej z tych list.
 
@@ -42,15 +42,22 @@ Uzasadnienie: Płaska struktura, łatwiejsze wyszukiwanie w Figmie.
 
 ---
 
-## 4. Hierarchia konfiguracji generatorów
+## 4. Kolejność modifiers = kolejność tokenów
 
-**Decyzja:** Kaskadowa konfiguracja: Responsive Variant → Ratio → Modifiers.
+**Decyzja:** Tokeny generują się według kolejności modifiers na liście globalnej.
 
-User wybiera:
-1. Które ratios są dostępne w danym responsive variant
-2. Które modifiers generować dla danego ratio
+Przykład: jeśli lista to `[-w-half, -w-margin, -to-edge]`, to tokeny:
+```
+v-col-1
+v-col-1-w-half      ← pierwszy modifier
+v-col-1-w-margin    ← drugi modifier
+v-col-1-to-edge     ← trzeci modifier
+v-col-2
+v-col-2-w-half
+...
+```
 
-Przykład: `static` może mieć 5 ratios ze wszystkimi modifiers, `to-tab-6-col` tylko 3 ratios z ograniczonymi modifiers.
+User kontroluje kolejność przez UI (drag & drop w przyszłości).
 
 ---
 
@@ -66,13 +73,35 @@ Uzasadnienie: Responsive variants często potrzebują różnych siatek na różn
 
 ---
 
-## 6. Jeden format eksportu
+## 6. Format eksportu: Figma Variables API
 
-**Decyzja:** Jeden plik JSON zawierający:
-1. Wygenerowane tokeny (format Figma Variables)
-2. Metadane Scale (konfiguracja do re-importu)
+**Decyzja:** Eksport w formacie zgodnym z Figma Variables REST API.
 
-Metadane Scale w description – Figma zignoruje, Portal/Scale odczyta.
+```json
+{
+  "version": "1.0",
+  "exportedAt": "...",
+  "collections": [{
+    "id": "VariableCollectionId:...",
+    "name": "Grid",
+    "modes": [
+      { "id": "mode:1", "name": "CROSS" },
+      { "id": "mode:2", "name": "CIRCLE" }
+    ],
+    "variables": [{
+      "id": "VariableID:...",
+      "name": "column/desktop/v-col-1",
+      "type": "FLOAT",
+      "valuesByMode": {
+        "mode:1": { "type": "FLOAT", "value": 104 },
+        "mode:2": { "type": "FLOAT", "value": 108 }
+      }
+    }]
+  }]
+}
+```
+
+Portal importuje bezpośrednio do Figmy.
 
 ---
 
@@ -143,34 +172,76 @@ Przykład: `-w-half` = `value + column-width / 2`
 
 ---
 
-## 13. Ratio w responsive variants
+## 13. Width vs Height – oddzielne generowanie
 
-**Decyzja:** Ratio może się zmieniać per viewport w ramach responsive variant.
+**Decyzja:** Szerokość generuje się RAZ, wysokość × ilość ratios.
 
-Przykład: `panoramic-high` (16:9) na desktop → `square` (1:1) na mobile.
+Uzasadnienie: Szerokość nie zależy od ratio. Tylko wysokość = width × ratio.
 
-User definiuje te przejścia w konfiguracji responsive variant.
-
----
-
-## 14. Warstwy output
-
-**Decyzja:** Predefiniowane warstwy z możliwością rozszerzenia:
-
-| Warstwa | Zawartość |
-|---------|-----------|
-| `base/` | Parametry wejściowe |
-| `column/` | v-col-X + modifiers |
-| `container/` | Responsive variants |
-| `margin/` | Marginesy |
-| `photo/width/` | w-col-X |
-| `photo/height/` | h-col-X per ratio |
-
-User może dodać własne warstwy.
+Struktura:
+```
+photo/{viewport}/width/{responsive}/     → jeden zestaw szerokości
+photo/{viewport}/height/{responsive}/
+   horizontal/   → wysokości dla 4:3
+   vertical/     → wysokości dla 3:4
+   square/       → wysokości dla 1:1
+```
 
 ---
 
-## 15. Wersjonowanie
+## 14. ARCHITEKTURA FOLDERÓW (NOWA)
+
+**Decyzja:** Aplikacja jest "głupia" – nie wie co to column, photo, margin. User sam buduje drzewo folderów.
+
+### Folder = konfiguracja
+
+Każdy folder ma:
+
+| Pole | Opis |
+|------|------|
+| **Nazwa/ścieżka** | User tworzy dowolną strukturę |
+| **Token prefix** | np. `v-col-`, `w-col-`, `mosaic-` |
+| **Modifiers** | Które z globalnej listy zastosować |
+| **Multiply by ratio?** | Toggle: tak/nie |
+| **Ratios** | Jeśli tak – które (tworzą subfolders) |
+| **Responsive variants** | Które (tworzą subfolders) |
+| **Width prefix** | Jeśli generuje szerokości |
+| **Height prefix** | Jeśli generuje wysokości |
+| **Generate height?** | Czy w ogóle obliczać wysokość |
+
+### Semantyka = nazwy
+
+`column`, `photo/width`, `margin` to tylko nazwy które USER nadaje folderom. Scale nie interpretuje – składa tokeny według konfiguracji.
+
+### Przykład konfiguracji
+
+```
+📁 column
+   path: "column/{viewport}"
+   prefix: "v-col-"
+   modifiers: [-w-half, -w-margin, -to-edge, -1G, -2G]
+   generate height: NIE
+
+📁 photo-mosaic
+   path: "photo/{viewport}/mosaic"
+   prefix: "mosaic-"
+   modifiers: [-w-margin]
+   generate height: TAK
+   ratios: [square, horizontal]
+   responsive: [static]
+```
+
+---
+
+## 15. Warstwy output jako foldery
+
+**Decyzja:** Stare "warstwy output" → nowe "foldery output" z pełną konfiguracją.
+
+User nie wybiera z predefiniowanej listy warstw. User TWORZY foldery i konfiguruje każdy osobno.
+
+---
+
+## 16. Wersjonowanie
 
 **Decyzja:** Semantic versioning dla aplikacji.
 

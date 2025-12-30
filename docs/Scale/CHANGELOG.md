@@ -1,5 +1,36 @@
 # REZZON Scale – CHANGELOG
 
+## [0.2.8] – 2025-12-30
+
+### Changed
+- **Eksport w formacie Figma Variables API**
+  - Pełna kompatybilność z Figma REST API
+  - Struktura: collections → modes → variables → valuesByMode
+  - Automatyczne generowanie ID dla collections, modes, variables
+  - Eksportowane warstwy: base/*, column/*, photo/*
+
+### Technical
+- Nowa funkcja `generateFigmaExport()` w engine/generator.ts
+- Typy: FigmaExport, FigmaCollection, FigmaVariable, FigmaMode
+
+---
+
+## [0.2.7] – 2025-12-30
+
+### Added
+- **Analiza R4-Grid JSON** – pełna dokumentacja struktury 3590 zmiennych
+  - Warstwy: base (46), column (288), container (392), margin (120), photo (2744)
+  - Modifiers: -1G, -2G, -w-half, -w-margin, -to-edge
+  - Warianty kondycyjne: -DL (Desktop-Laptop), -TM (Tablet-Mobile)
+
+### Identified Gaps
+- Brakujące warstwy: container, margin
+- Brakujący modifier: -2G
+- Specjalne tokeny: v-col-0-w-half, v-col-viewport, v-full-w-margin
+- Konfiguracja per-folder (architektura do przeprojektowania)
+
+---
+
 ## [0.2.6] – 2025-12-30
 
 ### Added

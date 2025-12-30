@@ -1,7 +1,7 @@
 # REZZON Scale – Briefing
 
 **Data aktualizacji:** 2025-12-30  
-**Status:** Implementacja w toku (v0.2.6)
+**Status:** Implementacja w toku (v0.2.8)
 
 ---
 
@@ -17,7 +17,7 @@
 **Kluczowa idea:**
 > "Cała ta apka to zbiór prostych obliczeń matematycznych i warunków wyznaczanych przez usera"
 
-Scale to **kalkulator z UI** w formie **edytora** (nie generatora) — user widzi dane, manipuluje nimi na żywo, widzi efekty, iteruje.
+Scale to **kalkulator z UI** w formie **edytora** (nie generatora) – user widzi dane, manipuluje nimi na żywo, widzi efekty, iteruje.
 
 ---
 
@@ -33,7 +33,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) — user widz
 | Modyfikatory | -w-half, -w-margin, -to-edge | własne (-1g, -2g, cokolwiek) |
 | Ratio families | horizontal, vertical, square, panoramic-high, panoramic-low | własne |
 | Warianty responsywne | static, to-tab-6-col, to-mobile-2col | własne |
-| Warstwy output | column, container, photo | własne |
+| **Foldery output** | column, container, photo | własne (pełna dowolność) |
 
 **Scale nie hardcoduje żadnej z tych list.**
 
@@ -48,7 +48,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) — user widz
 
 ---
 
-## 4. Grid — Macierz
+## 4. Grid – Macierz
 
 ### Struktura danych
 
@@ -60,7 +60,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) — user widz
 
 Każda komórka macierzy = zestaw parametrów base.
 
-### UI — jak Figma Variables
+### UI – jak Figma Variables
 
 Tabela z mode'ami jako kolumny, zmiennymi jako wiersze, inline editing.
 
@@ -129,34 +129,14 @@ v-full = ingrid
 | `-w-half` | 1 to n-1 | NIE | `value + col-width/2` |
 | `-w-margin` | 1 to n | TAK (×2) | `value + photo-margin` |
 | `-to-edge` | 1 to n | TAK (×2) | `value + margin-m` |
+| `-1G` | 1 to n-1 | NIE | `value + gutter` |
+| `-2G` | 1 to n-2 | NIE | `value + 2×gutter` |
 
-### User może dodać własne, np.:
-- `-1g` → `value + gutter`
-- `-2g` → `value + (2 × gutter)`
-- cokolwiek innego
+### User może dodać własne
 
-### Wizualizacja zasięgów:
+### Kolejność modifiers = kolejność tokenów
 
-```
-|←── margin-xs ──→|←──────────── ingrid ────────────→|←── margin-xs ──→|
-|←───────────── margin-m ─────────────→|←───────────── margin-m ─────────────→|
-|←─────────────────────── viewport ───────────────────────→|
-
-v-col-12           = ingrid
-v-col-12-w-margin  = ingrid + photo-margin
-v-col-12-to-edge   = ingrid + margin-m
-
-v-full-w-margin    = ingrid + 2 × photo-margin    (symetria)
-v-full-to-edge     = viewport                      (symetria)
-```
-
-### UI definiowania modyfikatora:
-
-User określa:
-1. **Name** (np. `-w-half`)
-2. **Formula** (z dropdownów: value, col-width, gutter, margin-m, margin-xs, ingrid, stała + operatory)
-3. **Apply to** (zakres kolumn: od–do)
-4. **Has "full" variant** (checkbox, ×2 dla symetrii)
+Tokeny generują się według kolejności modifiers na liście globalnej.
 
 ### Modyfikatory to sufiksy, nie subfoldery
 
@@ -167,8 +147,6 @@ h-col-1-w-half      ← modifier jako sufiks
 h-col-1-w-margin    ← modifier jako sufiks
 h-col-1-to-edge     ← modifier jako sufiks
 ```
-
-Modyfikatory NIE tworzą dodatkowych subfolderów w strukturze.
 
 ---
 
@@ -193,15 +171,10 @@ width = v-col-n (z grida)
 height = width × (ratio-b / ratio-a)
 ```
 
-### Struktura w Figmie:
+### Width vs Height
 
-```
-grid/photo/width/{responsive-variant}/w-col-1...
-grid/photo/height/{responsive-variant}/{ratio-family}/h-col-1...
-```
-
-Width jest płaskie (nie zależy od ratio).
-Height ma podfoldery per ratio family.
+**Szerokość generuje się RAZ** – nie zależy od ratio.
+**Wysokość generuje się × ilość ratios** – każde ratio to subfolder.
 
 ---
 
@@ -221,148 +194,143 @@ Height ma podfoldery per ratio family.
 
 User może dodać własne.
 
-### Logika:
-
-Wariant responsywny = **osobny zestaw tokenów** z własnymi regułami per viewport.
-
-Nazwa opisuje zachowanie: `to-tab-6-col` = "na tablecie przechodzi na 6 kolumn".
-
-User decyduje per zestaw, jak ma się zachować na różnych viewportach.
-
 ### Viewport Behaviors (v0.2.6)
 
 W ramach każdego responsive variant user może określić per viewport:
 - **Inherit** – używa domyślnej liczby kolumn z parametrów
 - **Override columns** – wymusza inną liczbę kolumn dla tego viewportu
 
-Przykład: `to-mob-4-col` może mieć:
-- Desktop (1920): inherit (12 col)
-- Tablet (768): override → 6 col
-- Mobile (390): override → 4 col
-
 ---
 
-## 12. HIERARCHIA KONFIGURACJI GENERATORÓW
+## 12. ARCHITEKTURA FOLDERÓW OUTPUT
 
-To jest kluczowa sekcja opisująca jak user konfiguruje co się generuje.
+### Stary model (hardcoded)
 
-### Struktura folderów w eksporcie
-
+Generator miał sztywną strukturę:
 ```
-base/{viewport}/                              ← parametry wejściowe
-column/{viewport}/                            ← v-col-1, v-col-1-w-half, ...
-container/{viewport}/                         ← responsive variants
-margin/{viewport}/                            ← marginesy
-photo/{viewport}/width/{responsive}/          ← w-col-1, w-col-1-w-half, ...
-photo/{viewport}/height/{responsive}/{ratio}/ ← h-col-1, h-col-1-w-half, ...
+column/{viewport}/...
+photo/{viewport}/width/{responsive}/...
+photo/{viewport}/height/{responsive}/{ratio}/...
 ```
 
-### Hierarchia decyzji usera
+User nie mógł zmienić ścieżek, prefixów, ani decydować co gdzie trafia.
 
-User konfiguruje **kaskadowo**:
+### Nowy model (elastyczny)
 
-```
-1. RESPONSIVE VARIANT (np. to-tab-6-col)
-   │
-   ├── 2. RATIO (np. horizontal, square)
-   │   │   User wybiera KTÓRE ratios są dostępne w tym responsive variant
-   │   │   Przykład: static ma 5 ratios, to-tab-6-col ma tylko 3
-   │   │
-   │   └── 3. MODIFIERS (np. -w-half, -w-margin, -to-edge)
-   │           User wybiera KTÓRE modifiers generować dla tego ratio
-   │           Przykład: panoramic-high może mieć tylko -w-margin
-   │
-   └── Generowane tokeny = kombinacja powyższych
-```
+**Aplikacja jest "głupia"** – nie wie co to column, photo, margin. User sam buduje drzewo folderów.
+
+### Folder = konfiguracja
+
+Każdy folder ma:
+
+| Pole | Opis |
+|------|------|
+| **Nazwa/ścieżka** | User tworzy dowolną strukturę |
+| **Token prefix** | np. `v-col-`, `w-col-`, `mosaic-` |
+| **Modifiers** | Które z globalnej listy zastosować |
+| **Multiply by ratio?** | Toggle: tak/nie |
+| **Ratios** | Jeśli tak – które (tworzą subfolders) |
+| **Responsive variants** | Które (tworzą subfolders) |
+| **Generate height?** | Czy w ogóle obliczać wysokość |
+| **Width prefix** | Jeśli generuje szerokości |
+| **Height prefix** | Jeśli generuje wysokości |
+
+### Semantyka = nazwy
+
+`column`, `photo/width`, `margin` to tylko nazwy które USER nadaje folderom.
+
+Generator nie interpretuje semantyki – składa tokeny według konfiguracji.
 
 ### Przykład konfiguracji
 
 ```
-Responsive: to-tab-6-col
-├── Ratio: horizontal
-│   ├── ☑ -w-half
-│   ├── ☑ -w-margin
-│   ├── ☑ -to-edge
-│   └── ☐ -1G
-├── Ratio: vertical
-│   ├── ☑ -w-half
-│   ├── ☐ -w-margin
-│   └── ☐ -to-edge
-└── Ratio: square
-    └── (brak modyfikatorów)
+📁 column
+   path: "column"
+   prefix: "v-col-"
+   modifiers: [-w-half, -w-margin, -to-edge, -1G, -2G]
+   responsive: [static]
+   generate height: NIE
 
-Responsive: static
-├── Ratio: horizontal (wszystkie modifiers)
-├── Ratio: vertical (wszystkie modifiers)
-├── Ratio: square (wszystkie modifiers)
-├── Ratio: panoramic-high (tylko -w-margin)
-└── Ratio: panoramic-low (tylko -w-margin)
+📁 photo-width
+   path: "photo/width"
+   prefix: "w-col-"
+   modifiers: [-w-half, -w-margin, -to-edge]
+   responsive: [static, to-tab-6-col, to-mobile-6-col]
+   generate height: NIE
+
+📁 photo-height
+   path: "photo/height"
+   prefix: "h-col-"
+   modifiers: [-w-half, -w-margin, -to-edge]
+   responsive: [static, to-tab-6-col, to-mobile-6-col]
+   ratios: [horizontal, vertical, square]
+   generate height: TAK
+   
+📁 mosaic
+   path: "photo/mosaic"
+   prefix: "mosaic-"
+   modifiers: [-w-margin]
+   responsive: [static]
+   ratios: [square]
+   generate height: TAK
 ```
 
-### Responsywność ratio
+### Generowana struktura
 
-Ratio może się **zmieniać per viewport** w ramach responsive variant.
-
-Przykład: `panoramic-high` (16:9) na desktop może stać się `square` (1:1) na mobile.
-
-User definiuje te przejścia per responsive variant.
-
-### Co to generuje
-
-Dla konfiguracji `to-tab-6-col/horizontal` z modifiers `-w-half, -w-margin, -to-edge`:
-
+Z powyższej konfiguracji:
 ```
-photo/desktop/height/to-tab-6-col/horizontal/h-col-1
-photo/desktop/height/to-tab-6-col/horizontal/h-col-1-w-half
-photo/desktop/height/to-tab-6-col/horizontal/h-col-1-w-margin
-photo/desktop/height/to-tab-6-col/horizontal/h-col-1-to-edge
-photo/desktop/height/to-tab-6-col/horizontal/h-col-2
-photo/desktop/height/to-tab-6-col/horizontal/h-col-2-w-half
-...
+column/{viewport}/v-col-1, v-col-1-w-half, ...
+photo/width/{viewport}/{responsive}/w-col-1, w-col-1-w-half, ...
+photo/height/{viewport}/{responsive}/horizontal/h-col-1, ...
+photo/height/{viewport}/{responsive}/vertical/h-col-1, ...
+photo/mosaic/{viewport}/static/square/mosaic-1, ...
 ```
 
 ---
 
-## 13. Warstwy output (lista otwarta)
+## 13. Eksport – Format Figma Variables API
 
-### Obecne w arkuszu:
+Eksport w formacie zgodnym z Figma REST API:
 
-| Warstwa | Opis |
-|---------|------|
-| `base/` | Parametry wejściowe per viewport |
-| `column/` | Bazowe szerokości kolumn + modifiers |
-| `container/` | Responsive variants |
-| `margin/` | Marginesy |
-| `photo/width/` | Szerokości dla zdjęć + responsywność |
-| `photo/height/` | Wysokości per ratio family + responsywność |
+```json
+{
+  "version": "1.0",
+  "exportedAt": "2025-12-30T...",
+  "fileName": "Grid",
+  "collections": [{
+    "id": "VariableCollectionId:new:1",
+    "name": "Grid",
+    "modes": [
+      { "id": "mode:1", "name": "CROSS" },
+      { "id": "mode:2", "name": "CIRCLE" }
+    ],
+    "variables": [{
+      "id": "VariableID:new:1",
+      "name": "column/desktop/v-col-1",
+      "type": "FLOAT",
+      "valuesByMode": {
+        "mode:1": { "type": "FLOAT", "value": 104 },
+        "mode:2": { "type": "FLOAT", "value": 108 }
+      }
+    }]
+  }]
+}
+```
 
-User może dodać własne warstwy.
-
-Container używa tej samej formuły co column — to tylko inna organizacja z responsywnością.
+Portal importuje bezpośrednio do Figmy.
 
 ---
 
 ## 14. Ograniczenia techniczne
 
-- Max **10 viewportów** (kolekcji) — ograniczenie Figmy
-- Max **10 stylów** (mode'ów/kolumn) — ograniczenie Figmy
-- Nazwy folderów bez `:` — ograniczenie Figmy
+- Max **10 viewportów** (kolekcji) – ograniczenie Figmy
+- Max **10 stylów** (mode'ów/kolumn) – ograniczenie Figmy
+- Nazwy folderów bez `:` – ograniczenie Figmy
 
 ---
 
-## 15. Eksport
-
-**Jeden format eksportu**, który:
-1. Figma łyka przez Portal
-2. Portal potrafi wyeksportować z powrotem do Scale
-3. Zawiera wygenerowane tokeny + definicje Scale (viewporty, style, modyfikatory, ratio, responsywność)
-
-Definicje Scale mogą siedzieć w metadanych/description — Figma zignoruje, Portal odczyta.
-
----
-
-## 16. Pliki referencyjne
+## 15. Pliki referencyjne
 
 - Arkusz Excel: `R4_1_GRID.xlsx`
-- JSON eksport: `1-R4-Grid_2025-12-18.json`
+- JSON eksport R4-Grid: `1-R4-Grid_2025-12-30.json` (3590 zmiennych)
 - Wspólny CSS: `rezzon-scale-styles.css`

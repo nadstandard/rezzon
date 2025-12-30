@@ -1,7 +1,18 @@
 import { create } from 'zustand';
-import type { GridStore } from '../types';
+import type { 
+  GridStore, 
+  Viewport, 
+  Style, 
+  BaseParameter, 
+  ComputedParameter,
+  Modifier,
+  RatioFamily,
+  ResponsiveVariant,
+  OutputLayer,
+  ScaleSession
+} from '../types';
 import { recalculateAllComputed } from '../engine/formulas';
-import { generateColumnTokensWithModifiers, countTokens, generateExportData } from '../engine/generator';
+import { generateColumnTokensWithModifiers, countTokens, generateFigmaExport } from '../engine/generator';
 
 // === HELPER: Generate unique ID ===
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -457,27 +468,65 @@ export const useGridStore = create<GridStore>((set, get) => ({
 
   // === IMPORT/EXPORT ===
   importFromJSON: (json) => {
-    console.log('Importing from JSON...', json);
-    // TODO: Implement JSON parser
+    try {
+      // Validate basic structure
+      const session = json as { type?: string; version?: string; data?: unknown };
+      
+      if (session.type !== 'scale-session') {
+        console.error('Invalid session type');
+        return { success: false, errors: ['Invalid file type. Expected "scale-session"'] };
+      }
+      
+      if (!session.data || typeof session.data !== 'object') {
+        console.error('Missing data section');
+        return { success: false, errors: ['Missing data section'] };
+      }
+      
+      const data = session.data as Record<string, unknown>;
+      
+      // Validate required arrays
+      const requiredArrays = ['viewports', 'styles', 'baseParameters'];
+      for (const arr of requiredArrays) {
+        if (!Array.isArray(data[arr])) {
+          return { success: false, errors: [`Missing or invalid "${arr}" array`] };
+        }
+      }
+      
+      // Import data
+      set({
+        viewports: (data.viewports as Viewport[]) || [],
+        styles: (data.styles as Style[]) || [],
+        baseParameters: (data.baseParameters as BaseParameter[]) || [],
+        computedParameters: (data.computedParameters as ComputedParameter[]) || [],
+        modifiers: (data.modifiers as Modifier[]) || [],
+        ratioFamilies: (data.ratioFamilies as RatioFamily[]) || [],
+        responsiveVariants: (data.responsiveVariants as ResponsiveVariant[]) || [],
+        outputLayers: (data.outputLayers as OutputLayer[]) || [],
+        selectedViewportId: (data.viewports as Viewport[])?.[0]?.id || null,
+        selectedStyleId: null,
+        activeTab: 'parameters',
+      });
+      
+      // Recalculate computed values
+      get().recalculateComputed();
+      
+      console.log('Session imported successfully');
+      return { success: true, errors: [] };
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+      console.error('Import error:', errorMsg);
+      return { success: false, errors: [errorMsg] };
+    }
   },
 
-  exportToJSON: () => {
+  exportSessionToJSON: () => {
     const state = get();
     
-    // Generate all tokens for export
-    const exportData = generateExportData(
-      state.viewports,
-      state.styles,
-      state.baseParameters,
-      state.computedParameters,
-      state.modifiers,
-      state.ratioFamilies,
-      state.responsiveVariants
-    );
-    
-    return {
-      // Scale configuration (for re-import)
-      config: {
+    const session: ScaleSession = {
+      version: '1.0',
+      type: 'scale-session',
+      exportedAt: new Date().toISOString(),
+      data: {
         viewports: state.viewports,
         styles: state.styles,
         baseParameters: state.baseParameters,
@@ -485,10 +534,26 @@ export const useGridStore = create<GridStore>((set, get) => ({
         modifiers: state.modifiers,
         ratioFamilies: state.ratioFamilies,
         responsiveVariants: state.responsiveVariants,
+        outputLayers: state.outputLayers,
       },
-      // Generated tokens (for Figma)
-      tokens: exportData.tokens,
-      metadata: exportData.metadata,
     };
+    
+    return session;
+  },
+
+  exportToJSON: () => {
+    const state = get();
+    
+    // Generate export in Figma Variables API format
+    return generateFigmaExport(
+      state.viewports,
+      state.styles,
+      state.baseParameters,
+      state.computedParameters,
+      state.modifiers,
+      state.ratioFamilies,
+      state.responsiveVariants,
+      'Grid'  // Collection name
+    );
   },
 }));

@@ -750,3 +750,366 @@ export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: Re
     </Modal>
   );
 }
+
+// ============================================
+// IMPORT SESSION MODAL
+// ============================================
+
+interface ImportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImport: (data: unknown) => { success: boolean; errors: string[] };
+}
+
+export function ImportModal({ isOpen, onClose, onImport }: ImportModalProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{
+    version?: string;
+    exportedAt?: string;
+    viewports?: number;
+    styles?: number;
+    modifiers?: number;
+    ratios?: number;
+    variants?: number;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<unknown>(null);
+
+  const resetState = () => {
+    setFile(null);
+    setPreview(null);
+    setError(null);
+    setParsedData(null);
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    }
+  }, [isOpen]);
+
+  const validateAndParseFile = async (f: File) => {
+    setError(null);
+    setPreview(null);
+    setParsedData(null);
+
+    // Check file type
+    if (!f.name.endsWith('.json')) {
+      setError('Please select a JSON file');
+      return;
+    }
+
+    try {
+      const text = await f.text();
+      const json = JSON.parse(text);
+
+      // Validate structure
+      if (json.type !== 'scale-session') {
+        setError('Invalid file: not a Scale session file. Expected type: "scale-session"');
+        return;
+      }
+
+      if (!json.version) {
+        setError('Invalid file: missing version');
+        return;
+      }
+
+      if (!json.data) {
+        setError('Invalid file: missing data section');
+        return;
+      }
+
+      const data = json.data;
+
+      // Validate required arrays
+      const requiredArrays = ['viewports', 'styles', 'baseParameters'];
+      for (const arr of requiredArrays) {
+        if (!Array.isArray(data[arr])) {
+          setError(`Invalid file: missing or invalid "${arr}" array`);
+          return;
+        }
+      }
+
+      // Build preview
+      setPreview({
+        version: json.version,
+        exportedAt: json.exportedAt,
+        viewports: data.viewports?.length || 0,
+        styles: data.styles?.length || 0,
+        modifiers: data.modifiers?.length || 0,
+        ratios: data.ratioFamilies?.length || 0,
+        variants: data.responsiveVariants?.length || 0,
+      });
+
+      setParsedData(json);
+      setFile(f);
+    } catch (e) {
+      setError(`Failed to parse JSON: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      validateAndParseFile(f);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      validateAndParseFile(f);
+    }
+  };
+
+  const handleImport = () => {
+    if (!parsedData) return;
+
+    const result = onImport(parsedData);
+    if (result.success) {
+      onClose();
+    } else {
+      setError(result.errors.join(', '));
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Import Scale Session"
+      footer={
+        <>
+          <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
+          <button 
+            className="btn btn--primary" 
+            onClick={handleImport}
+            disabled={!parsedData || !!error}
+          >
+            <Icon name="dl" size="sm" />
+            Import Session
+          </button>
+        </>
+      }
+    >
+      {/* Drop zone */}
+      <div
+        className={`import-dropzone ${isDragging ? 'dragging' : ''} ${file ? 'has-file' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById('import-file-input')?.click()}
+        style={{
+          border: `2px dashed ${isDragging ? 'var(--accent)' : error ? 'var(--red)' : 'var(--border)'}`,
+          borderRadius: 8,
+          padding: '32px 24px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          background: isDragging ? 'var(--bg-selected)' : 'var(--bg-app)',
+          transition: 'all 0.15s',
+          marginBottom: 16,
+        }}
+      >
+        <input
+          id="import-file-input"
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
+        
+        {file ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <Icon name="check" style={{ color: 'var(--green)' }} />
+            <span style={{ color: 'var(--text)' }}>{file.name}</span>
+            <button 
+              className="btn btn--ghost" 
+              style={{ padding: '4px 8px', marginLeft: 8 }}
+              onClick={(e) => { e.stopPropagation(); resetState(); }}
+            >
+              <Icon name="x" size="sm" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <Icon name="ul" style={{ marginBottom: 12, color: 'var(--text-muted)' }} />
+            <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
+              Drop Scale session file here
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+              or click to browse
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          background: 'var(--red-bg)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: 6,
+          padding: '10px 12px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+        }}>
+          <Icon name="warn" size="sm" style={{ color: 'var(--red)', flexShrink: 0, marginTop: 2 }} />
+          <span style={{ color: 'var(--red)', fontSize: 12 }}>{error}</span>
+        </div>
+      )}
+
+      {/* Preview */}
+      {preview && !error && (
+        <div className="modal__info">
+          <div className="modal__info-row">
+            <span className="modal__info-label">Version</span>
+            <span className="modal__info-value">{preview.version}</span>
+          </div>
+          {preview.exportedAt && (
+            <div className="modal__info-row">
+              <span className="modal__info-label">Exported</span>
+              <span className="modal__info-value">
+                {new Date(preview.exportedAt).toLocaleString()}
+              </span>
+            </div>
+          )}
+          <div className="modal__info-row">
+            <span className="modal__info-label">Viewports</span>
+            <span className="modal__info-value">{preview.viewports}</span>
+          </div>
+          <div className="modal__info-row">
+            <span className="modal__info-label">Styles</span>
+            <span className="modal__info-value">{preview.styles}</span>
+          </div>
+          <div className="modal__info-row">
+            <span className="modal__info-label">Modifiers</span>
+            <span className="modal__info-value">{preview.modifiers}</span>
+          </div>
+          <div className="modal__info-row">
+            <span className="modal__info-label">Ratio Families</span>
+            <span className="modal__info-value">{preview.ratios}</span>
+          </div>
+          <div className="modal__info-row">
+            <span className="modal__info-label">Responsive Variants</span>
+            <span className="modal__info-value">{preview.variants}</span>
+          </div>
+        </div>
+      )}
+
+      <p className="modal__hint">
+        <strong>Warning:</strong> Importing will replace your current session data. Make sure to export first if needed.
+      </p>
+    </Modal>
+  );
+}
+
+// ============================================
+// EXPORT OPTIONS MODAL
+// ============================================
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onExportSession: () => void;
+  onExportTokens: () => void;
+  tokenCount: number;
+}
+
+export function ExportModal({ isOpen, onClose, onExportSession, onExportTokens, tokenCount }: ExportModalProps) {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Export"
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Session export option */}
+        <div
+          className="export-option"
+          onClick={() => { onExportSession(); onClose(); }}
+          style={{
+            background: 'var(--bg-app)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: 16,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
+          onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              background: 'var(--bg-elevated)',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Icon name="hist" style={{ color: 'var(--accent)' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Scale Session</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                .json • Reload later to continue work
+              </div>
+            </div>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+            Saves viewports, styles, parameters, modifiers, ratios, and responsive variants. 
+            Use this to backup your work or continue later.
+          </p>
+        </div>
+
+        {/* Tokens export option */}
+        <div
+          className="export-option"
+          onClick={() => { onExportTokens(); onClose(); }}
+          style={{
+            background: 'var(--bg-app)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: 16,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
+          onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              background: 'var(--green-bg)',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Icon name="grid" style={{ color: 'var(--green)' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Generated Tokens</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                .json • {tokenCount.toLocaleString()} tokens for Figma
+              </div>
+            </div>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+            Exports generated token values ready for Figma Variables API. 
+            Use with REZZON Portal plugin.
+          </p>
+        </div>
+      </div>
+    </Modal>
+  );
+}

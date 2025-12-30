@@ -9,8 +9,8 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.2.6  
-**Faza:** Grid MVP (~75% complete)
+**Wersja:** 0.2.8  
+**Faza:** Architektura Folderów (~60% Grid MVP)
 
 ## Funkcjonalności
 
@@ -29,7 +29,7 @@ Część ekosystemu REZZON:
 **Token Generator**
 - Generowanie v-col-X, w-col-X, h-col-X
 - Aplikowanie modyfikatorów
-- Eksport JSON
+- **Eksport w formacie Figma Variables API**
 
 **Generators View**
 - CRUD Modifiers (name, formula, range, full variant)
@@ -37,7 +37,7 @@ Część ekosystemu REZZON:
 - CRUD Responsive Variants (name, description)
 - Toggle ratios per variant
 - Toggle modifiers per ratio
-- **Viewport Behaviors** – column override per viewport
+- Viewport Behaviors – column override per viewport
 
 **Preview View**
 - Tabela wszystkich tokenów z wartościami per style
@@ -52,14 +52,16 @@ Część ekosystemu REZZON:
 
 ### 🔄 W toku
 
-- Import JSON (sesji Scale)
-- Format eksportu zgodny z Figma Variables API
-- Preview polish (liczniki, podświetlanie)
+**Architektura Folderów Output**
+- User sam buduje drzewo folderów
+- Każdy folder: ścieżka, prefix, modifiers, ratios, responsive
+- Generator według konfiguracji użytkownika
 
 ### ☐ Planowane
 
 - Sekcje: Typography, Spacing, Radii
 - Persystencja (IndexedDB)
+- Drag & drop (kolejność modifiers, folderów)
 - Skróty klawiszowe
 
 ## Uruchomienie
@@ -79,7 +81,7 @@ src/
 │   └── Icons.tsx        # SVG sprites
 ├── engine/
 │   ├── formulas.ts      # Silnik formuł (computed values)
-│   └── generator.ts     # Generator tokenów
+│   └── generator.ts     # Generator tokenów + eksport Figma
 ├── store/
 │   └── gridStore.ts     # Zustand store
 ├── types/
@@ -110,10 +112,29 @@ v-full-w-margin = ingrid + 2×photo-margin
 v-full-to-edge = viewport
 ```
 
+## Eksport
+
+Format zgodny z Figma Variables API:
+
+```json
+{
+  "collections": [{
+    "name": "Grid",
+    "modes": [{ "id": "mode:1", "name": "CROSS" }],
+    "variables": [{
+      "name": "column/desktop/v-col-1",
+      "type": "FLOAT",
+      "valuesByMode": { "mode:1": { "value": 104 } }
+    }]
+  }]
+}
+```
+
 ## Dokumentacja
 
 - `REZZON_Scale_roadmap.md` – plan implementacji
 - `REZZON_Scale_briefing.md` – pełny briefing Grid
+- `REZZON_Scale_decyzje.md` – decyzje projektowe
 - `CHANGELOG.md` – historia zmian
 
 ## Technologie

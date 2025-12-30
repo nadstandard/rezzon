@@ -415,6 +415,253 @@ export interface ExportData {
 /**
  * Generate complete export data with all tokens
  */
+// ============================================
+// FIGMA VARIABLES FORMAT
+// ============================================
+
+export interface FigmaVariable {
+  id: string;
+  name: string;
+  type: 'FLOAT' | 'STRING' | 'BOOLEAN' | 'COLOR';
+  description: string;
+  hiddenFromPublishing: boolean;
+  scopes: string[];
+  codeSyntax: Record<string, unknown>;
+  valuesByMode: Record<string, { type: string; value: number | string | boolean }>;
+}
+
+export interface FigmaMode {
+  id: string;
+  name: string;
+}
+
+export interface FigmaCollection {
+  id: string;
+  name: string;
+  defaultModeId: string;
+  hiddenFromPublishing: boolean;
+  modes: FigmaMode[];
+  variables: FigmaVariable[];
+}
+
+export interface FigmaExport {
+  version: string;
+  exportedAt: string;
+  fileName: string;
+  collections: FigmaCollection[];
+}
+
+/**
+ * Generate export in Figma Variables API format
+ */
+export function generateFigmaExport(
+  viewports: Viewport[],
+  styles: Style[],
+  baseParameters: { name: string; values: Record<string, number> }[],
+  computedParameters: { name: string; values: Record<string, number> }[],
+  modifiers: Modifier[],
+  ratioFamilies: RatioFamily[],
+  responsiveVariants: ResponsiveVariant[],
+  collectionName: string = 'Grid'
+): FigmaExport {
+  // Generate mode IDs for each style
+  const modes: FigmaMode[] = styles.map((style, idx) => ({
+    id: `mode:${idx + 1}`,
+    name: style.name.toUpperCase(),
+  }));
+
+  const defaultModeId = modes[0]?.id || 'mode:1';
+
+  // Map style ID to mode ID
+  const styleModeMap: Record<string, string> = {};
+  styles.forEach((style, idx) => {
+    styleModeMap[style.id] = modes[idx].id;
+  });
+
+  const variables: FigmaVariable[] = [];
+  let varIndex = 1;
+
+  // Helper to create a variable
+  const createVariable = (
+    name: string,
+    valuesByStyle: Record<string, number>
+  ): FigmaVariable => {
+    const valuesByMode: Record<string, { type: string; value: number }> = {};
+    
+    styles.forEach((style) => {
+      const modeId = styleModeMap[style.id];
+      const value = valuesByStyle[style.id] ?? 0;
+      valuesByMode[modeId] = { type: 'FLOAT', value: Math.round(value) };
+    });
+
+    return {
+      id: `VariableID:new:${varIndex++}`,
+      name,
+      type: 'FLOAT',
+      description: '',
+      hiddenFromPublishing: false,
+      scopes: ['ALL_SCOPES'],
+      codeSyntax: {},
+      valuesByMode,
+    };
+  };
+
+  // Helper to get param values
+  const getBase = (paramName: string): Record<string, number> => {
+    const param = baseParameters.find((p) => p.name === paramName);
+    return param?.values ?? {};
+  };
+
+  const getComputed = (paramName: string): Record<string, number> => {
+    const param = computedParameters.find((p) => p.name === paramName);
+    return param?.values ?? {};
+  };
+
+  // 1. Base parameters (base/{viewport}/*)
+  viewports.forEach((viewport) => {
+    const vpName = viewport.name.toLowerCase();
+
+    // Base editable params
+    variables.push(createVariable(`base/${vpName}/viewport-edit`, getBase('viewport')));
+    variables.push(createVariable(`base/${vpName}/number-of-columns-edit`, 
+      Object.fromEntries(styles.map(s => [s.id, s.columns]))
+    ));
+    variables.push(createVariable(`base/${vpName}/gutter-width-edit`, getBase('gutter-width')));
+    variables.push(createVariable(`base/${vpName}/margin-m-edit`, getBase('margin-m')));
+    variables.push(createVariable(`base/${vpName}/margin-xs-edit`, getBase('margin-xs')));
+
+    // Computed params
+    variables.push(createVariable(`base/${vpName}/number-of-gutters`, getComputed('number-of-gutters')));
+    variables.push(createVariable(`base/${vpName}/column-width`, getComputed('column-width')));
+    variables.push(createVariable(`base/${vpName}/ingrid`, getComputed('ingrid')));
+    variables.push(createVariable(`base/${vpName}/photo-margin`, getComputed('photo-margin')));
+  });
+
+  // 2. Ratio params (base/ratio/*)
+  ratioFamilies.forEach((ratio) => {
+    const ratioValues: Record<string, number> = {};
+    styles.forEach((s) => { ratioValues[s.id] = ratio.ratioA; });
+    variables.push(createVariable(`base/ratio/${ratio.name}-a`, ratioValues));
+
+    const ratioBValues: Record<string, number> = {};
+    styles.forEach((s) => { ratioBValues[s.id] = ratio.ratioB; });
+    variables.push(createVariable(`base/ratio/${ratio.name}-b`, ratioBValues));
+  });
+
+  // 3. Generated tokens
+  viewports.forEach((viewport) => {
+    const vpName = viewport.name.toLowerCase();
+
+    styles.forEach((style) => {
+      const base = {
+        viewport: getBase('viewport')[style.id] || viewport.width,
+        gutter: getBase('gutter-width')[style.id] || 0,
+        'margin-m': getBase('margin-m')[style.id] || 0,
+        'margin-xs': getBase('margin-xs')[style.id] || 0,
+        columns: style.columns,
+      };
+
+      const computed = {
+        'column-width': getComputed('column-width')[style.id] || 0,
+        'ingrid': getComputed('ingrid')[style.id] || 0,
+        'photo-margin': getComputed('photo-margin')[style.id] || 0,
+        'number-of-gutters': getComputed('number-of-gutters')[style.id] || 0,
+      };
+
+      const ctx: GeneratorContext = {
+        styleId: style.id,
+        styleName: style.name,
+        columns: style.columns,
+        base,
+        computed,
+      };
+
+      // Column tokens
+      const columnTokens = generateColumnTokensWithModifiers(ctx, modifiers);
+      columnTokens.forEach((t) => {
+        const varName = `column/${vpName}/${t.name}`;
+        const existingVar = variables.find((v) => v.name === varName);
+        if (existingVar) {
+          existingVar.valuesByMode[styleModeMap[style.id]] = { 
+            type: 'FLOAT', 
+            value: Math.round(t.value) 
+          };
+        } else {
+          const values: Record<string, number> = {};
+          values[style.id] = t.value;
+          variables.push(createVariable(varName, values));
+        }
+      });
+
+      // Photo tokens per responsive variant
+      responsiveVariants.forEach((variant) => {
+        // Width tokens
+        const widthTokens = generatePhotoWidthTokens(ctx, modifiers);
+        widthTokens.forEach((t) => {
+          const varName = `photo/${vpName}/width/${variant.name}/${t.name}`;
+          const existingVar = variables.find((v) => v.name === varName);
+          if (existingVar) {
+            existingVar.valuesByMode[styleModeMap[style.id]] = { 
+              type: 'FLOAT', 
+              value: Math.round(t.value) 
+            };
+          } else {
+            const values: Record<string, number> = {};
+            values[style.id] = t.value;
+            variables.push(createVariable(varName, values));
+          }
+        });
+
+        // Height tokens per ratio
+        variant.ratioConfigs
+          .filter((rc) => rc.enabled)
+          .forEach((ratioConfig) => {
+            const ratio = ratioFamilies.find((rf) => rf.id === ratioConfig.ratioId);
+            if (!ratio) return;
+
+            const heightTokens = generatePhotoHeightTokens(
+              ctx,
+              modifiers,
+              ratio,
+              ratioConfig.enabledModifiers
+            );
+
+            heightTokens.forEach((t) => {
+              const varName = `photo/${vpName}/height/${variant.name}/${ratio.name}/${t.name}`;
+              const existingVar = variables.find((v) => v.name === varName);
+              if (existingVar) {
+                existingVar.valuesByMode[styleModeMap[style.id]] = { 
+                  type: 'FLOAT', 
+                  value: Math.round(t.value) 
+                };
+              } else {
+                const values: Record<string, number> = {};
+                values[style.id] = t.value;
+                variables.push(createVariable(varName, values));
+              }
+            });
+          });
+      });
+    });
+  });
+
+  return {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    fileName: collectionName,
+    collections: [
+      {
+        id: `VariableCollectionId:new:1`,
+        name: collectionName,
+        defaultModeId,
+        hiddenFromPublishing: false,
+        modes,
+        variables,
+      },
+    ],
+  };
+}
+
 export function generateExportData(
   viewports: Viewport[],
   styles: Style[],

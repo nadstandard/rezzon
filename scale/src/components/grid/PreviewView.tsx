@@ -108,9 +108,9 @@ export function PreviewView() {
     });
   }, [tokens, searchQuery, filters.modifier]);
 
-  // Limit display for performance
-  const displayedTokens = filteredTokens.slice(0, 50);
-  const remainingCount = filteredTokens.length - displayedTokens.length;
+  // No limit - show all tokens
+  const displayedTokens = filteredTokens;
+  const totalCount = tokens.length;
 
   return (
     <div className="preview-view">
@@ -185,10 +185,8 @@ export function PreviewView() {
       {/* Stats */}
       <div className="preview-stats">
         <div className="preview-stat">
-          Showing <strong>{displayedTokens.length}</strong> of {filteredTokens.length} tokens
-        </div>
-        <div className="preview-stat">
-          Total generated: <strong>{tokens.length}</strong>
+          Showing <strong>{displayedTokens.length}</strong> of {totalCount} tokens
+          {searchQuery && ` (filtered)`}
         </div>
       </div>
 
@@ -226,17 +224,6 @@ export function PreviewView() {
                 ))}
               </tr>
             ))}
-
-            {remainingCount > 0 && (
-              <tr style={{ opacity: 0.5 }}>
-                <td
-                  colSpan={styles.length + 1}
-                  style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 12 }}
-                >
-                  ... {remainingCount} more tokens ...
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
