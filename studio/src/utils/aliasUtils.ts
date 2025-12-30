@@ -1,6 +1,38 @@
 import type { Library, Variable, AliasType, AliasInfo, VariableValue } from '../types';
 
 /**
+ * Znajduje zmienną w bibliotece po ID lub po nazwie
+ */
+function findVariableInLibrary(
+  library: Library,
+  variableId: string,
+  variableName?: string
+): Variable | undefined {
+  // Najpierw szukaj po ID
+  if (library.file.variables[variableId]) {
+    return library.file.variables[variableId];
+  }
+  
+  // Jeśli nie znaleziono po ID, szukaj po nazwie
+  if (variableName) {
+    for (const variable of Object.values(library.file.variables)) {
+      // Porównaj końcową nazwę (bez ścieżki kolekcji)
+      const varShortName = variable.name.split('/').pop();
+      const targetShortName = variableName.split('/').pop();
+      if (varShortName === targetShortName) {
+        return variable;
+      }
+      // Albo pełną nazwę
+      if (variable.name === variableName) {
+        return variable;
+      }
+    }
+  }
+  
+  return undefined;
+}
+
+/**
  * Określa typ aliasu dla danej wartości
  */
 export function getAliasType(
@@ -12,15 +44,15 @@ export function getAliasType(
     return 'none';
   }
 
-  // Sprawdź czy alias jest w tej samej bibliotece
-  if (sourceLibrary.file.variables[value.variableId]) {
+  // Sprawdź czy alias jest w tej samej bibliotece (po ID lub nazwie)
+  if (findVariableInLibrary(sourceLibrary, value.variableId, value.variableName)) {
     return 'internal';
   }
 
-  // Sprawdź w innych bibliotekach
+  // Sprawdź w innych bibliotekach (po ID lub nazwie)
   for (const lib of allLibraries) {
     if (lib.id === sourceLibrary.id) continue;
-    if (lib.file.variables[value.variableId]) {
+    if (findVariableInLibrary(lib, value.variableId, value.variableName)) {
       return 'external';
     }
   }
@@ -50,11 +82,11 @@ export function getAliasInfo(
   let targetLibrary = sourceLibrary.name;
 
   if (type === 'internal') {
-    targetVariable = sourceLibrary.file.variables[value.variableId];
+    targetVariable = findVariableInLibrary(sourceLibrary, value.variableId, value.variableName);
   } else if (type === 'external') {
     for (const lib of allLibraries) {
       if (lib.id === sourceLibrary.id) continue;
-      const found = lib.file.variables[value.variableId];
+      const found = findVariableInLibrary(lib, value.variableId, value.variableName);
       if (found) {
         targetVariable = found;
         targetLibrary = lib.name;
@@ -139,7 +171,7 @@ export function findConnectedExternalLibraries(
       // Sprawdź czy alias jest w innej bibliotece
       for (const lib of allLibraries) {
         if (lib.id === library.id) continue;
-        if (lib.file.variables[value.variableId]) {
+        if (findVariableInLibrary(lib, value.variableId, value.variableName)) {
           const existing = connections.get(lib.id);
           if (existing) {
             existing.aliasCount++;
@@ -177,13 +209,13 @@ export function resolveAliasValue(
   let targetVariable: Variable | undefined;
   
   // Najpierw w tej samej bibliotece
-  targetVariable = sourceLibrary.file.variables[value.variableId];
+  targetVariable = findVariableInLibrary(sourceLibrary, value.variableId, value.variableName);
   
   // Potem w innych
   if (!targetVariable) {
     for (const lib of allLibraries) {
       if (lib.id === sourceLibrary.id) continue;
-      targetVariable = lib.file.variables[value.variableId];
+      targetVariable = findVariableInLibrary(lib, value.variableId, value.variableName);
       if (targetVariable) break;
     }
   }

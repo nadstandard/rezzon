@@ -155,6 +155,7 @@ export interface GridActions {
   removeResponsiveVariant: (id: string) => void;
   toggleRatioInVariant: (variantId: string, ratioId: string, enabled: boolean) => void;
   toggleModifierInRatio: (variantId: string, ratioId: string, modifierId: string, enabled: boolean) => void;
+  updateViewportBehavior: (variantId: string, viewportId: string, behavior: 'inherit' | 'override', overrideColumns?: number) => void;
   
   // Tab navigation
   setActiveTab: (tab: 'parameters' | 'generators' | 'preview') => void;

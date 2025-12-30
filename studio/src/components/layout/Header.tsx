@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2 } from 'lucide-react';
+import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2, X } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { ImportModal } from '../ui/ImportModal';
 import { ClearWorkspaceModal } from '../ui/ClearWorkspaceModal';
@@ -56,7 +56,32 @@ export function Header() {
           placeholder={getPlaceholder()}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ paddingRight: searchQuery ? 32 : 10 }}
         />
+        {searchQuery && (
+          <button 
+            className="search__clear"
+            onClick={() => setSearchQuery('')}
+            title="Clear search"
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              padding: 2,
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 4,
+            }}
+          >
+            <X className="icon xs" />
+          </button>
+        )}
       </div>
       
       <div className="header__actions">

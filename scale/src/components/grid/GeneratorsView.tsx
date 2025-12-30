@@ -1,22 +1,27 @@
 import { useState } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
-import { ModifierModal, RatioModal, ConfirmDeleteModal } from '../Modals';
+import { ModifierModal, RatioModal, ConfirmDeleteModal, ResponsiveVariantModal } from '../Modals';
 
 export function GeneratorsView() {
   const {
     responsiveVariants,
     ratioFamilies,
     modifiers,
+    viewports,
+    styles,
     toggleRatioInVariant,
     toggleModifierInRatio,
+    updateViewportBehavior,
     addModifier,
     updateModifier,
     removeModifier,
     addRatioFamily,
     updateRatioFamily,
     removeRatioFamily,
-    styles,
+    addResponsiveVariant,
+    updateResponsiveVariant,
+    removeResponsiveVariant,
   } = useGridStore();
 
   const [expandedVariants, setExpandedVariants] = useState<Set<string>>(
@@ -32,6 +37,11 @@ export function GeneratorsView() {
   const [ratioModalOpen, setRatioModalOpen] = useState(false);
   const [editingRatio, setEditingRatio] = useState<{ id: string; name: string; ratioA: number; ratioB: number } | null>(null);
   const [deleteRatioId, setDeleteRatioId] = useState<string | null>(null);
+
+  // Responsive Variant modal state
+  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [editingVariant, setEditingVariant] = useState<{ id: string; name: string; description?: string } | null>(null);
+  const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null);
 
   // Get max columns from styles
   const maxColumns = Math.max(...styles.map(s => s.columns), 12);
@@ -128,13 +138,51 @@ export function GeneratorsView() {
     });
   };
 
+  // === RESPONSIVE VARIANT HANDLERS ===
+  const handleAddVariant = (data: { name: string; description?: string }) => {
+    // Create new variant with default ratioConfigs for all existing ratios
+    addResponsiveVariant({
+      name: data.name,
+      description: data.description,
+      ratioConfigs: ratioFamilies.map(rf => ({
+        ratioId: rf.id,
+        enabled: false,
+        enabledModifiers: [],
+      })),
+      viewportBehaviors: [],
+    });
+    setVariantModalOpen(false);
+  };
+
+  const handleEditVariant = (data: { name: string; description?: string }) => {
+    if (editingVariant) {
+      updateResponsiveVariant(editingVariant.id, data);
+      setEditingVariant(null);
+    }
+  };
+
+  const handleDeleteVariant = () => {
+    if (deleteVariantId) {
+      removeResponsiveVariant(deleteVariantId);
+      setDeleteVariantId(null);
+    }
+  };
+
+  const openEditVariant = (variant: typeof responsiveVariants[0]) => {
+    setEditingVariant({
+      id: variant.id,
+      name: variant.name,
+      description: variant.description,
+    });
+  };
+
   return (
     <div className="generators-layout">
       {/* Main content - Responsive variants */}
       <div className="generators-main">
         {/* Add responsive variant button */}
         <div style={{ padding: '12px 16px' }}>
-          <button className="btn btn--ghost" style={{ width: '100%' }}>
+          <button className="btn btn--ghost" style={{ width: '100%' }} onClick={() => setVariantModalOpen(true)}>
             <Icon name="plus" size="sm" />
             Add Responsive Variant
           </button>
@@ -160,12 +208,13 @@ export function GeneratorsView() {
                   {enabledRatios} ratios · {tokenCount} tokens
                 </span>
                 <div className="generator-panel__actions">
-                  <button className="action-btn" onClick={(e) => e.stopPropagation()}>
+                  <button className="action-btn" onClick={(e) => { e.stopPropagation(); openEditVariant(variant); }}>
                     <Icon name="edit" size="sm" />
                   </button>
                   <button
                     className="action-btn action-btn--danger"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); setDeleteVariantId(variant.id); }}
+                    disabled={responsiveVariants.length <= 1}
                   >
                     <Icon name="trash" size="sm" />
                   </button>
@@ -235,6 +284,53 @@ export function GeneratorsView() {
                                   );
                                 })}
                               </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Viewport Behaviors */}
+                  <div className="gen-section" style={{ marginTop: 16 }}>
+                    <div className="gen-section__header">
+                      <span className="gen-section__title">Viewport Behaviors</span>
+                    </div>
+                    <div className="viewport-behaviors">
+                      {viewports.map((vp) => {
+                        const behavior = variant.viewportBehaviors?.find(vb => vb.viewportId === vp.id);
+                        const isOverride = behavior?.behavior === 'override';
+                        const defaultColumns = styles[0]?.columns ?? 12;
+                        const currentColumns = isOverride ? (behavior?.overrideColumns ?? defaultColumns) : defaultColumns;
+
+                        return (
+                          <div key={vp.id} className="viewport-behavior-row">
+                            <div className="viewport-behavior-row__viewport">
+                              <Icon name={vp.icon} size="sm" />
+                              <span>{vp.width}</span>
+                            </div>
+                            <select
+                              className="viewport-behavior-row__select"
+                              value={isOverride ? 'override' : 'inherit'}
+                              onChange={(e) => {
+                                const newBehavior = e.target.value as 'inherit' | 'override';
+                                updateViewportBehavior(variant.id, vp.id, newBehavior, defaultColumns);
+                              }}
+                            >
+                              <option value="inherit">Inherit ({defaultColumns} col)</option>
+                              <option value="override">Override columns</option>
+                            </select>
+                            {isOverride && (
+                              <input
+                                type="number"
+                                className="viewport-behavior-row__columns"
+                                value={currentColumns}
+                                min={1}
+                                max={12}
+                                onChange={(e) => {
+                                  updateViewportBehavior(variant.id, vp.id, 'override', parseInt(e.target.value) || defaultColumns);
+                                }}
+                              />
                             )}
                           </div>
                         );
@@ -373,6 +469,29 @@ export function GeneratorsView() {
         title="Delete Ratio Family"
         message="Are you sure you want to delete this ratio family? This action cannot be undone."
         itemName={ratioFamilies.find(r => r.id === deleteRatioId)?.name || 'ratio'}
+      />
+
+      {/* Responsive Variant Modals */}
+      <ResponsiveVariantModal
+        isOpen={variantModalOpen}
+        onClose={() => setVariantModalOpen(false)}
+        onSave={handleAddVariant}
+      />
+
+      <ResponsiveVariantModal
+        isOpen={!!editingVariant}
+        onClose={() => setEditingVariant(null)}
+        onSave={handleEditVariant}
+        editData={editingVariant}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteVariantId}
+        onClose={() => setDeleteVariantId(null)}
+        onConfirm={handleDeleteVariant}
+        title="Delete Responsive Variant"
+        message="Are you sure you want to delete this responsive variant? All its configurations will be lost."
+        itemName={responsiveVariants.find(v => v.id === deleteVariantId)?.name || 'variant'}
       />
     </div>
   );

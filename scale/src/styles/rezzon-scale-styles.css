@@ -76,17 +76,15 @@
 }
 
 .viewport-card__actions {
-  display: none;
+  display: flex;
   gap: 2px;
   margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
 .viewport-card:hover .viewport-card__actions {
-  display: flex;
-}
-
-.viewport-card:hover .viewport-card__styles {
-  display: none;
+  opacity: 1;
 }
 
 .viewport-card__actions .action-btn {
@@ -164,12 +162,14 @@
 }
 
 .style-header__actions {
-  display: none;
+  display: flex;
   gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
 .matrix-table th:hover .style-header__actions {
-  display: flex;
+  opacity: 1;
 }
 
 .style-header__actions .action-btn {
@@ -207,7 +207,7 @@
 
 /* Param cell delete button */
 .param-cell__delete {
-  display: none;
+  display: flex;
   width: 18px;
   height: 18px;
   border-radius: 4px;
@@ -218,6 +218,8 @@
   margin-left: auto;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
 .param-cell__delete:hover {
@@ -226,7 +228,7 @@
 }
 
 .param-row:hover .param-cell__delete {
-  display: flex;
+  opacity: 1;
 }
 
 /* Empty cell for add column */
@@ -305,7 +307,7 @@
   color: var(--text);
   font-size: 12px;
   font-family: 'SF Mono', 'Consolas', monospace;
-  text-align: right;
+  text-align: left;
   outline: none;
   transition: all 0.1s;
 }
@@ -336,7 +338,7 @@
   font-size: 12px;
   font-family: 'SF Mono', 'Consolas', monospace;
   color: var(--type-computed);
-  text-align: right;
+  text-align: left;
   padding: 6px 8px;
 }
 
@@ -344,7 +346,7 @@
   display: block;
   font-size: 11px;
   color: var(--type-generated);
-  text-align: right;
+  text-align: left;
   padding: 6px 8px;
 }
 
@@ -798,20 +800,19 @@
 .modifier-row__range {
   color: var(--text-muted);
   font-size: 10px;
+  min-width: 40px;
 }
 
 .modifier-row__actions {
-  display: none;
+  display: flex;
   gap: 2px;
   margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
 .modifier-row:hover .modifier-row__actions {
-  display: flex;
-}
-
-.modifier-row:hover .modifier-row__range {
-  display: none;
+  opacity: 1;
 }
 
 .modifier-row__actions .action-btn {
@@ -861,6 +862,62 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
+}
+
+/* Viewport Behaviors */
+.viewport-behaviors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.viewport-behavior-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg-app);
+  border-radius: 6px;
+}
+
+.viewport-behavior-row__viewport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 70px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.viewport-behavior-row__select {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.viewport-behavior-row__select:hover {
+  border-color: var(--text-muted);
+}
+
+.viewport-behavior-row__columns {
+  width: 60px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+}
+
+.viewport-behavior-row__columns:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* ==================== PREVIEW VIEW ==================== */

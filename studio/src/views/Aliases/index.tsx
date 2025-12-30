@@ -498,7 +498,15 @@ function AliasDetailPanel({
   const modes = collection?.modes || [];
 
   return (
-    <aside className="panel" style={{ width: 300 }}>
+    <aside className="panel" style={{ 
+      width: 300, 
+      position: 'fixed',
+      right: 0,
+      top: 'var(--header-height)',
+      bottom: 'var(--statusbar-height)',
+      zIndex: 50,
+      boxShadow: '-4px 0 20px rgba(0,0,0,0.3)'
+    }}>
       <div className="panel__header">
         <span className="panel__title">Alias Details</span>
         <button className="panel__close" onClick={onClose}><X className="icon sm" /></button>

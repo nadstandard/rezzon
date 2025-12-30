@@ -280,68 +280,43 @@ export function ParametersView() {
               });
             });
 
-            // Show first 5 base tokens + "..." + last 3
-            const tokenNames = ['v-col-1', 'v-col-2', 'v-col-3', 'v-col-4', 'v-col-5'];
-            const lastTokens = [`v-col-${firstStyle.columns}`, 'v-col-viewport'];
+            // Generate ALL token names: v-col-1 to v-col-{maxColumns} + v-col-viewport
+            const maxColumns = Math.max(...styles.map(s => s.columns));
+            const allTokenNames: string[] = [];
+            for (let i = 1; i <= maxColumns; i++) {
+              allTokenNames.push(`v-col-${i}`);
+            }
+            allTokenNames.push('v-col-viewport');
 
             return (
               <>
-                {tokenNames.map(name => (
-                  <tr key={name} className="param-row">
-                    <td className="col-param">
-                      <div className="param-cell">
-                        <div className="param-cell__type param-cell__type--generated">=</div>
-                        <span className="param-cell__name">{name}</span>
-                      </div>
-                    </td>
-                    {styles.map(style => (
-                      <td key={style.id} className="value-cell">
-                        <span className="value-generated">
-                          {Math.round((tokensByStyle[style.id]?.[name] ?? 0) * 100) / 100}
-                        </span>
+                {allTokenNames.map((name) => {
+                  const colNum = parseInt(name.replace('v-col-', '')) || 0;
+                  
+                  return (
+                    <tr key={name} className="param-row">
+                      <td className="col-param">
+                        <div className="param-cell">
+                          <div className="param-cell__type param-cell__type--generated">=</div>
+                          <span className="param-cell__name">{name}</span>
+                        </div>
                       </td>
-                    ))}
-                    <td className="value-cell value-cell--empty"></td>
-                  </tr>
-                ))}
-
-                <tr className="param-row param-row--collapsed">
-                  <td className="col-param">
-                    <div className="param-cell">
-                      <div className="param-cell__type param-cell__type--generated" style={{ opacity: 0.5 }}>⋮</div>
-                      <span className="param-cell__name param-cell__name--muted">
-                        {firstStyle.columns - 6} more tokens
-                      </span>
-                    </div>
-                  </td>
-                  {styles.map(style => (
-                    <td key={style.id} className="value-cell">
-                      <span className="value-generated" style={{ opacity: 0.5 }}>⋮</span>
-                    </td>
-                  ))}
-                  <td className="value-cell value-cell--empty"></td>
-                </tr>
-
-                {lastTokens.map(name => (
-                  <tr key={name} className="param-row">
-                    <td className="col-param">
-                      <div className="param-cell">
-                        <div className="param-cell__type param-cell__type--generated">=</div>
-                        <span className="param-cell__name">
-                          {name === `v-col-${firstStyle.columns}` ? `${name} (v-full)` : name}
-                        </span>
-                      </div>
-                    </td>
-                    {styles.map(style => (
-                      <td key={style.id} className="value-cell">
-                        <span className="value-generated">
-                          {Math.round((tokensByStyle[style.id]?.[name] ?? 0) * 100) / 100}
-                        </span>
-                      </td>
-                    ))}
-                    <td className="value-cell value-cell--empty"></td>
-                  </tr>
-                ))}
+                      {styles.map(style => {
+                        const value = tokensByStyle[style.id]?.[name];
+                        const isOutOfRange = name !== 'v-col-viewport' && colNum > style.columns;
+                        
+                        return (
+                          <td key={style.id} className="value-cell">
+                            <span className="value-generated" style={isOutOfRange ? { opacity: 0.3 } : undefined}>
+                              {isOutOfRange ? '–' : Math.round((value ?? 0) * 100) / 100}
+                            </span>
+                          </td>
+                        );
+                      })}
+                      <td className="value-cell value-cell--empty"></td>
+                    </tr>
+                  );
+                })}
               </>
             );
           })()}
