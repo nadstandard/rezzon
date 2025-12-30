@@ -10,7 +10,7 @@ export interface Viewport {
   id: string;
   name: string;        // e.g., "Desktop", "Tablet", "Mobile"
   width: number;       // e.g., 1920, 768, 390
-  icon: 'monitor' | 'tablet' | 'phone';
+  icon: 'monitor' | 'laptop' | 'tablet' | 'phone';
 }
 
 // === STYLE (Mode/Column) ===
@@ -137,6 +137,7 @@ export interface GridActions {
   // Parameter actions
   updateBaseParameter: (id: string, styleId: string, value: number) => void;
   addBaseParameter: (param: Omit<BaseParameter, 'id'>) => void;
+  removeBaseParameter: (id: string) => void;
   
   // Modifier actions
   addModifier: (modifier: Omit<Modifier, 'id'>) => void;

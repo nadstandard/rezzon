@@ -210,6 +210,10 @@ export const useGridStore = create<GridStore>((set, get) => ({
     baseParameters: [...state.baseParameters, { ...param, id: generateId() }],
   })),
 
+  removeBaseParameter: (id) => set((state) => ({
+    baseParameters: state.baseParameters.filter((bp) => bp.id !== id),
+  })),
+
   // === MODIFIER ACTIONS ===
   addModifier: (modifier) => set((state) => ({
     modifiers: [...state.modifiers, { ...modifier, id: generateId() }],

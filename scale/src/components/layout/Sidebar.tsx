@@ -1,19 +1,71 @@
+import { useState } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
+import { ViewportModal, ConfirmDeleteModal } from '../Modals';
+import type { Viewport } from '../../types/grid';
 
 export function Sidebar() {
   const {
     viewports,
+    styles,
     selectedViewportId,
     selectViewport,
+    addViewport,
+    updateViewport,
+    removeViewport,
     outputLayers,
     modifiers,
     ratioFamilies,
     responsiveVariants,
   } = useGridStore();
 
+  // Modal states
+  const [viewportModalOpen, setViewportModalOpen] = useState(false);
+  const [editingViewport, setEditingViewport] = useState<{ id: string; name: string; width: number; icon: Viewport['icon'] } | null>(null);
+  const [deleteViewportId, setDeleteViewportId] = useState<string | null>(null);
+
   // Calculate total tokens
   const totalTokens = outputLayers.reduce((sum, layer) => sum + layer.tokenCount, 0);
+
+  // Handlers
+  const handleAddViewport = (data: { name: string; width: number; icon: string }) => {
+    addViewport({
+      name: data.name,
+      width: data.width,
+      icon: data.icon as Viewport['icon'],
+    });
+  };
+
+  const handleEditViewport = (data: { name: string; width: number; icon: string }) => {
+    if (editingViewport) {
+      updateViewport(editingViewport.id, {
+        name: data.name,
+        width: data.width,
+        icon: data.icon as Viewport['icon'],
+      });
+      setEditingViewport(null);
+    }
+  };
+
+  const handleDeleteViewport = () => {
+    if (deleteViewportId) {
+      removeViewport(deleteViewportId);
+      setDeleteViewportId(null);
+    }
+  };
+
+  const openEditModal = (vp: typeof viewports[0], e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingViewport({ id: vp.id, name: vp.name, width: vp.width, icon: vp.icon });
+    setViewportModalOpen(true);
+  };
+
+  const openDeleteModal = (vpId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteViewportId(vpId);
+  };
+
+  const viewportToDelete = viewports.find(vp => vp.id === deleteViewportId);
 
   return (
     <aside className="sidebar">
@@ -23,7 +75,12 @@ export function Sidebar() {
           <div className="sidebar__header">
             <Icon name="chev-d" size="xs" className="sidebar__chevron" />
             <span className="sidebar__title">Viewports</span>
-            <button className="action-btn" style={{ width: 20, height: 20, marginLeft: 'auto' }}>
+            <button 
+              className="action-btn" 
+              style={{ width: 20, height: 20, marginLeft: 'auto' }}
+              onClick={() => { setEditingViewport(null); setViewportModalOpen(true); }}
+              title="Add viewport"
+            >
               <Icon name="plus" size="xs" />
             </button>
           </div>
@@ -37,12 +94,29 @@ export function Sidebar() {
                 <Icon name={viewport.icon} size="sm" style={{ color: 'var(--text-muted)' }} />
                 <span className="viewport-card__size">{viewport.width}</span>
                 <span className="viewport-card__name">{viewport.name}</span>
-                <span className="viewport-card__styles">4 styles</span>
+                <span className="viewport-card__styles">{styles.length} styles</span>
+                <div className="viewport-card__actions">
+                  <button 
+                    className="action-btn" 
+                    onClick={(e) => openEditModal(viewport, e)}
+                    title="Edit viewport"
+                  >
+                    <Icon name="edit" size="xs" />
+                  </button>
+                  <button 
+                    className="action-btn action-btn--danger" 
+                    onClick={(e) => openDeleteModal(viewport.id, e)}
+                    title="Delete viewport"
+                    disabled={viewports.length <= 1}
+                  >
+                    <Icon name="trash" size="xs" />
+                  </button>
+                </div>
               </div>
             ))}
 
             {/* Add viewport */}
-            <div className="add-row">
+            <div className="add-row" onClick={() => { setEditingViewport(null); setViewportModalOpen(true); }}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
               </div>
@@ -50,6 +124,24 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+
+        {/* Viewport Modal */}
+        <ViewportModal
+          isOpen={viewportModalOpen}
+          onClose={() => { setViewportModalOpen(false); setEditingViewport(null); }}
+          onSave={editingViewport ? handleEditViewport : handleAddViewport}
+          editData={editingViewport}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!deleteViewportId}
+          onClose={() => setDeleteViewportId(null)}
+          onConfirm={handleDeleteViewport}
+          title="Delete Viewport"
+          message="Are you sure you want to delete this viewport? This action cannot be undone."
+          itemName={viewportToDelete?.name}
+        />
 
         {/* Output Layers section */}
         <div className="sidebar__section">

@@ -8,6 +8,18 @@ import type {
   AliasType
 } from '../types';
 
+// Typ operacji do UNDO/REDO
+interface HistoryEntry {
+  type: string;
+  description: string;
+  timestamp: number;
+  // Snapshot stanu przed operacją
+  libraries: Library[];
+  disconnectedLibraries: DisconnectedLibrary[];
+}
+
+const HISTORY_LIMIT = 30;
+
 interface AppState {
   // Dane
   libraries: Library[];
@@ -19,8 +31,8 @@ interface AppState {
   
   // Historia (UNDO/REDO)
   history: {
-    past: any[];
-    future: any[];
+    past: HistoryEntry[];
+    future: HistoryEntry[];
   };
   
   // Akcje - Libraries
@@ -74,6 +86,8 @@ interface AppState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  getUndoDescription: () => string | null;
+  getRedoDescription: () => string | null;
 }
 
 const initialUIState: UIState = {
@@ -89,6 +103,40 @@ const initialUIState: UIState = {
   },
   searchQuery: '',
 };
+
+// Helper: deep clone state for history
+function cloneForHistory(state: AppState): Pick<HistoryEntry, 'libraries' | 'disconnectedLibraries'> {
+  return {
+    libraries: JSON.parse(JSON.stringify(state.libraries)),
+    disconnectedLibraries: JSON.parse(JSON.stringify(state.disconnectedLibraries)),
+  };
+}
+
+// Helper: save state to history before mutation
+function saveToHistory(
+  state: AppState, 
+  type: string, 
+  description: string
+): AppState['history'] {
+  const entry: HistoryEntry = {
+    type,
+    description,
+    timestamp: Date.now(),
+    ...cloneForHistory(state),
+  };
+  
+  const newPast = [...state.history.past, entry];
+  
+  // Limit history size
+  if (newPast.length > HISTORY_LIMIT) {
+    newPast.shift();
+  }
+  
+  return {
+    past: newPast,
+    future: [], // Clear future on new action
+  };
+}
 
 export const useAppStore = create<AppState>()((set, get) => ({
   // Początkowy stan
@@ -143,7 +191,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   clearLibraries: () => set({
     libraries: [],
     snapshots: [],
+    disconnectedLibraries: [],
     ui: initialUIState,
+    history: { past: [], future: [] },
   }),
   
   setActiveView: (view) => set((state) => ({
@@ -289,8 +339,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
   restoreSnapshot: (id) => set((state) => {
     const snapshot = state.snapshots.find((s) => s.id === id);
     if (!snapshot) return state;
+    
+    // Save current state to history before restore
+    const newHistory = saveToHistory(state, 'restoreSnapshot', `Restore snapshot "${snapshot.name}"`);
+    
     return {
       libraries: JSON.parse(JSON.stringify(snapshot.data.libraries)),
+      history: newHistory,
     };
   }),
   
@@ -298,7 +353,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     snapshots: state.snapshots.filter((s) => s.id !== id),
   })),
   
-  // CRUD - Rename single variable
+  // CRUD - Rename single variable (WITH UNDO)
   renameVariable: (libraryId, variableId, newName) => {
     const state = get();
     const library = state.libraries.find((l) => l.id === libraryId);
@@ -309,7 +364,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     
     // Pobierz folder path z nazwy
     const pathParts = variable.name.split('/');
-    pathParts.pop(); // usuń nazwę zmiennej
+    const oldShortName = pathParts.pop() || '';
     const folderPath = pathParts.join('/');
     
     // Walidacja nazwy
@@ -325,8 +380,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
     );
     if (existingVar) return { success: false, error: `Variable "${newFullPath}" already exists` };
     
-    // Wykonaj rename
+    // Wykonaj rename z zapisem do historii
     set((s) => {
+      const newHistory = saveToHistory(s, 'rename', `Rename "${oldShortName}" → "${newName}"`);
+      
       const libs = [...s.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return s;
@@ -340,13 +397,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
       };
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
     
     return { success: true };
   },
   
-  // CRUD - Bulk rename
+  // CRUD - Bulk rename (WITH UNDO)
   bulkRename: (libraryId, variableIds, match, replace, useRegex) => {
     const state = get();
     const library = state.libraries.find((l) => l.id === libraryId);
@@ -394,8 +451,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return { success: true, renamed: 0, conflicts: [] };
     }
     
-    // Wykonaj rename
+    // Wykonaj rename z zapisem do historii
     set((s) => {
+      const newHistory = saveToHistory(s, 'bulkRename', `Bulk rename ${renames.length} variables ("${match}" → "${replace}")`);
+      
       const libs = [...s.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return s;
@@ -412,13 +471,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
       }
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
     
     return { success: true, renamed: renames.length, conflicts: [] };
   },
   
-  // CRUD - Delete
+  // CRUD - Delete (WITH UNDO)
   deleteVariables: (libraryId, variableIds) => {
     const state = get();
     const library = state.libraries.find((l) => l.id === libraryId);
@@ -438,8 +497,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
       }
     }
     
-    // Usuń zmienne
+    // Zbierz nazwy usuwanych zmiennych dla opisu
+    const deletedNames = variableIds
+      .map(id => library.file.variables[id]?.name.split('/').pop())
+      .filter(Boolean)
+      .slice(0, 3);
+    const description = variableIds.length === 1 
+      ? `Delete "${deletedNames[0]}"` 
+      : `Delete ${variableIds.length} variables`;
+    
+    // Usuń zmienne z zapisem do historii
     set((s) => {
+      const newHistory = saveToHistory(s, 'delete', description);
+      
       const libs = [...s.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return s;
@@ -471,6 +541,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       // Wyczyść selekcję
       return { 
         libraries: libs,
+        history: newHistory,
         ui: { ...s.ui, selectedVariables: s.ui.selectedVariables.filter((id) => !variableIds.includes(id)) },
       };
     });
@@ -478,7 +549,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     return { deleted: variableIds.length, brokenAliases };
   },
   
-  // CRUD - Duplicate folder
+  // CRUD - Duplicate folder (WITH UNDO)
   duplicateFolder: (libraryId, collectionId, folderPath) => {
     const state = get();
     const library = state.libraries.find((l) => l.id === libraryId);
@@ -504,10 +575,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
       newFolderPath = folderPath + ' ' + suffix;
     }
     
-    // Stwórz kopie zmiennych
+    const folderName = folderPath.split('/').pop() || folderPath;
+    
+    // Stwórz kopie zmiennych z zapisem do historii
     const newVariableIds: string[] = [];
     
     set((s) => {
+      const newHistory = saveToHistory(s, 'duplicate', `Duplicate folder "${folderName}"`);
+      
       const libs = [...s.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return s;
@@ -541,25 +616,28 @@ export const useAppStore = create<AppState>()((set, get) => ({
       updatedLib.variableCount = Object.keys(updatedLib.file.variables).length;
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
     
     return { success: true, newFolderPath };
   },
   
-  // Aliasy - Set alias
+  // Aliasy - Set alias (WITH UNDO)
   setAlias: (libraryId, variableId, modeId, targetVariableId) => {
     set((state) => {
       const libs = [...state.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return state;
       
+      const variable = libs[libIdx].file.variables[variableId];
+      if (!variable) return state;
+      
+      const varName = variable.name.split('/').pop() || variable.name;
+      const newHistory = saveToHistory(state, 'setAlias', `Set alias on "${varName}"`);
+      
       const updatedLib = { ...libs[libIdx] };
       updatedLib.file = { ...updatedLib.file };
       updatedLib.file.variables = { ...updatedLib.file.variables };
-      
-      const variable = updatedLib.file.variables[variableId];
-      if (!variable) return state;
       
       updatedLib.file.variables[variableId] = {
         ...variable,
@@ -573,23 +651,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
       };
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
   },
   
-  // Aliasy - Remove alias
+  // Aliasy - Remove alias (WITH UNDO)
   removeAlias: (libraryId, variableId, modeId) => {
     set((state) => {
       const libs = [...state.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return state;
       
+      const variable = libs[libIdx].file.variables[variableId];
+      if (!variable) return state;
+      
+      const varName = variable.name.split('/').pop() || variable.name;
+      const newHistory = saveToHistory(state, 'removeAlias', `Remove alias from "${varName}"`);
+      
       const updatedLib = { ...libs[libIdx] };
       updatedLib.file = { ...updatedLib.file };
       updatedLib.file.variables = { ...updatedLib.file.variables };
-      
-      const variable = updatedLib.file.variables[variableId];
-      if (!variable) return state;
       
       // Znajdź resolved value - na razie ustawiamy null/undefined
       updatedLib.file.variables[variableId] = {
@@ -604,11 +685,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       };
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
   },
   
-  // Aliasy - Bulk alias
+  // Aliasy - Bulk alias (WITH UNDO)
   bulkAlias: (libraryId, matches, modeIds) => {
     let created = 0;
     
@@ -616,6 +697,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const libs = [...state.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return state;
+      
+      const newHistory = saveToHistory(state, 'bulkAlias', `Bulk alias ${matches.length} variables`);
       
       const updatedLib = { ...libs[libIdx] };
       updatedLib.file = { ...updatedLib.file };
@@ -641,15 +724,17 @@ export const useAppStore = create<AppState>()((set, get) => ({
       }
       
       libs[libIdx] = updatedLib;
-      return { libraries: libs };
+      return { libraries: libs, history: newHistory };
     });
     
     return { created };
   },
   
-  // Aliasy - Disconnect library
+  // Aliasy - Disconnect library (WITH UNDO)
   disconnectLibrary: (libraryId, externalLibraryName, resolveModeId) => {
     set((state) => {
+      const newHistory = saveToHistory(state, 'disconnect', `Disconnect "${externalLibraryName}"`);
+      
       const libs = [...state.libraries];
       const libIdx = libs.findIndex((l) => l.id === libraryId);
       if (libIdx < 0) return state;
@@ -706,11 +791,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return {
         libraries: libs,
         disconnectedLibraries: [...state.disconnectedLibraries, disconnected],
+        history: newHistory,
       };
     });
   },
   
-  // Aliasy - Restore library
+  // Aliasy - Restore library (WITH UNDO)
   restoreLibrary: (libraryName) => {
     const state = get();
     const disconnected = state.disconnectedLibraries.find((d) => d.libraryName === libraryName);
@@ -721,6 +807,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
     let broken = 0;
     
     set((s) => {
+      const newHistory = saveToHistory(s, 'restore', `Restore connection to "${libraryName}"`);
+      
       const libs = [...s.libraries];
       
       for (const prevAlias of disconnected.previousAliases) {
@@ -763,24 +851,74 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return {
         libraries: libs,
         disconnectedLibraries: s.disconnectedLibraries.filter((d) => d.libraryName !== libraryName),
+        history: newHistory,
       };
     });
     
     return { restored, broken };
   },
   
+  // UNDO - przywróć poprzedni stan
   undo: () => set((state) => {
     if (state.history.past.length === 0) return state;
-    // TODO: Implementacja UNDO
-    return state;
+    
+    const past = [...state.history.past];
+    const lastEntry = past.pop()!;
+    
+    // Zapisz bieżący stan do future
+    const currentEntry: HistoryEntry = {
+      type: lastEntry.type,
+      description: lastEntry.description,
+      timestamp: Date.now(),
+      ...cloneForHistory(state),
+    };
+    
+    return {
+      libraries: JSON.parse(JSON.stringify(lastEntry.libraries)),
+      disconnectedLibraries: JSON.parse(JSON.stringify(lastEntry.disconnectedLibraries)),
+      history: {
+        past,
+        future: [...state.history.future, currentEntry],
+      },
+    };
   }),
   
+  // REDO - przywróć cofnięty stan
   redo: () => set((state) => {
     if (state.history.future.length === 0) return state;
-    // TODO: Implementacja REDO
-    return state;
+    
+    const future = [...state.history.future];
+    const nextEntry = future.pop()!;
+    
+    // Zapisz bieżący stan do past
+    const currentEntry: HistoryEntry = {
+      type: nextEntry.type,
+      description: nextEntry.description,
+      timestamp: Date.now(),
+      ...cloneForHistory(state),
+    };
+    
+    return {
+      libraries: JSON.parse(JSON.stringify(nextEntry.libraries)),
+      disconnectedLibraries: JSON.parse(JSON.stringify(nextEntry.disconnectedLibraries)),
+      history: {
+        past: [...state.history.past, currentEntry],
+        future,
+      },
+    };
   }),
   
   canUndo: () => get().history.past.length > 0,
   canRedo: () => get().history.future.length > 0,
+  
+  // Nowe helpery do tooltipów
+  getUndoDescription: () => {
+    const past = get().history.past;
+    return past.length > 0 ? past[past.length - 1].description : null;
+  },
+  
+  getRedoDescription: () => {
+    const future = get().history.future;
+    return future.length > 0 ? future[future.length - 1].description : null;
+  },
 }));

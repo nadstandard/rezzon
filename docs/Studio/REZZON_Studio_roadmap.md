@@ -1,7 +1,7 @@
 # REZZON Studio — Roadmapa implementacji
 
-**Status:** v0.5.1 (Faza 5 ukończona, Checkpoint #3 PASSED)  
-**Data aktualizacji:** 2025-12-29
+**Status:** v0.6.0 (Faza 6 ukończona)  
+**Data aktualizacji:** 2025-12-30
 
 ---
 
@@ -11,10 +11,10 @@
 |------|------|--------|-------------|
 | **Setup** | 1, 2 | ✅ DONE | — |
 | **Core** | 3, 4, 5 | ✅ DONE | #1 ✅, #2 ✅, #3 ✅ |
-| **Safety** | 6, 7, 8, 9 | ⏳ TODO | #4, #5 |
+| **Safety** | 6, 7, 8, 9 | 🔄 IN PROGRESS | #4, #5 |
 | **Polish** | 10, 11, 12 | ⏳ TODO | #6 |
 
-**Pozostało:** ~12-18 dni roboczych
+**Pozostało:** ~10-14 dni roboczych
 
 ---
 
@@ -95,6 +95,15 @@
 
 **Test Checkpoint #3:** ✅ PASSED (v0.5.1)
 
+### Faza 6 — UNDO/REDO ✅
+- [x] Stack past/future w store (HistoryEntry z opisem i pełnym stanem)
+- [x] Limit 30 kroków historii (HISTORY_LIMIT)
+- [x] Obsługiwane operacje: rename, bulkRename, delete, duplicate, setAlias, removeAlias, bulkAlias, disconnect, restore, restoreSnapshot
+- [x] Przyciski Undo/Redo w toolbarze (aktywne/disabled)
+- [x] Dynamiczne tooltipy z opisem operacji (np. "Undo: Delete 5 variables")
+- [x] Skróty klawiszowe: ⌘Z / Ctrl+Z (Undo), ⌘⇧Z / Ctrl+Shift+Z / ⌘Y (Redo)
+- [x] Helper functions: canUndo(), canRedo(), getUndoDescription(), getRedoDescription()
+
 ---
 
 ## ✅ NAPRAWY W v0.5.1 (Checkpoint #3)
@@ -131,20 +140,6 @@
 ---
 
 ## 🔄 DO ZROBIENIA
-
-### Faza 6 — UNDO/REDO (Est. 2 dni)
-
-#### 6.1 Historia operacji
-- [ ] Stack past/future w store
-- [ ] Limit 20-30 kroków
-- [ ] Obsługiwane operacje: rename, delete, alias, disconnect
-
-#### 6.2 UI
-- [ ] Przyciski Undo/Redo w toolbarze (aktywne/disabled)
-- [ ] Skróty klawiszowe: ⌘Z / ⌘⇧Z
-- [ ] Tooltip z opisem operacji do cofnięcia
-
----
 
 ### Faza 7 — Snapshots (Est. 2-3 dni)
 
@@ -252,7 +247,7 @@
 
 ### Faza 11 — Skróty klawiszowe (Est. 1 dzień)
 - [ ] ⌘K — fokus na search
-- [ ] ⌘Z / ⌘⇧Z — undo/redo
+- [x] ⌘Z / ⌘⇧Z — undo/redo ✅ (Faza 6)
 - [ ] Delete — usuń zaznaczone
 - [ ] Enter — rename
 - [ ] ⌘A — select all
@@ -307,6 +302,15 @@
 ---
 
 ## 📜 CHANGELOG
+
+### v0.6.0 (2025-12-30)
+- ✅ Faza 6: UNDO/REDO
+- Pełna implementacja historii operacji w store
+- HistoryEntry z opisem operacji i pełnym snapshotem stanu
+- Limit 30 kroków (HISTORY_LIMIT)
+- Operacje: rename, bulkRename, delete, duplicate, setAlias, removeAlias, bulkAlias, disconnect, restore, restoreSnapshot
+- Przyciski Undo/Redo w toolbarze z dynamicznymi tooltipami
+- Skróty klawiszowe: ⌘Z, ⌘⇧Z, ⌘Y
 
 ### v0.5.1 (2025-12-29)
 - ✅ Checkpoint #3: PASSED (100%)
@@ -374,8 +378,9 @@
 
 ## 🎯 NASTĘPNY KROK
 
-**Faza 6: UNDO/REDO**
+**Faza 7: Snapshots**
 
-1. Stack past/future w store (limit 20-30 kroków)
-2. Przyciski Undo/Redo w toolbarze
-3. Skróty klawiszowe: ⌘Z / ⌘⇧Z
+1. Modal "Create Snapshot" — nazwa + opis
+2. Lista snapshotów w widoku Snapshots
+3. Restore z potwierdzeniem
+4. (opcjonalnie) Compare snapshot vs current

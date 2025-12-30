@@ -1,6 +1,6 @@
 # REZZON Studio — Historia testów
 
-**Data aktualizacji:** 2025-12-29
+**Data aktualizacji:** 2025-12-30
 
 Ten dokument zawiera historię wszystkich test checkpointów.
 
@@ -13,6 +13,8 @@ Ten dokument zawiera historię wszystkich test checkpointów.
 | #1 | v0.3.3 | ✅ PASSED | 100% | 2025-12-29 |
 | #2 | v0.4.0 | ✅ PASSED | 100% | 2025-12-29 |
 | #3 | v0.5.1 | ✅ PASSED | 100% | 2025-12-29 |
+
+**Faza 6 (UNDO/REDO):** Zaimplementowana w v0.6.0 (2025-12-30) — oczekuje na testowanie w Checkpoint #4/#5
 
 ---
 

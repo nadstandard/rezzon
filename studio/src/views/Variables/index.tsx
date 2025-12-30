@@ -358,6 +358,14 @@ export function VariablesView() {
   const clearFilters = useAppStore((state) => state.clearFilters);
   const renameVariable = useAppStore((state) => state.renameVariable);
   
+  // UNDO/REDO
+  const undo = useAppStore((state) => state.undo);
+  const redo = useAppStore((state) => state.redo);
+  const canUndo = useAppStore((state) => state.canUndo());
+  const canRedo = useAppStore((state) => state.canRedo());
+  const undoDescription = useAppStore((state) => state.getUndoDescription());
+  const redoDescription = useAppStore((state) => state.getRedoDescription());
+  
   const [filterOpen, setFilterOpen] = useState(false);
   const [lastClickedId, setLastClickedId] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -385,6 +393,30 @@ export function VariablesView() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [filterOpen]);
+  
+  // Skróty klawiszowe UNDO/REDO
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘Z lub Ctrl+Z = Undo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) undo();
+      }
+      // ⌘⇧Z lub Ctrl+Shift+Z = Redo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        if (canRedo) redo();
+      }
+      // ⌘Y lub Ctrl+Y = Redo (alternatywny skrót)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+        e.preventDefault();
+        if (canRedo) redo();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo]);
   
   const selectedLibrary = libraries.find((l) => l.id === selectedLibraryId);
   const selectedCollection = selectedLibrary?.file.variableCollections?.[selectedCollectionId || ''];
@@ -681,10 +713,20 @@ export function VariablesView() {
           <div className="toolbar__sep" />
           
           <div className="toolbar__group">
-            <button className="tool-btn" title="Undo">
+            <button 
+              className="tool-btn" 
+              title={undoDescription ? `Undo: ${undoDescription}` : 'Undo (⌘Z)'}
+              disabled={!canUndo}
+              onClick={undo}
+            >
               <Undo2 className="icon" />
             </button>
-            <button className="tool-btn" title="Redo" disabled>
+            <button 
+              className="tool-btn" 
+              title={redoDescription ? `Redo: ${redoDescription}` : 'Redo (⌘⇧Z)'}
+              disabled={!canRedo}
+              onClick={redo}
+            >
               <Redo2 className="icon" />
             </button>
           </div>
