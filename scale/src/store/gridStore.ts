@@ -165,11 +165,38 @@ export const useGridStore = create<GridStore>((set, get) => ({
     viewports: [...state.viewports, { ...viewport, id: generateId() }],
   })),
 
-  updateViewport: (id, updates) => set((state) => ({
-    viewports: state.viewports.map((vp) =>
+  updateViewport: (id, updates) => {
+    const state = get();
+    
+    // Update viewport in list
+    const newViewports = state.viewports.map((vp) =>
       vp.id === id ? { ...vp, ...updates } : vp
-    ),
-  })),
+    );
+    
+    // If this viewport is selected AND width changed, update base parameter "viewport"
+    if (state.selectedViewportId === id && updates.width !== undefined) {
+      const viewportParam = state.baseParameters.find(bp => bp.name === 'viewport');
+      if (viewportParam) {
+        const newValues: Record<string, number> = {};
+        state.styles.forEach(style => {
+          newValues[style.id] = updates.width as number;
+        });
+        
+        set({
+          viewports: newViewports,
+          baseParameters: state.baseParameters.map(bp =>
+            bp.name === 'viewport' ? { ...bp, values: newValues } : bp
+          ),
+        });
+        
+        // Recalculate computed values
+        get().recalculateComputed();
+        return;
+      }
+    }
+    
+    set({ viewports: newViewports });
+  },
 
   removeViewport: (id) => set((state) => ({
     viewports: state.viewports.filter((vp) => vp.id !== id),

@@ -648,3 +648,105 @@ export function RatioModal({ isOpen, onClose, onSave, editData }: RatioModalProp
     </Modal>
   );
 }
+
+// ============================================
+// ADD/EDIT RESPONSIVE VARIANT MODAL
+// ============================================
+
+interface ResponsiveVariantModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (variant: { name: string; description?: string }) => void;
+  editData?: { name: string; description?: string } | null;
+}
+
+export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: ResponsiveVariantModalProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (editData) {
+      setName(editData.name);
+      setDescription(editData.description || '');
+    } else {
+      setName('');
+      setDescription('');
+    }
+  }, [editData, isOpen]);
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onSave({ 
+      name: name.trim().toLowerCase().replace(/\s+/g, '-'),
+      description: description.trim() || undefined,
+    });
+    onClose();
+  };
+
+  const isEdit = !!editData;
+
+  // Name presets
+  const namePresets = [
+    { name: 'static', desc: 'Same columns across all viewports' },
+    { name: 'to-tab-6-col', desc: 'Switch to 6 columns on tablet' },
+    { name: 'to-mob-4-col', desc: 'Switch to 4 columns on mobile' },
+    { name: 'to-mob-2-col', desc: 'Switch to 2 columns on mobile' },
+    { name: 'fluid', desc: 'Fluid columns based on viewport' },
+  ];
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Edit Responsive Variant' : 'Add Responsive Variant'}
+      footer={
+        <>
+          <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn--primary" onClick={handleSubmit} disabled={!name.trim()}>
+            <Icon name={isEdit ? 'check' : 'plus'} size="sm" />
+            {isEdit ? 'Save' : 'Add Variant'}
+          </button>
+        </>
+      }
+    >
+      <div className="modal__label">Name</div>
+      <input
+        type="text"
+        className="modal__input"
+        placeholder="e.g., static, to-tab-6-col, fluid"
+        value={name}
+        onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+        autoFocus
+      />
+      <p className="modal__hint">Used in token names: v-col-3-<strong>{name || 'variant'}</strong></p>
+
+      {/* Quick presets */}
+      <div className="modal__label" style={{ marginTop: 12 }}>Presets</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {namePresets.map((preset) => (
+          <button
+            key={preset.name}
+            className="btn btn--ghost"
+            style={{ padding: '6px 10px', fontSize: 11, justifyContent: 'flex-start', textAlign: 'left' }}
+            onClick={() => { setName(preset.name); setDescription(preset.desc); }}
+          >
+            <strong style={{ minWidth: 100 }}>{preset.name}</strong>
+            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{preset.desc}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="modal__label" style={{ marginTop: 16 }}>Description (optional)</div>
+      <textarea
+        className="modal__textarea"
+        placeholder="Describe when to use this variant..."
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+      />
+      <p className="modal__hint">
+        After creating, configure which ratios and modifiers are enabled in the main panel.
+      </p>
+    </Modal>
+  );
+}
