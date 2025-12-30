@@ -305,18 +305,18 @@ export function ParametersView() {
                   </tr>
                 ))}
 
-                <tr className="param-row" style={{ opacity: 0.6 }}>
+                <tr className="param-row param-row--collapsed">
                   <td className="col-param">
                     <div className="param-cell">
-                      <div className="param-cell__type param-cell__type--generated">=</div>
+                      <div className="param-cell__type param-cell__type--generated" style={{ opacity: 0.5 }}>⋮</div>
                       <span className="param-cell__name param-cell__name--muted">
-                        ... v-col-6 to v-col-{firstStyle.columns - 1}
+                        {firstStyle.columns - 6} more tokens
                       </span>
                     </div>
                   </td>
                   {styles.map(style => (
                     <td key={style.id} className="value-cell">
-                      <span className="value-generated">...</span>
+                      <span className="value-generated" style={{ opacity: 0.5 }}>⋮</span>
                     </td>
                   ))}
                   <td className="value-cell value-cell--empty"></td>

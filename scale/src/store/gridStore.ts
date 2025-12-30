@@ -176,7 +176,35 @@ export const useGridStore = create<GridStore>((set, get) => ({
     selectedViewportId: state.selectedViewportId === id ? null : state.selectedViewportId,
   })),
 
-  selectViewport: (id) => set({ selectedViewportId: id }),
+  selectViewport: (id) => {
+    const state = get();
+    const viewport = state.viewports.find(vp => vp.id === id);
+    if (!viewport) {
+      set({ selectedViewportId: id });
+      return;
+    }
+    
+    // Update base parameter "viewport" for all styles with selected viewport's width
+    const viewportParam = state.baseParameters.find(bp => bp.name === 'viewport');
+    if (viewportParam) {
+      const newValues: Record<string, number> = {};
+      state.styles.forEach(style => {
+        newValues[style.id] = viewport.width;
+      });
+      
+      set((state) => ({
+        selectedViewportId: id,
+        baseParameters: state.baseParameters.map(bp =>
+          bp.name === 'viewport' ? { ...bp, values: newValues } : bp
+        ),
+      }));
+      
+      // Recalculate computed values
+      get().recalculateComputed();
+    } else {
+      set({ selectedViewportId: id });
+    }
+  },
 
   // === STYLE ACTIONS ===
   addStyle: (style) => set((state) => ({

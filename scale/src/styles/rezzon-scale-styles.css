@@ -96,9 +96,10 @@
 
 /* ==================== MATRIX TABLE ==================== */
 .matrix-table {
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .matrix-table th {
@@ -122,6 +123,8 @@
 
 .matrix-table .col-param {
   width: 180px;
+  min-width: 180px;
+  max-width: 180px;
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   position: sticky;
@@ -130,7 +133,9 @@
 }
 
 .matrix-table .col-style {
-  min-width: 120px;
+  width: 100px;
+  min-width: 100px;
+  max-width: 140px;
 }
 
 /* Style header */
@@ -327,6 +332,7 @@
 }
 
 .value-computed {
+  display: block;
   font-size: 12px;
   font-family: 'SF Mono', 'Consolas', monospace;
   color: var(--type-computed);
@@ -335,6 +341,7 @@
 }
 
 .value-generated {
+  display: block;
   font-size: 11px;
   color: var(--type-generated);
   text-align: right;
@@ -771,6 +778,10 @@
   font-size: 11px;
 }
 
+.modifier-row:hover {
+  background: var(--bg-elevated);
+}
+
 .modifier-row__name {
   font-weight: 500;
   color: var(--text);
@@ -787,6 +798,25 @@
 .modifier-row__range {
   color: var(--text-muted);
   font-size: 10px;
+}
+
+.modifier-row__actions {
+  display: none;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.modifier-row:hover .modifier-row__actions {
+  display: flex;
+}
+
+.modifier-row:hover .modifier-row__range {
+  display: none;
+}
+
+.modifier-row__actions .action-btn {
+  width: 20px;
+  height: 20px;
 }
 
 /* Ratio preview in sidebar */

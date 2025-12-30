@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
+import { ModifierModal, RatioModal, ConfirmDeleteModal } from '../Modals';
 
 export function GeneratorsView() {
   const {
@@ -9,11 +10,31 @@ export function GeneratorsView() {
     modifiers,
     toggleRatioInVariant,
     toggleModifierInRatio,
+    addModifier,
+    updateModifier,
+    removeModifier,
+    addRatioFamily,
+    updateRatioFamily,
+    removeRatioFamily,
+    styles,
   } = useGridStore();
 
   const [expandedVariants, setExpandedVariants] = useState<Set<string>>(
     new Set([responsiveVariants[0]?.id])
   );
+
+  // Modifier modal state
+  const [modifierModalOpen, setModifierModalOpen] = useState(false);
+  const [editingModifier, setEditingModifier] = useState<{ id: string; name: string; formula: string; applyFrom: number; applyTo: number; hasFullVariant: boolean } | null>(null);
+  const [deleteModifierId, setDeleteModifierId] = useState<string | null>(null);
+
+  // Ratio modal state
+  const [ratioModalOpen, setRatioModalOpen] = useState(false);
+  const [editingRatio, setEditingRatio] = useState<{ id: string; name: string; ratioA: number; ratioB: number } | null>(null);
+  const [deleteRatioId, setDeleteRatioId] = useState<string | null>(null);
+
+  // Get max columns from styles
+  const maxColumns = Math.max(...styles.map(s => s.columns), 12);
 
   const toggleVariantExpanded = (variantId: string) => {
     setExpandedVariants((prev) => {
@@ -45,6 +66,66 @@ export function GeneratorsView() {
       }
     });
     return count * 4; // × 4 viewports
+  };
+
+  // === MODIFIER HANDLERS ===
+  const handleAddModifier = (data: { name: string; formula: string; applyFrom: number; applyTo: number; hasFullVariant: boolean }) => {
+    addModifier(data);
+    setModifierModalOpen(false);
+  };
+
+  const handleEditModifier = (data: { name: string; formula: string; applyFrom: number; applyTo: number; hasFullVariant: boolean }) => {
+    if (editingModifier) {
+      updateModifier(editingModifier.id, data);
+      setEditingModifier(null);
+    }
+  };
+
+  const handleDeleteModifier = () => {
+    if (deleteModifierId) {
+      removeModifier(deleteModifierId);
+      setDeleteModifierId(null);
+    }
+  };
+
+  const openEditModifier = (mod: typeof modifiers[0]) => {
+    setEditingModifier({
+      id: mod.id,
+      name: mod.name,
+      formula: mod.formula,
+      applyFrom: mod.applyFrom,
+      applyTo: mod.applyTo,
+      hasFullVariant: mod.hasFullVariant,
+    });
+  };
+
+  // === RATIO HANDLERS ===
+  const handleAddRatio = (data: { name: string; ratioA: number; ratioB: number }) => {
+    addRatioFamily(data);
+    setRatioModalOpen(false);
+  };
+
+  const handleEditRatio = (data: { name: string; ratioA: number; ratioB: number }) => {
+    if (editingRatio) {
+      updateRatioFamily(editingRatio.id, data);
+      setEditingRatio(null);
+    }
+  };
+
+  const handleDeleteRatio = () => {
+    if (deleteRatioId) {
+      removeRatioFamily(deleteRatioId);
+      setDeleteRatioId(null);
+    }
+  };
+
+  const openEditRatio = (ratio: typeof ratioFamilies[0]) => {
+    setEditingRatio({
+      id: ratio.id,
+      name: ratio.name,
+      ratioA: ratio.ratioA,
+      ratioB: ratio.ratioB,
+    });
   };
 
   return (
@@ -185,13 +266,18 @@ export function GeneratorsView() {
                   <span className="modifier-row__range">
                     {mod.applyFrom}–{mod.applyTo}
                   </span>
-                  <button className="action-btn">
-                    <Icon name="edit" size="xs" />
-                  </button>
+                  <div className="modifier-row__actions">
+                    <button className="action-btn" onClick={() => openEditModifier(mod)}>
+                      <Icon name="edit" size="xs" />
+                    </button>
+                    <button className="action-btn action-btn--danger" onClick={() => setDeleteModifierId(mod.id)}>
+                      <Icon name="trash" size="xs" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="add-row" style={{ marginTop: 8 }}>
+            <div className="add-row" style={{ marginTop: 8 }} onClick={() => setModifierModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
               </div>
@@ -221,13 +307,18 @@ export function GeneratorsView() {
                   <span className="modifier-row__formula">
                     {ratio.ratioA}:{ratio.ratioB}
                   </span>
-                  <button className="action-btn">
-                    <Icon name="edit" size="xs" />
-                  </button>
+                  <div className="modifier-row__actions">
+                    <button className="action-btn" onClick={() => openEditRatio(ratio)}>
+                      <Icon name="edit" size="xs" />
+                    </button>
+                    <button className="action-btn action-btn--danger" onClick={() => setDeleteRatioId(ratio.id)}>
+                      <Icon name="trash" size="xs" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="add-row" style={{ marginTop: 8 }}>
+            <div className="add-row" style={{ marginTop: 8 }} onClick={() => setRatioModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
               </div>
@@ -236,6 +327,53 @@ export function GeneratorsView() {
           </div>
         </div>
       </div>
+
+      {/* MODALS */}
+      <ModifierModal
+        isOpen={modifierModalOpen}
+        onClose={() => setModifierModalOpen(false)}
+        onSave={handleAddModifier}
+        maxColumns={maxColumns}
+      />
+
+      <ModifierModal
+        isOpen={!!editingModifier}
+        onClose={() => setEditingModifier(null)}
+        onSave={handleEditModifier}
+        editData={editingModifier}
+        maxColumns={maxColumns}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteModifierId}
+        onClose={() => setDeleteModifierId(null)}
+        onConfirm={handleDeleteModifier}
+        title="Delete Modifier"
+        message="Are you sure you want to delete this modifier? This action cannot be undone."
+        itemName={modifiers.find(m => m.id === deleteModifierId)?.name || 'modifier'}
+      />
+
+      <RatioModal
+        isOpen={ratioModalOpen}
+        onClose={() => setRatioModalOpen(false)}
+        onSave={handleAddRatio}
+      />
+
+      <RatioModal
+        isOpen={!!editingRatio}
+        onClose={() => setEditingRatio(null)}
+        onSave={handleEditRatio}
+        editData={editingRatio}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteRatioId}
+        onClose={() => setDeleteRatioId(null)}
+        onConfirm={handleDeleteRatio}
+        title="Delete Ratio Family"
+        message="Are you sure you want to delete this ratio family? This action cannot be undone."
+        itemName={ratioFamilies.find(r => r.id === deleteRatioId)?.name || 'ratio'}
+      />
     </div>
   );
 }
