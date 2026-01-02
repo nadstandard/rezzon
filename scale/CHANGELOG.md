@@ -1,5 +1,68 @@
 # REZZON Scale — Changelog
 
+## [0.3.7] - 2025-01-02
+
+### Breaking Changes
+- **Removed `generateHeight`** — No longer a toggle; create separate folders instead
+- **Removed `widthPrefix`/`heightPrefix`** — Use `tokenPrefix` on each folder
+- **Single ratio selection** — `multiplyByRatio` now uses ONE ratio (radio buttons instead of checkboxes)
+
+### Changed
+- **Simplified architecture** — Each folder generates one set of tokens with one configuration
+  - For heights: Create folder with `h-col-` prefix and enable `multiplyByRatio` with selected ratio
+  - For widths: Create folder with `w-col-` prefix without ratio multiplication
+- **Ratio multiplication** — When enabled, all values are multiplied by ratioB/ratioA
+- **Responsive Variants** — Hidden in UI ("Coming soon") until redesigned
+
+### Updated Demo Data
+- `column` folder — Standard viewport columns (v-col-*)
+- `photo/width` folder — Photo widths (w-col-*)
+- `photo/height-horizontal` folder — Heights with 16:9 ratio (h-col-*)
+- `photo/height-square` folder — Heights with 1:1 ratio (h-col-*)
+
+### Added
+- Radio button styling for single ratio selection
+- "Coming soon" badge for disabled features
+- Config hint text for upcoming features
+
+---
+
+## [0.3.6] - 2025-01-02
+
+### Fixed
+- **Responsive Variants** — Now properly respect their configuration:
+  - `viewportBehaviors.overrideColumns` — when a responsive variant specifies different column count per viewport, it's now used
+  - `ratioConfigs` — ratio configurations per responsive variant are now used instead of folder defaults
+  - `ratioConfigs.enabledModifiers` — modifiers can now be configured per ratio within a responsive variant
+
+### Changed
+- Token generation now creates tokens with correct column counts per viewport/responsive combination
+- Height token generation uses ratio-specific modifier configuration from responsive variants
+
+---
+
+## [0.3.5] - 2025-01-02
+
+### Added
+- **Formula Parser** — Real parser for modifier formulas replacing hardcoded patterns
+  - Supports: `+ gutter`, `+ margin-m`, `+ column-width/2`, `+ gutter * 2`, etc.
+  - Variables available: viewport, gutter, margin-m, margin-xs, columns, column-width, ingrid, photo-margin
+  - Supports arithmetic: `+`, `-`, `*`, `/`, parentheses
+- **Drag & Drop Reordering** — Using @dnd-kit library
+  - Viewports in sidebar — drag to reorder
+  - Modifiers in Generators — drag to change global order
+- **Token Generation Order** — Grouped by modifier
+  - Base tokens first (v-col-1, v-col-2, ..., v-full)
+  - Then all tokens for modifier 1 (v-col-1-w-half, v-col-2-w-half, ...)
+  - Then all tokens for modifier 2, etc.
+  - Order controlled by global modifier ordering
+
+### Changed
+- Modifier formulas now use real parsing instead of string matching
+- Token generation respects global modifier order for consistent output
+
+---
+
 ## [0.3.4] - 2025-01-02
 
 ### Added

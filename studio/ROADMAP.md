@@ -1,7 +1,7 @@
 # REZZON Studio – Roadmapa implementacji v2
 
-**Status:** v0.7.2 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
-**Data:** 2025-12-30
+**Status:** v0.7.3 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
+**Data:** 2025-01-02
 
 ---
 
@@ -129,6 +129,9 @@
 ---
 
 ## 📋 CHANGELOG
+
+### v0.7.3 (2025-01-02)
+- **FIX:** Disconnect modal — pokazuje modes z TARGET library zamiast z source (REZZON)
 
 ### v0.7.2 (2025-12-30)
 - **FIX:** Disconnect library — używa getAliasType do poprawnej identyfikacji external aliasów

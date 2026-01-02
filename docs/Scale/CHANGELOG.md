@@ -1,5 +1,42 @@
 # REZZON Scale – CHANGELOG
 
+## [0.3.7] – 2025-01-02
+
+### Changed
+- **Uproszczenie architektury folderów**
+  - Usunięto `generateHeight` toggle (jeden folder = jeden typ tokena)
+  - Usunięto `widthPrefix` / `heightPrefix` (zastąpione jednym `tokenPrefix`)
+  - Jeden ratio na folder (radio buttons zamiast checkboxów)
+  - Ukryto UI Responsive Variants (do reimplementacji)
+
+### Technical
+- Filozofia: jeden folder = jeden zestaw tokenów = jedna konfiguracja
+- Uproszczony model `OutputFolder`
+
+---
+
+## [0.3.0] – 2025-01-01
+
+### Added
+- **Architektura Output Folders**
+  - Nowy typ `OutputFolder` z pełną konfiguracją
+  - UI drzewa folderów w Generators View
+  - Panel konfiguracji folderu (prawa strona)
+  - Generator według konfiguracji użytkownika
+  - Podgląd generowanych tokenów per folder
+
+### Changed
+- **Nowa filozofia:** Aplikacja jest "głupia" – nie wie co to column, photo, margin
+- User sam buduje drzewo folderów i konfiguruje każdy osobno
+- Zastąpiono hardcoded warstwy (column, photo/width, photo/height) elastycznymi folderami
+
+### Technical
+- Nowy typ `OutputFolder` w types/grid.ts
+- Funkcje `generateTokensForFolder()`, `generateAllTokensForFolder()`
+- `calculateFolderTokenCount()` dla live preview
+
+---
+
 ## [0.2.8] – 2025-12-30
 
 ### Changed
@@ -191,3 +228,20 @@
   - Grid briefing complete (macierz, formuły, modyfikatory, ratios, responsive)
   - Excel analysis (R4_1_GRID.xlsx)
   - JSON analysis (1-R4-Grid_2025-12-18.json)
+
+---
+
+## Known Issues
+
+### Generator nie używa Responsive Variants
+
+**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
+
+```typescript
+// For now, skip responsive variants (will be redesigned later)
+// Just generate tokens per viewport
+```
+
+**Status:** Do naprawy w Fazie 4 roadmapy.
+
+**Obejście:** Typy `ViewportBehavior` i `ResponsiveVariant` są zdefiniowane, UI ViewportBehaviors istnieje (v0.2.6), ale generator ignoruje te dane.

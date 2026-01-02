@@ -9,8 +9,8 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.2.8  
-**Faza:** Architektura Folderów (~60% Grid MVP)
+**Wersja:** 0.3.7  
+**Faza:** Responsive Variants (~70% Grid MVP)
 
 ## Funkcjonalności
 
@@ -33,11 +33,15 @@ Część ekosystemu REZZON:
 
 **Generators View**
 - CRUD Modifiers (name, formula, range, full variant)
-- CRUD Ratio Families (name, ratio A:B, enabled)
+- CRUD Ratio Families (name, ratio A:B)
 - CRUD Responsive Variants (name, description)
-- Toggle ratios per variant
-- Toggle modifiers per ratio
-- Viewport Behaviors – column override per viewport
+- Viewport Behaviors UI (inherit/override columns)
+
+**Output Folders**
+- Elastyczna architektura folderów
+- User sam buduje drzewo folderów
+- Konfiguracja per folder: prefix, modifiers, ratio
+- Podgląd generowanych tokenów
 
 **Preview View**
 - Tabela wszystkich tokenów z wartościami per style
@@ -50,19 +54,19 @@ Część ekosystemu REZZON:
 - Smooth hover transitions
 - Compact layout
 
+### ❌ Niezaimplementowane
+
+**Responsive Variants w generatorze**
+- Typy `ViewportBehavior` i `ResponsiveVariant` są gotowe
+- UI do konfiguracji ViewportBehaviors istnieje
+- **Generator NIE UŻYWA tych danych** (do naprawy)
+
 ### 🔄 W toku
 
-**Architektura Folderów Output**
-- User sam buduje drzewo folderów
-- Każdy folder: ścieżka, prefix, modifiers, ratios, responsive
-- Generator według konfiguracji użytkownika
-
-### ☐ Planowane
-
-- Sekcje: Typography, Spacing, Radii
-- Persystencja (IndexedDB)
-- Drag & drop (kolejność modifiers, folderów)
-- Skróty klawiszowe
+**Faza 4: Responsive Variants**
+- Implementacja mechanizmu "collapse to N columns"
+- Iteracja po `enabledResponsiveVariants` w folderze
+- Logika: `inherit` vs `override` columns
 
 ## Uruchomienie
 
@@ -112,6 +116,26 @@ v-full-w-margin = ingrid + 2×photo-margin
 v-full-to-edge = viewport
 ```
 
+## Mechanizm Responsive Variants
+
+### Cel
+Pozwala na "collapse" layoutów na mniejszych ekranach bez ręcznego aliasowania.
+
+### Przykład: `to-tab-6-col`
+
+| Viewport | Behavior | v-col-8 = |
+|----------|----------|-----------|
+| Desktop  | Inherit  | 888 (8 kolumn) |
+| Tablet   | Override 6 | **316** (6 kolumn!) |
+| Mobile   | Override 6 | **316** (6 kolumn!) |
+
+**WSZYSTKIE tokeny w tym wariancie** mają wartość dla 6 kolumn.
+
+### Status implementacji
+- ✅ Typy: `ViewportBehavior`, `ResponsiveVariant`
+- ✅ UI: Panel Viewport Behaviors w Generators
+- ❌ Generator: **NIE UŻYWA** tych danych (linia 1153 generator.ts)
+
 ## Eksport
 
 Format zgodny z Figma Variables API:
@@ -142,3 +166,16 @@ Format zgodny z Figma Variables API:
 - Vite + React 19 + TypeScript
 - Zustand (state management)
 - CSS (bez frameworków)
+
+## Known Issues
+
+### Generator ignoruje Responsive Variants
+
+**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
+
+```typescript
+// For now, skip responsive variants (will be redesigned later)
+// Just generate tokens per viewport
+```
+
+**Do naprawy w Fazie 4 roadmapy.**

@@ -49,6 +49,14 @@
   border-color: var(--text-muted);
 }
 
+.viewport-card:hover .drag-handle {
+  opacity: 1;
+}
+
+.viewport-card .drag-handle {
+  margin-left: -4px;
+}
+
 .viewport-card.active {
   border-color: var(--accent);
   background: var(--bg-selected);
@@ -784,6 +792,14 @@
   background: var(--bg-elevated);
 }
 
+.modifier-row:hover .drag-handle {
+  opacity: 1;
+}
+
+.modifier-row .drag-handle {
+  margin-left: -2px;
+}
+
 .modifier-row__name {
   font-weight: 500;
   color: var(--text);
@@ -1431,13 +1447,33 @@
 }
 
 .config-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin-bottom: 6px;
+}
+
+.config-label__badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  text-transform: none;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.config-group--disabled {
+  opacity: 0.5;
+}
+
+.config-group--disabled .config-hint {
+  font-style: italic;
 }
 
 .config-input {
@@ -1521,6 +1557,23 @@
   font-size: 10px;
   color: var(--text-muted);
   font-family: 'SF Mono', Consolas, monospace;
+}
+
+/* Radio button variant */
+.config-checkbox__box--radio {
+  border-radius: 50%;
+}
+
+.config-checkbox input:checked + .config-checkbox__box--radio {
+  background: transparent;
+  border-color: var(--accent);
+}
+
+.config-radio__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
 }
 
 /* Config Toggle */
@@ -1631,4 +1684,125 @@
   color: var(--text-muted);
   font-family: 'SF Mono', Consolas, monospace;
   font-size: 10px;
+}
+
+/* ==================== DRAG & DROP ==================== */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  cursor: grab;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+  color: var(--text-secondary);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Sortable item states */
+.sortable-item {
+  position: relative;
+}
+
+.sortable-item.dragging {
+  opacity: 0.5;
+  z-index: 100;
+}
+
+.sortable-item.drag-over {
+  border-top: 2px solid var(--accent);
+}
+
+/* Sidebar item with drag handle */
+.sidebar-item-draggable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  color: var(--text-secondary);
+  transition: all 0.1s;
+}
+
+.sidebar-item-draggable:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.sidebar-item-draggable:hover .drag-handle {
+  opacity: 1;
+}
+
+.sidebar-item-draggable.active {
+  background: var(--bg-selected);
+  color: var(--text);
+}
+
+.sidebar-item-draggable.active .icon:not(.drag-handle .icon) {
+  color: var(--accent);
+}
+
+/* Modifier item draggable */
+.modifier-item-draggable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modifier-item-draggable:hover {
+  border-color: var(--text-muted);
+}
+
+.modifier-item-draggable:hover .drag-handle {
+  opacity: 1;
+}
+
+.modifier-item-draggable.selected {
+  border-color: var(--accent);
+  background: var(--bg-selected);
+}
+
+.modifier-item-draggable__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modifier-item-draggable__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.modifier-item-draggable__formula {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'SF Mono', Consolas, monospace;
+  margin-top: 2px;
+}
+
+.modifier-item-draggable__range {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
 }

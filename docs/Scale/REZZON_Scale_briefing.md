@@ -1,7 +1,7 @@
 # REZZON Scale – Briefing
 
-**Data aktualizacji:** 2025-12-30  
-**Status:** Implementacja w toku (v0.2.8)
+**Data aktualizacji:** 2025-01-02  
+**Status:** Implementacja w toku (v0.3.7)
 
 ---
 
@@ -41,7 +41,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) – user widz
 
 ## 3. Sekcje Scale
 
-1. **Grid** (główna, zaimplementowana)
+1. **Grid** (główna, w trakcie implementacji)
 2. **Typography** (TODO)
 3. **Spacing** (TODO)
 4. **Radii** (TODO)
@@ -52,13 +52,20 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) – user widz
 
 ### Struktura danych
 
-**Viewporty = Kolekcje** (max 10, lista otwarta)
+**Viewporty = Wiersze w macierzy** (max 10, lista otwarta)
+- Desktop (1920px), Laptop (1366px), Tablet (768px), Mobile (390px)
 
-**Style = Mode'y / Kolumny** (max 10, lista otwarta)
+**Style = Mode'y / Kolumny w Figma** (max 10, lista otwarta)
+- CROSS, CIRCLE, TRIANGLE, SQUARE
+- Każdy styl ma własną szerokość kolumny i guttera
 
-### Macierz viewport × styl
+### WAŻNE: Mode vs Viewport
 
-Każda komórka macierzy = zestaw parametrów base.
+W Figma Variables JSON:
+- **Modes** = style grida (CROSS/CIRCLE/TRIANGLE/SQUARE)
+- **Viewporty** = w ścieżce tokena (`column/desktop/v-col-1`)
+
+To NIE są responsive breakpointy w sensie Figma modes!
 
 ### UI – jak Figma Variables
 
@@ -194,30 +201,95 @@ height = width × (ratio-b / ratio-a)
 
 User może dodać własne.
 
-### Viewport Behaviors (v0.2.6)
+---
 
-W ramach każdego responsive variant user może określić per viewport:
-- **Inherit** – używa domyślnej liczby kolumn z parametrów
-- **Override columns** – wymusza inną liczbę kolumn dla tego viewportu
+## 12. MECHANIZM RESPONSIVE VARIANTS (KLUCZOWE!)
+
+### Czym są responsive variants?
+
+Responsive variants to **NIE osobne viewporty**. To **alternatywne zachowania** tokenów w ramach tego samego viewportu.
+
+### Viewport Behaviors
+
+Każdy responsive variant definiuje zachowanie per viewport:
+
+| Behavior | Opis |
+|----------|------|
+| **Inherit** | Używa domyślnej liczby kolumn z parametrów |
+| **Override columns** | Wymusza konkretną liczbę kolumn (collapse) |
+
+### Przykład: `to-tab-6-col`
+
+```
+Viewport     | Behavior | Columns | Co się dzieje
+-------------|----------|---------|------------------
+Desktop      | Inherit  | 12      | Wartości normalne
+Laptop       | Inherit  | 12      | Wartości normalne
+Tablet       | Override | 6       | WSZYSTKO = wartość 6 kolumn
+Mobile       | Override | 6       | WSZYSTKO = wartość 6 kolumn
+```
+
+### Efekt w tokenach (z analizy JSON R4-Grid):
+
+**Normalne tokeny (static):**
+```
+container/tablet/v-col-1  = 36   (1 kolumna)
+container/tablet/v-col-6  = 316  (6 kolumn)
+container/tablet/v-col-8  = 428  (8 kolumn)
+container/tablet/v-col-12 = 652  (12 kolumn)
+```
+
+**Z responsive variant `to-tab-6-col`:**
+```
+container/tablet/to-tab-6-col/v-col-1  = 316  ← collapsed!
+container/tablet/to-tab-6-col/v-col-6  = 316  ← collapsed!
+container/tablet/to-tab-6-col/v-col-8  = 316  ← collapsed!
+container/tablet/to-tab-6-col/v-col-12 = 316  ← collapsed!
+```
+
+**WSZYSTKIE tokeny w tym wariancie mają tę samą wartość** = wartość dla 6 kolumn.
+
+### Zastosowanie UX
+
+Pozwala designerowi powiedzieć:
+> "Ten element ma 8 kolumn na desktopie, ale na tablecie kolapsuje się do 6 kolumn"
+
+Zamiast ręcznie ustawiać aliasy, designer wybiera odpowiedni wariant.
+
+### Konfiguracja w Scale
+
+```typescript
+interface ViewportBehavior {
+  viewportId: string;
+  behavior: 'inherit' | 'override';
+  overrideColumns?: number;  // jeśli override
+}
+
+interface ResponsiveVariant {
+  id: string;
+  name: string;              // "to-tab-6-col"
+  viewportBehaviors: ViewportBehavior[];
+}
+```
+
+### Logika generatora
+
+```
+Dla każdego tokena v-col-N:
+  Dla każdego viewport:
+    Jeśli behavior === 'inherit':
+      value = normalna wartość dla N kolumn
+    Jeśli behavior === 'override':
+      value = wartość dla overrideColumns kolumn (np. 6)
+```
 
 ---
 
-## 12. ARCHITEKTURA FOLDERÓW OUTPUT
+## 13. ARCHITEKTURA FOLDERÓW OUTPUT
 
-### Stary model (hardcoded)
+### Filozofia: "Głupi" generator
 
-Generator miał sztywną strukturę:
-```
-column/{viewport}/...
-photo/{viewport}/width/{responsive}/...
-photo/{viewport}/height/{responsive}/{ratio}/...
-```
-
-User nie mógł zmienić ścieżek, prefixów, ani decydować co gdzie trafia.
-
-### Nowy model (elastyczny)
-
-**Aplikacja jest "głupia"** – nie wie co to column, photo, margin. User sam buduje drzewo folderów.
+**Aplikacja nie wie co to column, photo, margin.** User sam buduje drzewo folderów i konfiguruje każdy.
 
 ### Folder = konfiguracja
 
@@ -228,74 +300,51 @@ Każdy folder ma:
 | **Nazwa/ścieżka** | User tworzy dowolną strukturę |
 | **Token prefix** | np. `v-col-`, `w-col-`, `mosaic-` |
 | **Modifiers** | Które z globalnej listy zastosować |
-| **Multiply by ratio?** | Toggle: tak/nie |
-| **Ratios** | Jeśli tak – które (tworzą subfolders) |
+| **Multiply by ratio?** | Toggle: tak/nie (jeden ratio na folder) |
 | **Responsive variants** | Które (tworzą subfolders) |
-| **Generate height?** | Czy w ogóle obliczać wysokość |
-| **Width prefix** | Jeśli generuje szerokości |
-| **Height prefix** | Jeśli generuje wysokości |
 
-### Semantyka = nazwy
+### Uproszczenia w v0.3.7
 
-`column`, `photo/width`, `margin` to tylko nazwy które USER nadaje folderom.
-
-Generator nie interpretuje semantyki – składa tokeny według konfiguracji.
+- Usunięto toggle "Generate height?" (jeden folder = jeden typ tokena)
+- Usunięto widthPrefix/heightPrefix (zastąpione jednym tokenPrefix)
+- Jeden ratio na folder (radio buttons zamiast multi-select)
+- UI responsive variants ukryte (do reimplementacji)
 
 ### Przykład konfiguracji
 
 ```
 📁 column
-   path: "column"
+   path: "column/{viewport}"
    prefix: "v-col-"
    modifiers: [-w-half, -w-margin, -to-edge, -1G, -2G]
+   ratio: brak
    responsive: [static]
-   generate height: NIE
 
 📁 photo-width
-   path: "photo/width"
+   path: "photo/{viewport}/width/{responsive}"
    prefix: "w-col-"
    modifiers: [-w-half, -w-margin, -to-edge]
+   ratio: brak
    responsive: [static, to-tab-6-col, to-mobile-6-col]
-   generate height: NIE
 
-📁 photo-height
-   path: "photo/height"
+📁 photo-height-horizontal
+   path: "photo/{viewport}/height/{responsive}/horizontal"
    prefix: "h-col-"
    modifiers: [-w-half, -w-margin, -to-edge]
+   ratio: horizontal (4:3)
    responsive: [static, to-tab-6-col, to-mobile-6-col]
-   ratios: [horizontal, vertical, square]
-   generate height: TAK
-   
-📁 mosaic
-   path: "photo/mosaic"
-   prefix: "mosaic-"
-   modifiers: [-w-margin]
-   responsive: [static]
-   ratios: [square]
-   generate height: TAK
-```
-
-### Generowana struktura
-
-Z powyższej konfiguracji:
-```
-column/{viewport}/v-col-1, v-col-1-w-half, ...
-photo/width/{viewport}/{responsive}/w-col-1, w-col-1-w-half, ...
-photo/height/{viewport}/{responsive}/horizontal/h-col-1, ...
-photo/height/{viewport}/{responsive}/vertical/h-col-1, ...
-photo/mosaic/{viewport}/static/square/mosaic-1, ...
 ```
 
 ---
 
-## 13. Eksport – Format Figma Variables API
+## 14. Eksport – Format Figma Variables API
 
 Eksport w formacie zgodnym z Figma REST API:
 
 ```json
 {
   "version": "1.0",
-  "exportedAt": "2025-12-30T...",
+  "exportedAt": "2025-01-02T...",
   "fileName": "Grid",
   "collections": [{
     "id": "VariableCollectionId:new:1",
@@ -321,16 +370,33 @@ Portal importuje bezpośrednio do Figmy.
 
 ---
 
-## 14. Ograniczenia techniczne
+## 15. Ograniczenia techniczne
 
-- Max **10 viewportów** (kolekcji) – ograniczenie Figmy
-- Max **10 stylów** (mode'ów/kolumn) – ograniczenie Figmy
+- Max **10 viewportów** – ograniczenie Figmy (modes)
+- Max **10 stylów** – ograniczenie Figmy (modes)
 - Nazwy folderów bez `:` – ograniczenie Figmy
 
 ---
 
-## 15. Pliki referencyjne
+## 16. Pliki referencyjne
 
 - Arkusz Excel: `R4_1_GRID.xlsx`
 - JSON eksport R4-Grid: `1-R4-Grid_2025-12-30.json` (3590 zmiennych)
 - Wspólny CSS: `rezzon-scale-styles.css`
+
+---
+
+## 17. Status implementacji
+
+### ✅ Zaimplementowane
+- Macierz viewport × style
+- Formula Engine (computed values)
+- Token Generator (base + modifiers)
+- Eksport Figma Variables API
+- OutputFolders architecture
+- Ratio multiplication (jeden ratio na folder)
+
+### ❌ Niezaimplementowane
+- **Responsive variants w generatorze** (typy gotowe, generator ignoruje)
+- ViewportBehaviors (override columns)
+- Pełna struktura R4-Grid (3590 tokenów)

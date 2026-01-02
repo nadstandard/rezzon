@@ -182,10 +182,7 @@ const createDemoData = (): Partial<GridStore> => ({
       enabledResponsiveVariants: [],
       multiplyByRatio: false,
       enabledRatios: [],
-      generateHeight: false,
-      widthPrefix: '',
-      heightPrefix: '',
-      tokenCount: 0, // Will be calculated
+      tokenCount: 0,
     },
     {
       id: 'of-2',
@@ -197,39 +194,42 @@ const createDemoData = (): Partial<GridStore> => ({
       enabledResponsiveVariants: [],
       multiplyByRatio: false,
       enabledRatios: [],
-      generateHeight: false,
-      widthPrefix: '',
-      heightPrefix: '',
       tokenCount: 0,
     },
     {
       id: 'of-3',
       name: 'width',
       parentId: 'of-2',
-      path: 'photo/{viewport}/width/{responsive}',
+      path: 'photo/{viewport}/width',
       tokenPrefix: 'w-col-',
       enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
-      enabledResponsiveVariants: ['rv-1', 'rv-2'],
+      enabledResponsiveVariants: [],
       multiplyByRatio: false,
       enabledRatios: [],
-      generateHeight: false,
-      widthPrefix: '',
-      heightPrefix: '',
       tokenCount: 0,
     },
     {
       id: 'of-4',
-      name: 'height',
+      name: 'height-horizontal',
       parentId: 'of-2',
-      path: 'photo/{viewport}/height/{responsive}',
-      tokenPrefix: 'w-col-',  // Base is width
+      path: 'photo/{viewport}/height-horizontal',
+      tokenPrefix: 'h-col-',
       enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
-      enabledResponsiveVariants: ['rv-1', 'rv-2'],
+      enabledResponsiveVariants: [],
       multiplyByRatio: true,
-      enabledRatios: ['rf-1', 'rf-2', 'rf-3'],
-      generateHeight: true,
-      widthPrefix: 'w-col-',
-      heightPrefix: 'h-col-',
+      enabledRatios: ['rf-1'], // 16:9 - horizontal
+      tokenCount: 0,
+    },
+    {
+      id: 'of-5',
+      name: 'height-square',
+      parentId: 'of-2',
+      path: 'photo/{viewport}/height-square',
+      tokenPrefix: 'h-col-',
+      enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
+      enabledResponsiveVariants: [],
+      multiplyByRatio: true,
+      enabledRatios: ['rf-2'], // 1:1 - square
       tokenCount: 0,
     },
   ],
@@ -316,6 +316,13 @@ export const useGridStore = create<GridStore>((set, get) => ({
     }
   },
 
+  reorderViewports: (fromIndex, toIndex) => set((state) => {
+    const newViewports = [...state.viewports];
+    const [removed] = newViewports.splice(fromIndex, 1);
+    newViewports.splice(toIndex, 0, removed);
+    return { viewports: newViewports };
+  }),
+
   // === STYLE ACTIONS ===
   addStyle: (style) => set((state) => ({
     styles: [...state.styles, { ...style, id: generateId() }],
@@ -366,6 +373,13 @@ export const useGridStore = create<GridStore>((set, get) => ({
   removeModifier: (id) => set((state) => ({
     modifiers: state.modifiers.filter((mod) => mod.id !== id),
   })),
+
+  reorderModifiers: (fromIndex, toIndex) => set((state) => {
+    const newModifiers = [...state.modifiers];
+    const [removed] = newModifiers.splice(fromIndex, 1);
+    newModifiers.splice(toIndex, 0, removed);
+    return { modifiers: newModifiers };
+  }),
 
   // === RATIO ACTIONS ===
   addRatioFamily: (ratio) => set((state) => ({
@@ -532,6 +546,50 @@ export const useGridStore = create<GridStore>((set, get) => ({
       return { ...f, enabledRatios: newRatios };
     }),
   })),
+
+  reorderOutputFolders: (fromIndex, toIndex, parentId) => set((state) => {
+    // Get siblings (folders with same parentId)
+    const siblings = state.outputFolders.filter(f => f.parentId === parentId);
+    const nonSiblings = state.outputFolders.filter(f => f.parentId !== parentId);
+    
+    // Reorder within siblings
+    const [removed] = siblings.splice(fromIndex, 1);
+    siblings.splice(toIndex, 0, removed);
+    
+    // Reconstruct array preserving original order for non-siblings
+    const result: typeof state.outputFolders = [];
+    
+    // First, add all root items if we're moving root items
+    if (parentId === null) {
+      // Root items come first, then children follow their parents
+      siblings.forEach(sibling => {
+        result.push(sibling);
+        // Add all descendants of this sibling
+        const addDescendants = (pid: string) => {
+          state.outputFolders
+            .filter(f => f.parentId === pid)
+            .forEach(child => {
+              result.push(child);
+              addDescendants(child.id);
+            });
+        };
+        addDescendants(sibling.id);
+      });
+    } else {
+      // For nested reordering, rebuild maintaining structure
+      const addWithChildren = (folders: typeof state.outputFolders, pid: string | null) => {
+        const children = folders.filter(f => f.parentId === pid);
+        const ordered = pid === parentId ? siblings : children;
+        ordered.forEach(folder => {
+          result.push(folder);
+          addWithChildren(folders, folder.id);
+        });
+      };
+      addWithChildren(state.outputFolders, null);
+    }
+    
+    return { outputFolders: result.length > 0 ? result : [...siblings, ...nonSiblings] };
+  }),
 
   // === TAB NAVIGATION ===
   setActiveTab: (tab) => set({ activeTab: tab }),

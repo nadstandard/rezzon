@@ -4,6 +4,7 @@ import { useGridStore } from '../../store';
 import { ViewportModal, ConfirmDeleteModal } from '../Modals';
 import type { Viewport } from '../../types/grid';
 import { calculateFolderTokenCount, type FolderGeneratorContext } from '../../engine/generator';
+import { SortableList } from '../common/SortableList';
 
 export function Sidebar() {
   const {
@@ -14,6 +15,7 @@ export function Sidebar() {
     addViewport,
     updateViewport,
     removeViewport,
+    reorderViewports,
     outputFolders,
     modifiers,
     ratioFamilies,
@@ -97,35 +99,48 @@ export function Sidebar() {
             </button>
           </div>
           <div className="sidebar__content">
-            {viewports.map((viewport) => (
-              <div
-                key={viewport.id}
-                className={`viewport-card ${selectedViewportId === viewport.id ? 'active' : ''}`}
-                onClick={() => selectViewport(viewport.id)}
-              >
-                <Icon name={viewport.icon} size="sm" style={{ color: 'var(--text-muted)' }} />
-                <span className="viewport-card__size">{viewport.width}</span>
-                <span className="viewport-card__name">{viewport.name}</span>
-                <span className="viewport-card__styles">{styles.length} styles</span>
-                <div className="viewport-card__actions">
-                  <button 
-                    className="action-btn" 
-                    onClick={(e) => openEditModal(viewport, e)}
-                    title="Edit viewport"
-                  >
-                    <Icon name="edit" size="xs" />
-                  </button>
-                  <button 
-                    className="action-btn action-btn--danger" 
-                    onClick={(e) => openDeleteModal(viewport.id, e)}
-                    title="Delete viewport"
-                    disabled={viewports.length <= 1}
-                  >
-                    <Icon name="trash" size="xs" />
-                  </button>
+            <SortableList
+              items={viewports}
+              onReorder={reorderViewports}
+              renderItem={(viewport) => (
+                <div
+                  className={`viewport-card ${selectedViewportId === viewport.id ? 'active' : ''}`}
+                  onClick={() => selectViewport(viewport.id)}
+                >
+                  <div className="drag-handle" onClick={(e) => e.stopPropagation()}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="9" cy="5" r="2"/>
+                      <circle cx="15" cy="5" r="2"/>
+                      <circle cx="9" cy="12" r="2"/>
+                      <circle cx="15" cy="12" r="2"/>
+                      <circle cx="9" cy="19" r="2"/>
+                      <circle cx="15" cy="19" r="2"/>
+                    </svg>
+                  </div>
+                  <Icon name={viewport.icon} size="sm" style={{ color: 'var(--text-muted)' }} />
+                  <span className="viewport-card__size">{viewport.width}</span>
+                  <span className="viewport-card__name">{viewport.name}</span>
+                  <span className="viewport-card__styles">{styles.length} styles</span>
+                  <div className="viewport-card__actions">
+                    <button 
+                      className="action-btn" 
+                      onClick={(e) => openEditModal(viewport, e)}
+                      title="Edit viewport"
+                    >
+                      <Icon name="edit" size="xs" />
+                    </button>
+                    <button 
+                      className="action-btn action-btn--danger" 
+                      onClick={(e) => openDeleteModal(viewport.id, e)}
+                      title="Delete viewport"
+                      disabled={viewports.length <= 1}
+                    >
+                      <Icon name="trash" size="xs" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+            />
 
             {/* Add viewport */}
             <div className="add-row" onClick={() => { setEditingViewport(null); setViewportModalOpen(true); }}>

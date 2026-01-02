@@ -403,19 +403,27 @@ export function AliasesView() {
       )}
 
       {/* Modals */}
-      {disconnectModal && activeLibrary && (
-        <DisconnectModal
-          isOpen={disconnectModal.isOpen}
-          onClose={() => setDisconnectModal(null)}
-          onDisconnect={(modeId) => { 
-            disconnectLibrary(activeLibrary.id, disconnectModal.libraryName, modeId); 
-            setDisconnectModal(null); 
-          }}
-          libraryName={disconnectModal.libraryName}
-          aliasCount={disconnectModal.aliasCount}
-          modes={Object.values(activeLibrary.file.variableCollections)[0]?.modes || []}
-        />
-      )}
+      {disconnectModal && activeLibrary && (() => {
+        // Pobierz modes z TARGET library (nie z active/source library)
+        const targetLibrary = libraries.find(l => l.name === disconnectModal.libraryName);
+        const targetModes = targetLibrary 
+          ? Object.values(targetLibrary.file.variableCollections)[0]?.modes || []
+          : [];
+        
+        return (
+          <DisconnectModal
+            isOpen={disconnectModal.isOpen}
+            onClose={() => setDisconnectModal(null)}
+            onDisconnect={(modeId) => { 
+              disconnectLibrary(activeLibrary.id, disconnectModal.libraryName, modeId); 
+              setDisconnectModal(null); 
+            }}
+            libraryName={disconnectModal.libraryName}
+            aliasCount={disconnectModal.aliasCount}
+            modes={targetModes}
+          />
+        );
+      })()}
 
       {restoreModal && (
         <RestoreModal

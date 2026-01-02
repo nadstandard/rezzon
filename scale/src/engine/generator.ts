@@ -86,46 +86,175 @@ export function generateColumnTokens(
 }
 
 /**
- * Apply a modifier to a base token value
+ * Apply a modifier to a base token value using formula parser
  */
 export function applyModifier(
   baseValue: number,
   modifier: Modifier,
   ctx: GeneratorContext
 ): number {
-  const colWidth = ctx.computed['column-width'];
-  const gutter = ctx.base.gutter;
-  const marginM = ctx.base['margin-m'];
-  const photoMargin = ctx.computed['photo-margin'];
-
-  // Parse and apply formula
-  // Supported formulas: "+ column-width/2", "+ photo-margin", "+ margin-m", "+ gutter"
   const formula = modifier.formula.trim();
+  if (!formula) return baseValue;
+  
+  // Build variable context for formula evaluation
+  const variables: Record<string, number> = {
+    // Base parameters
+    'viewport': ctx.base.viewport,
+    'gutter': ctx.base.gutter,
+    'margin-m': ctx.base['margin-m'],
+    'margin-xs': ctx.base['margin-xs'],
+    'columns': ctx.columns,
+    // Computed parameters
+    'column-width': ctx.computed['column-width'],
+    'col-width': ctx.computed['column-width'], // alias
+    'ingrid': ctx.computed['ingrid'],
+    'photo-margin': ctx.computed['photo-margin'],
+    'number-of-gutters': ctx.computed['number-of-gutters'],
+    // Base value reference
+    'base': baseValue,
+    'value': baseValue,
+  };
+  
+  // Parse and evaluate formula
+  const result = evaluateFormula(formula, variables, baseValue);
+  return result;
+}
 
-  if (formula === '+ column-width/2' || formula === '+ col-width/2') {
-    return baseValue + colWidth / 2;
+/**
+ * Evaluate a formula string with variables
+ * Supports: +, -, *, /, parentheses, numbers, variable names
+ * Formula can start with operator (e.g., "+ gutter") which applies to baseValue
+ */
+function evaluateFormula(
+  formula: string, 
+  variables: Record<string, number>,
+  baseValue: number
+): number {
+  // Normalize formula
+  let normalized = formula
+    .replace(/×/g, '*')  // Replace × with *
+    .replace(/÷/g, '/')  // Replace ÷ with /
+    .trim();
+  
+  // If formula starts with operator, prepend base value
+  if (/^[+\-*/]/.test(normalized)) {
+    normalized = `${baseValue} ${normalized}`;
   }
-  if (formula === '+ photo-margin') {
-    return baseValue + photoMargin;
+  
+  // Tokenize
+  const tokens = tokenizeFormula(normalized);
+  
+  // Parse and evaluate
+  try {
+    const result = parseExpression(tokens, variables);
+    return Math.round(result * 100) / 100; // Round to 2 decimals
+  } catch (e) {
+    console.warn(`Failed to parse formula: ${formula}`, e);
+    return baseValue;
   }
-  if (formula === '+ margin-m') {
-    return baseValue + marginM;
-  }
-  if (formula === '+ gutter') {
-    return baseValue + gutter;
-  }
-  if (formula.startsWith('+ ') && formula.includes('gutter')) {
-    // Handle "+ 2×gutter" style formulas
-    const match = formula.match(/\+\s*(\d+)?[×x]?\s*gutter/);
-    if (match) {
-      const multiplier = match[1] ? parseInt(match[1]) : 1;
-      return baseValue + gutter * multiplier;
+}
+
+/**
+ * Tokenize formula string into tokens
+ */
+function tokenizeFormula(formula: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  
+  for (let i = 0; i < formula.length; i++) {
+    const char = formula[i];
+    
+    if (char === ' ') {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
     }
+    
+    if ('+-*/()'.includes(char)) {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      tokens.push(char);
+      continue;
+    }
+    
+    current += char;
   }
+  
+  if (current) {
+    tokens.push(current);
+  }
+  
+  return tokens;
+}
 
-  // Unknown formula - return base value unchanged
-  console.warn(`Unknown modifier formula: ${formula}`);
-  return baseValue;
+/**
+ * Parse expression with operator precedence
+ * Grammar:
+ *   expression = term (('+' | '-') term)*
+ *   term = factor (('*' | '/') factor)*
+ *   factor = number | variable | '(' expression ')'
+ */
+function parseExpression(tokens: string[], variables: Record<string, number>): number {
+  let pos = 0;
+  
+  function parseExpr(): number {
+    let left = parseTerm();
+    
+    while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+      const op = tokens[pos++];
+      const right = parseTerm();
+      left = op === '+' ? left + right : left - right;
+    }
+    
+    return left;
+  }
+  
+  function parseTerm(): number {
+    let left = parseFactor();
+    
+    while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+      const op = tokens[pos++];
+      const right = parseFactor();
+      left = op === '*' ? left * right : left / right;
+    }
+    
+    return left;
+  }
+  
+  function parseFactor(): number {
+    const token = tokens[pos];
+    
+    // Parentheses
+    if (token === '(') {
+      pos++;
+      const result = parseExpr();
+      if (tokens[pos] === ')') pos++;
+      return result;
+    }
+    
+    pos++;
+    
+    // Number
+    const num = parseFloat(token);
+    if (!isNaN(num)) {
+      return num;
+    }
+    
+    // Variable
+    if (token in variables) {
+      return variables[token];
+    }
+    
+    // Unknown - return 0
+    console.warn(`Unknown variable in formula: ${token}`);
+    return 0;
+  }
+  
+  return parseExpr();
 }
 
 /**
@@ -863,18 +992,32 @@ function getStyleContext(
 }
 
 /**
- * Generate base width tokens (without viewport/responsive expansion)
+ * Generate tokens for a folder
+ * Order: all base tokens first, then all tokens for each modifier (in global modifier order)
+ * If multiplyByRatio is enabled and a ratio is selected, values are multiplied by ratio
  */
-function generateBaseWidthTokens(
+function generateBaseTokens(
   folder: OutputFolder,
   ctx: FolderGeneratorContext
 ): FolderToken[] {
   const tokens: FolderToken[] = [];
   const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
   const maxColumns = Math.max(...ctx.styles.map(s => s.columns));
-  const prefix = folder.generateHeight ? (folder.widthPrefix || 'w-col-') : folder.tokenPrefix;
+  const prefix = folder.tokenPrefix;
+  const fullPrefix = prefix.replace(/col-?$/, '');
   
-  // Generate base column tokens (1 to maxColumns)
+  // Get ratio multiplier if multiplyByRatio is enabled
+  let ratioMultiplier = 1;
+  if (folder.multiplyByRatio && folder.enabledRatios.length > 0) {
+    const ratio = ctx.ratioFamilies.find(r => r.id === folder.enabledRatios[0]);
+    if (ratio) {
+      ratioMultiplier = ratio.ratioB / ratio.ratioA;
+    }
+  }
+  
+  // ============================================
+  // PHASE 1: All base column tokens (1 to maxColumns)
+  // ============================================
   for (let col = 1; col <= maxColumns; col++) {
     const token: FolderToken = {
       name: `${prefix}${col}`,
@@ -888,16 +1031,36 @@ function generateBaseWidthTokens(
         );
         const colWidth = computed['column-width'];
         const gutter = base.gutter;
-        token.values[style.id] = Math.round(colWidth * col + gutter * (col - 1));
+        const baseValue = colWidth * col + gutter * (col - 1);
+        token.values[style.id] = Math.round(baseValue * ratioMultiplier);
       }
     });
     
     if (Object.keys(token.values).length > 0) {
       tokens.push(token);
     }
-    
-    // Apply modifiers to this column
-    enabledMods.forEach(mod => {
+  }
+  
+  // ============================================
+  // PHASE 2: Base 'full' token
+  // ============================================
+  const fullToken: FolderToken = {
+    name: `${fullPrefix}full`,
+    values: {},
+  };
+  ctx.styles.forEach(style => {
+    const { computed } = getStyleContext(
+      style.id, style, ctx.baseParameters, ctx.computedParameters
+    );
+    fullToken.values[style.id] = Math.round(computed['ingrid'] * ratioMultiplier);
+  });
+  tokens.push(fullToken);
+  
+  // ============================================
+  // PHASE 3: All tokens for each modifier (in global order)
+  // ============================================
+  enabledMods.forEach(mod => {
+    for (let col = 1; col <= maxColumns; col++) {
       if (col >= mod.applyFrom && col <= mod.applyTo) {
         const modToken: FolderToken = {
           name: `${prefix}${col}${mod.name}`,
@@ -920,7 +1083,8 @@ function generateBaseWidthTokens(
             const colWidth = computed['column-width'];
             const gutter = base.gutter;
             const baseValue = colWidth * col + gutter * (col - 1);
-            modToken.values[style.id] = Math.round(applyModifier(baseValue, mod, genCtx));
+            const modifiedValue = applyModifier(baseValue, mod, genCtx);
+            modToken.values[style.id] = Math.round(modifiedValue * ratioMultiplier);
           }
         });
         
@@ -928,83 +1092,37 @@ function generateBaseWidthTokens(
           tokens.push(modToken);
         }
       }
-    });
-  }
-  
-  // Add 'full' token
-  const fullPrefix = prefix.replace(/col-?$/, '');
-  const fullToken: FolderToken = {
-    name: `${fullPrefix}full`,
-    values: {},
-  };
-  ctx.styles.forEach(style => {
-    const { computed } = getStyleContext(
-      style.id, style, ctx.baseParameters, ctx.computedParameters
-    );
-    fullToken.values[style.id] = Math.round(computed['ingrid']);
-  });
-  tokens.push(fullToken);
-  
-  // Add full variants for modifiers with hasFullVariant
-  enabledMods.filter(m => m.hasFullVariant).forEach(mod => {
-    const fullModToken: FolderToken = {
-      name: `${fullPrefix}full${mod.name}`,
-      values: {},
-      modifier: mod.name,
-    };
+    }
     
-    ctx.styles.forEach(style => {
-      const { base, computed } = getStyleContext(
-        style.id, style, ctx.baseParameters, ctx.computedParameters
-      );
-      const ingrid = computed['ingrid'];
-      const photoMargin = computed['photo-margin'];
-      const viewport = base.viewport;
+    // Full variant for this modifier (if applicable)
+    if (mod.hasFullVariant) {
+      const fullModToken: FolderToken = {
+        name: `${fullPrefix}full${mod.name}`,
+        values: {},
+        modifier: mod.name,
+      };
       
-      let value = ingrid;
-      if (mod.formula.includes('photo-margin')) {
-        value = ingrid + 2 * photoMargin;
-      } else if (mod.formula.includes('margin-m')) {
-        value = viewport;
-      }
-      fullModToken.values[style.id] = Math.round(value);
-    });
-    tokens.push(fullModToken);
+      ctx.styles.forEach(style => {
+        const { base, computed } = getStyleContext(
+          style.id, style, ctx.baseParameters, ctx.computedParameters
+        );
+        const genCtx: GeneratorContext = {
+          styleId: style.id,
+          styleName: style.name,
+          columns: style.columns,
+          base,
+          computed,
+        };
+        const ingrid = computed['ingrid'];
+        const modifiedValue = applyModifier(ingrid, mod, genCtx);
+        fullModToken.values[style.id] = Math.round(modifiedValue * ratioMultiplier);
+      });
+      
+      tokens.push(fullModToken);
+    }
   });
   
   return tokens;
-}
-
-/**
- * Generate height tokens from width tokens for a specific ratio
- */
-function generateHeightTokensForRatio(
-  widthTokens: FolderToken[],
-  ratio: RatioFamily,
-  folder: OutputFolder
-): FolderToken[] {
-  const ratioMultiplier = ratio.ratioB / ratio.ratioA;
-  const widthPrefix = folder.widthPrefix || 'w-col-';
-  const heightPrefix = folder.heightPrefix || 'h-col-';
-  
-  return widthTokens.map(widthToken => {
-    // Replace width prefix with height prefix, then append ratio name
-    let heightName = widthToken.name.replace(widthPrefix, heightPrefix).replace('w-full', 'h-full');
-    // Append ratio name to prevent conflicts between different ratios
-    heightName = `${heightName}-${ratio.name}`;
-    
-    return {
-      name: heightName,
-      values: Object.fromEntries(
-        Object.entries(widthToken.values).map(([styleId, widthValue]) => [
-          styleId,
-          Math.round(widthValue * ratioMultiplier)
-        ])
-      ),
-      modifier: widthToken.modifier,
-      ratio: ratio.name,
-    };
-  });
 }
 
 /**
@@ -1014,23 +1132,7 @@ export function generateTokensForFolder(
   folder: OutputFolder,
   ctx: FolderGeneratorContext
 ): FolderToken[] {
-  const widthTokens = generateBaseWidthTokens(folder, ctx);
-  
-  // If generateHeight is true, generate ONLY height tokens (width tokens are in separate folder)
-  if (folder.generateHeight && folder.enabledRatios.length > 0) {
-    const enabledRatios = ctx.ratioFamilies.filter(r => folder.enabledRatios.includes(r.id));
-    const allHeightTokens: FolderToken[] = [];
-    
-    enabledRatios.forEach(ratio => {
-      const heightTokens = generateHeightTokensForRatio(widthTokens, ratio, folder);
-      allHeightTokens.push(...heightTokens);
-    });
-    
-    // Return ONLY height tokens, not width tokens
-    return allHeightTokens;
-  }
-  
-  return widthTokens;
+  return generateBaseTokens(folder, ctx);
 }
 
 /**
@@ -1041,7 +1143,6 @@ export function generateAllTokensForFolder(
   ctx: FolderGeneratorContext
 ): FolderToken[] {
   const templateInfo = parsePathTemplate(folder.path);
-  const baseTokens = generateBaseWidthTokens(folder, ctx);
   const allTokens: FolderToken[] = [];
   
   // Determine viewports to iterate
@@ -1049,56 +1150,162 @@ export function generateAllTokensForFolder(
     ? ctx.viewports 
     : [{ id: 'default', name: 'default', width: 0, icon: 'monitor' as const }];
   
-  // Determine responsive variants to iterate
-  const responsivesToUse = templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0
-    ? ctx.responsiveVariants.filter(rv => folder.enabledResponsiveVariants.includes(rv.id))
-    : [{ id: 'default', name: 'default', ratioConfigs: [], viewportBehaviors: [] }];
-  
-  // Determine ratios
-  const enabledRatios = folder.generateHeight && folder.enabledRatios.length > 0
-    ? ctx.ratioFamilies.filter(r => folder.enabledRatios.includes(r.id))
-    : [];
-  
-  // Expand tokens across viewports and responsive variants
+  // For now, skip responsive variants (will be redesigned later)
+  // Just generate tokens per viewport
   viewportsToUse.forEach(viewport => {
-    responsivesToUse.forEach(responsive => {
-      const vpName = viewport.name !== 'default' ? viewport.name : undefined;
-      const rvName = responsive.name !== 'default' ? responsive.name : undefined;
-      
-      // If generateHeight, generate ONLY height tokens
-      if (enabledRatios.length > 0) {
-        // Height tokens per ratio
-        enabledRatios.forEach(ratio => {
-          const heightTokens = generateHeightTokensForRatio(baseTokens, ratio, folder);
-          const ratioPath = folder.multiplyByRatio
-            ? resolvePathTemplate(folder.path.replace('{ratio}', ratio.name), vpName, rvName)
-            : resolvePathTemplate(folder.path, vpName, rvName);
-          
-          heightTokens.forEach(token => {
-            allTokens.push({
-              ...token,
-              path: `${ratioPath}/${token.name}`,
-              viewport: vpName,
-              responsive: rvName,
-            });
-          });
-        });
-      } else {
-        // Width tokens only
-        baseTokens.forEach(token => {
-          const basePath = resolvePathTemplate(folder.path, vpName, rvName);
-          allTokens.push({
-            ...token,
-            path: `${basePath}/${token.name}`,
-            viewport: vpName,
-            responsive: rvName,
-          });
-        });
-      }
+    const vpName = viewport.name !== 'default' ? viewport.name : undefined;
+    
+    // Generate tokens with ratio multiplication if enabled
+    const baseTokens = generateBaseTokensWithOverride(folder, ctx);
+    
+    baseTokens.forEach(token => {
+      const basePath = resolvePathTemplate(folder.path, vpName, undefined);
+      allTokens.push({
+        ...token,
+        path: `${basePath}/${token.name}`,
+        viewport: vpName,
+      });
     });
   });
   
   return allTokens;
+}
+
+/**
+ * Generate tokens with optional column override and ratio multiplication
+ */
+function generateBaseTokensWithOverride(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext,
+  columnsOverride?: number
+): FolderToken[] {
+  const tokens: FolderToken[] = [];
+  const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
+  
+  // Use override or max from styles
+  const maxColumns = columnsOverride ?? Math.max(...ctx.styles.map(s => s.columns));
+  const prefix = folder.tokenPrefix;
+  const fullPrefix = prefix.replace(/col-?$/, '');
+  
+  // Get ratio multiplier if multiplyByRatio is enabled
+  let ratioMultiplier = 1;
+  if (folder.multiplyByRatio && folder.enabledRatios.length > 0) {
+    const ratio = ctx.ratioFamilies.find(r => r.id === folder.enabledRatios[0]);
+    if (ratio) {
+      ratioMultiplier = ratio.ratioB / ratio.ratioA;
+    }
+  }
+  
+  // ============================================
+  // PHASE 1: All base column tokens (1 to maxColumns)
+  // ============================================
+  for (let col = 1; col <= maxColumns; col++) {
+    const token: FolderToken = {
+      name: `${prefix}${col}`,
+      values: {},
+    };
+    
+    ctx.styles.forEach(style => {
+      const effectiveColumns = columnsOverride ?? style.columns;
+      if (col <= effectiveColumns) {
+        const { base, computed } = getStyleContext(
+          style.id, style, ctx.baseParameters, ctx.computedParameters
+        );
+        const colWidth = computed['column-width'];
+        const gutter = base.gutter;
+        const baseValue = colWidth * col + gutter * (col - 1);
+        token.values[style.id] = Math.round(baseValue * ratioMultiplier);
+      }
+    });
+    
+    if (Object.keys(token.values).length > 0) {
+      tokens.push(token);
+    }
+  }
+  
+  // ============================================
+  // PHASE 2: Base 'full' token
+  // ============================================
+  const fullToken: FolderToken = {
+    name: `${fullPrefix}full`,
+    values: {},
+  };
+  ctx.styles.forEach(style => {
+    const { computed } = getStyleContext(
+      style.id, style, ctx.baseParameters, ctx.computedParameters
+    );
+    fullToken.values[style.id] = Math.round(computed['ingrid'] * ratioMultiplier);
+  });
+  tokens.push(fullToken);
+  
+  // ============================================
+  // PHASE 3: All tokens for each modifier (in global order)
+  // ============================================
+  enabledMods.forEach(mod => {
+    for (let col = 1; col <= maxColumns; col++) {
+      if (col >= mod.applyFrom && col <= mod.applyTo) {
+        const modToken: FolderToken = {
+          name: `${prefix}${col}${mod.name}`,
+          values: {},
+          modifier: mod.name,
+        };
+        
+        ctx.styles.forEach(style => {
+          const effectiveColumns = columnsOverride ?? style.columns;
+          if (col <= effectiveColumns) {
+            const { base, computed } = getStyleContext(
+              style.id, style, ctx.baseParameters, ctx.computedParameters
+            );
+            const genCtx: GeneratorContext = {
+              styleId: style.id,
+              styleName: style.name,
+              columns: effectiveColumns,
+              base,
+              computed,
+            };
+            const colWidth = computed['column-width'];
+            const gutter = base.gutter;
+            const baseValue = colWidth * col + gutter * (col - 1);
+            const modifiedValue = applyModifier(baseValue, mod, genCtx);
+            modToken.values[style.id] = Math.round(modifiedValue * ratioMultiplier);
+          }
+        });
+        
+        if (Object.keys(modToken.values).length > 0) {
+          tokens.push(modToken);
+        }
+      }
+    }
+    
+    // Full variant for this modifier (if applicable)
+    if (mod.hasFullVariant) {
+      const fullModToken: FolderToken = {
+        name: `${fullPrefix}full${mod.name}`,
+        values: {},
+        modifier: mod.name,
+      };
+      
+      ctx.styles.forEach(style => {
+        const { base, computed } = getStyleContext(
+          style.id, style, ctx.baseParameters, ctx.computedParameters
+        );
+        const genCtx: GeneratorContext = {
+          styleId: style.id,
+          styleName: style.name,
+          columns: columnsOverride ?? style.columns,
+          base,
+          computed,
+        };
+        const ingrid = computed['ingrid'];
+        const modifiedValue = applyModifier(ingrid, mod, genCtx);
+        fullModToken.values[style.id] = Math.round(modifiedValue * ratioMultiplier);
+      });
+      
+      tokens.push(fullModToken);
+    }
+  });
+  
+  return tokens;
 }
 
 /**
@@ -1126,24 +1333,11 @@ export function calculateFolderTokenCount(
   // Full variants for modifiers with hasFullVariant
   baseCount += enabledMods.filter(m => m.hasFullVariant).length;
   
-  // If generateHeight, count ONLY height tokens (width tokens are in separate folder)
-  let totalCount: number;
-  if (folder.generateHeight && folder.enabledRatios.length > 0) {
-    // Height tokens only: base × number of ratios
-    totalCount = baseCount * folder.enabledRatios.length;
-  } else {
-    // Width tokens only
-    totalCount = baseCount;
-  }
+  let totalCount = baseCount;
   
   // Multiply by viewports (if {viewport} in path)
   if (templateInfo.hasViewport) {
     totalCount *= ctx.viewports.length;
-  }
-  
-  // Multiply by responsive variants (if {responsive} in path and variants enabled)
-  if (templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0) {
-    totalCount *= folder.enabledResponsiveVariants.length;
   }
   
   return totalCount;

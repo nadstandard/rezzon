@@ -1,7 +1,7 @@
 # REZZON Scale – Roadmapa implementacji
 
-**Status:** v0.2.8 – Eksport Figma działa  
-**Data aktualizacji:** 2025-12-30
+**Status:** v0.3.7 – Architektura uproszczona  
+**Data aktualizacji:** 2025-01-02
 
 ---
 
@@ -52,7 +52,7 @@
 - [x] Panel Modifiers z CRUD
 - [x] Panel Ratio Families z CRUD
 - [x] Panel Responsive Variants z CRUD
-- [x] Viewport Behaviors – column override per viewport
+- [x] Viewport Behaviors – column override per viewport (UI gotowe)
 
 #### 2.5 Preview View
 - [x] Tabela tokenów z wartościami per style
@@ -63,15 +63,31 @@
 - [x] Format Figma Variables API (v0.2.8)
 - [x] Struktura: collections → modes → variables → valuesByMode
 
+### Faza 3 – Architektura Folderów Output (DONE)
+
+- [x] Nowy typ `OutputFolder` z pełną konfiguracją
+- [x] Drzewo folderów zamiast flat listy
+- [x] UI drzewa folderów (lewa strona)
+- [x] Panel konfiguracji folderu (prawa strona)
+- [x] Generator według konfiguracji folderów
+- [x] Podgląd generowanych tokenów
+
+### Faza 3.5 – Uproszczenia architektury (DONE - v0.3.7)
+
+- [x] Usunięto `generateHeight` toggle
+- [x] Usunięto `widthPrefix` / `heightPrefix` (zastąpione `tokenPrefix`)
+- [x] Jeden ratio na folder (radio buttons)
+- [x] Ukryto UI Responsive Variants (do reimplementacji)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #1 – PASSED                             │
-│  Zakres: Parameters + Formuły + Eksport                     │
-│  ☑ Macierz renderuje się poprawnie                         │
-│  ☑ Edycja base przelicza computed                          │
-│  ☑ Generated tokeny się aktualizują                         │
-│  ☑ CRUD viewportów/stylów działa                           │
-│  ☑ Eksport Figma działa                                     │
+│  🧪 TEST CHECKPOINT #2 – PASSED                             │
+│  Zakres: Architektura folderów + uproszczenia               │
+│  ☑ User tworzy własną strukturę folderów                    │
+│  ☑ Każdy folder ma własną konfigurację                      │
+│  ☑ Modifiers przypisane per folder                          │
+│  ☑ Ratio multiplication działa (jeden ratio)                │
+│  ☑ Eksport generuje według konfiguracji                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -79,55 +95,71 @@
 
 ## 🔄 W TOKU
 
-### Faza 3 – Architektura Folderów Output (Est. 3-4 dni)
+### Faza 4 – Responsive Variants w generatorze (Est. 2-3 dni)
 
-**Cel:** User sam buduje drzewo folderów, aplikacja jest "głupia".
+**Problem:** Typy `ViewportBehavior` i `ResponsiveVariant` są gotowe, ale generator ich **NIE UŻYWA**.
 
-#### 3.1 Model danych
-- [ ] Nowy typ `OutputFolder` z pełną konfiguracją
-- [ ] Drzewo folderów zamiast flat listy
-- [ ] Powiązania: folder → modifiers, ratios, responsive
+**Cel:** Implementacja mechanizmu "collapse to N columns" w generatorze.
 
-#### 3.2 Konfiguracja folderu
-- [ ] Ścieżka/nazwa (user tworzy)
-- [ ] Token prefix (user ustala)
-- [ ] Wybór modifiers z globalnej listy
-- [ ] Toggle "Multiply by ratio?" + wybór ratios
-- [ ] Wybór responsive variants
-- [ ] Toggle "Generate height?" + prefixy width/height
+#### 4.1 Analiza (DONE)
+- [x] Zrozumienie struktury R4-Grid JSON
+- [x] Dokumentacja mechanizmu ViewportBehaviors
+- [x] Identyfikacja luk w generatorze
 
-#### 3.3 UI Generators View
-- [ ] Drzewo folderów (lewa strona)
-- [ ] Panel konfiguracji folderu (prawa strona)
-- [ ] Podgląd generowanych tokenów
+#### 4.2 Implementacja generatora
+- [ ] Iteracja po `enabledResponsiveVariants` w folderze
+- [ ] Pobieranie `viewportBehaviors` dla każdego variant
+- [ ] Logika: `inherit` vs `override` columns
+- [ ] Generowanie ścieżek z responsive variant w nazwie
+- [ ] Obliczanie wartości z `overrideColumns`
 
-#### 3.4 Generator refactor
-- [ ] Generowanie według konfiguracji folderów
-- [ ] Kolejność tokenów = kolejność modifiers
-- [ ] Eksport z nową strukturą
+#### 4.3 Logika collapse
+```typescript
+// Pseudokod
+for (variant of folder.enabledResponsiveVariants) {
+  for (viewport of viewports) {
+    const behavior = variant.viewportBehaviors[viewport.id];
+    
+    if (behavior === 'inherit') {
+      // Normalne wartości
+      columns = style.columns;
+    } else {
+      // Collapse: WSZYSTKIE tokeny = wartość dla N kolumn
+      columns = behavior.overrideColumns;
+    }
+    
+    generateTokens(folder, viewport, variant, columns);
+  }
+}
+```
+
+#### 4.4 UI (przywrócenie)
+- [ ] Panel Responsive Variants w Generators View
+- [ ] Viewport Behaviors UI per variant
+- [ ] Toggle responsive variants per folder
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #2 – Architektura folderów              │
+│  🧪 TEST CHECKPOINT #3 – Responsive Variants                │
 ├─────────────────────────────────────────────────────────────┤
-│  Zakres: Elastyczne foldery output                          │
+│  Zakres: Pełny flow z responsive variants                   │
 │                                                             │
 │  Checklistka:                                               │
-│  ▢ User tworzy własną strukturę folderów                    │
-│  ▢ Każdy folder ma własną konfigurację                      │
-│  ▢ Modifiers/ratios/responsive przypisane per folder        │
-│  ▢ Eksport generuje według konfiguracji                     │
-│  ▢ Odtworzenie struktury R4-Grid możliwe                    │
+│  ☐ Variant "static" generuje normalne wartości              │
+│  ☐ Variant "to-tab-6-col" kolapsuje tablet/mobile do 6 col  │
+│  ☐ Eksport zawiera subfoldery responsive                    │
+│  ☐ Wartości collapse są poprawne (sprawdzić z JSON R4-Grid) │
+│  ☐ UI pozwala konfigurować ViewportBehaviors                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 BLOK 2: UZUPEŁNIENIA
+## 📋 BLOK 2: WALIDACJA I UZUPEŁNIENIA
 
-### Faza 4 – Brakujące warstwy R4-Grid (Est. 2-3 dni)
+### Faza 5 – Brakujące warstwy R4-Grid (Est. 2-3 dni)
 
-Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
+Po responsive variants – walidacja przez odtworzenie R4-Grid:
 
 - [ ] Warstwa container (392 tokeny)
 - [ ] Warstwa margin (120 tokenów)
@@ -135,14 +167,14 @@ Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
 - [ ] Specjalne tokeny: v-col-0-w-half, v-col-viewport, v-full-w-margin
 - [ ] Warianty kondycyjne: -DL, -TM (Desktop-Laptop, Tablet-Mobile)
 
-### Faza 5 – Import/Eksport sesji (Est. 1-2 dni)
+### Faza 6 – Import/Eksport sesji (Est. 1-2 dni)
 
 - [ ] Import JSON Scale session
 - [ ] Modal importu z drag & drop
 - [ ] Metadane Scale w eksporcie (do re-importu)
 - [ ] Walidacja przed eksportem
 
-### Faza 6 – Preview Polish (Est. 1 dzień)
+### Faza 7 – Preview Polish (Est. 1 dzień)
 
 - [ ] Sidebar: warstwy z licznikami (live update)
 - [ ] Podświetlanie modyfikatorów w nazwach
@@ -151,18 +183,18 @@ Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #3 – GRID MVP                           │
+│  🧪 TEST CHECKPOINT #4 – GRID MVP                           │
 ├─────────────────────────────────────────────────────────────┤
 │  Zakres: Pełny flow Grid                                    │
-│  Cel: Tworzenie → Edycja → Generowanie → Eksport           │
+│  Cel: Tworzenie → Edycja → Generowanie → Eksport            │
 │                                                             │
 │  Checklistka:                                               │
-│  ▢ Odtworzenie R4-Grid (3590 zmiennych)                     │
-│  ▢ Import sesji działa                                      │
-│  ▢ Eksport do Figmy (Portal importuje)                     │
-│  ▢ Re-import sesji działa                                   │
+│  ☐ Odtworzenie R4-Grid (3590 zmiennych)                     │
+│  ☐ Import sesji działa                                      │
+│  ☐ Eksport do Figmy (Portal importuje)                      │
+│  ☐ Re-import sesji działa                                   │
 │                                                             │
-│  🎨 UI feedback: PEŁNY PRZEGLĄD                            │
+│  🎨 UI feedback: PEŁNY PRZEGLĄD                             │
 │  ⚠️  DECISION POINT: Grid MVP wystarczający?                │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -171,17 +203,17 @@ Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
 
 ## 📋 BLOK 3: POZOSTAŁE SEKCJE
 
-### Faza 7 – Typography
+### Faza 8 – Typography
 - [ ] Briefing (wywiad)
 - [ ] Mockupy HTML
 - [ ] Implementacja React
 
-### Faza 8 – Spacing
+### Faza 9 – Spacing
 - [ ] Briefing (wywiad)
 - [ ] Mockupy HTML
 - [ ] Implementacja React
 
-### Faza 9 – Radii
+### Faza 10 – Radii
 - [ ] Briefing (wywiad)
 - [ ] Mockupy HTML
 - [ ] Implementacja React
@@ -190,36 +222,36 @@ Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
 
 ## 📋 BLOK 4: POLISH
 
-### Faza 10 – UX
+### Faza 11 – UX
 - [ ] Drag & drop (kolejność modifiers, folderów)
 - [ ] Skróty klawiszowe
 - [ ] Tooltips
 - [ ] Empty/Loading/Error states
 - [ ] Toast notifications
 
-### Faza 11 – Persystencja
+### Faza 12 – Persystencja
 - [ ] IndexedDB (Dexie.js)
 - [ ] Auto-save przy zmianach
 - [ ] Restore stanu przy starcie
 
-### Faza 12 – Optymalizacje
+### Faza 13 – Optymalizacje
 - [ ] Wirtualizacja (jeśli potrzebna)
 - [ ] React.memo
 - [ ] Debounce
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #4 – FINAL                              │
+│  🧪 TEST CHECKPOINT #5 – FINAL                              │
 ├─────────────────────────────────────────────────────────────┤
 │  Zakres: Produkcja                                          │
-│  Cel: Gotowe do codziennego użytku                         │
+│  Cel: Gotowe do codziennego użytku                          │
 │                                                             │
 │  Checklistka:                                               │
-│  ▢ Wszystkie sekcje działają                                │
-│  ▢ Pełny flow z prawdziwymi danymi                          │
-│  ▢ Performance OK                                           │
-│  ▢ UI spójne i dopracowane                                  │
-│  ▢ Brak błędów w konsoli                                    │
+│  ☐ Wszystkie sekcje działają                                │
+│  ☐ Pełny flow z prawdziwymi danymi                          │
+│  ☐ Performance OK                                           │
+│  ☐ UI spójne i dopracowane                                  │
+│  ☐ Brak błędów w konsoli                                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -232,20 +264,37 @@ Po architekturze folderów – walidacja przez odtworzenie R4-Grid:
 | **Briefing & Mockupy** | 0 | ✅ DONE |
 | **Szkielet React** | 1 | ✅ DONE |
 | **Grid Core** | 2 | ✅ DONE |
-| **Architektura Folderów** | 3 | 🔄 NEXT |
-| **Uzupełnienia** | 4-6 | ☐ TODO |
-| **Pozostałe sekcje** | 7-9 | ☐ TODO |
-| **Polish** | 10-12 | ☐ TODO |
+| **Architektura Folderów** | 3, 3.5 | ✅ DONE |
+| **Responsive Variants** | 4 | 🔄 NEXT |
+| **Walidacja R4-Grid** | 5-7 | ☐ TODO |
+| **Pozostałe sekcje** | 8-10 | ☐ TODO |
+| **Polish** | 11-13 | ☐ TODO |
 
-**Szacowany postęp Grid MVP:** ~60%
+**Szacowany postęp Grid MVP:** ~70%
 
 ---
 
 ## 🎯 NASTĘPNY KROK
 
-**Faza 3: Architektura Folderów Output**
+**Faza 4: Responsive Variants w generatorze**
 
-1. Nowy model danych `OutputFolder`
-2. UI drzewa folderów
-3. Panel konfiguracji folderu
-4. Refactor generatora
+1. Implementacja logiki `inherit` / `override` w `generateAllTokensForFolder()`
+2. Iteracja po `enabledResponsiveVariants`
+3. Sprawdzanie `viewportBehaviors` dla każdego viewport
+4. Generowanie ścieżek z responsive variant
+5. Test na danych R4-Grid
+
+---
+
+## 📝 ZNANE PROBLEMY
+
+### Generator ignoruje responsive variants
+
+**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
+
+```typescript
+// For now, skip responsive variants (will be redesigned later)
+// Just generate tokens per viewport
+```
+
+**Do naprawy w Fazie 4.**

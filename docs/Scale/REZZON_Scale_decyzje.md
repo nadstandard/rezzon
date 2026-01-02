@@ -1,6 +1,6 @@
 # REZZON Scale – Decyzje projektowe
 
-**Data aktualizacji:** 2025-12-30
+**Data aktualizacji:** 2025-01-02
 
 ---
 
@@ -61,15 +61,48 @@ User kontroluje kolejność przez UI (drag & drop w przyszłości).
 
 ---
 
-## 5. Viewport Behaviors
+## 5. Viewport Behaviors – mechanizm collapse
 
-**Decyzja:** Każdy responsive variant może mieć override liczby kolumn per viewport.
+**Decyzja:** Każdy responsive variant definiuje zachowanie per viewport poprzez ViewportBehaviors.
 
-Opcje per viewport:
+### Model danych
+
+```typescript
+interface ViewportBehavior {
+  viewportId: string;
+  behavior: 'inherit' | 'override';
+  overrideColumns?: number;
+}
+```
+
+### Opcje per viewport:
 - **Inherit** – używa domyślnej liczby kolumn z parametrów
-- **Override columns** – wymusza konkretną liczbę
+- **Override columns** – wymusza konkretną liczbę (collapse)
 
-Uzasadnienie: Responsive variants często potrzebują różnych siatek na różnych breakpointach.
+### Logika generatora
+
+```
+Dla tokena v-col-N w viewport V:
+  behavior = variant.viewportBehaviors[V]
+  
+  if behavior === 'inherit':
+    return normalValue(N)
+  
+  if behavior === 'override':
+    targetCols = behavior.overrideColumns
+    return normalValue(targetCols)  // WSZYSTKIE tokeny = ta sama wartość
+```
+
+### Przykład: `to-tab-6-col`
+
+| Viewport | Behavior | Columns | v-col-8 = |
+|----------|----------|---------|-----------|
+| Desktop  | Inherit  | 12      | 888 (8 kolumn) |
+| Laptop   | Inherit  | 12      | 888 (8 kolumn) |
+| Tablet   | Override | 6       | **316** (6 kolumn!) |
+| Mobile   | Override | 6       | **316** (6 kolumn!) |
+
+Uzasadnienie: Pozwala na "collapse" layoutów na mniejszych ekranach bez ręcznego aliasowania.
 
 ---
 
@@ -129,7 +162,7 @@ UI blokuje przekroczenie limitów.
 ## 9. Sekcje aplikacji
 
 **Decyzja:** 4 sekcje z osobnymi briefingami i implementacjami:
-1. Grid (zaimplementowane)
+1. Grid (w trakcie implementacji)
 2. Typography (TODO)
 3. Spacing (TODO)
 4. Radii (TODO)
@@ -172,24 +205,20 @@ Przykład: `-w-half` = `value + column-width / 2`
 
 ---
 
-## 13. Width vs Height – oddzielne generowanie
+## 13. Jeden ratio na folder
 
-**Decyzja:** Szerokość generuje się RAZ, wysokość × ilość ratios.
+**Decyzja (v0.3.7):** Folder może mieć JEDEN ratio do mnożenia, nie wiele.
 
-Uzasadnienie: Szerokość nie zależy od ratio. Tylko wysokość = width × ratio.
+Uzasadnienie: Upraszcza model. Jeśli potrzeba wielu ratios – tworzymy osobne foldery:
+- `photo-height-horizontal` (ratio 4:3)
+- `photo-height-vertical` (ratio 3:4)
+- `photo-height-square` (ratio 1:1)
 
-Struktura:
-```
-photo/{viewport}/width/{responsive}/     → jeden zestaw szerokości
-photo/{viewport}/height/{responsive}/
-   horizontal/   → wysokości dla 4:3
-   vertical/     → wysokości dla 3:4
-   square/       → wysokości dla 1:1
-```
+UI: Radio buttons zamiast checkboxów.
 
 ---
 
-## 14. ARCHITEKTURA FOLDERÓW (NOWA)
+## 14. ARCHITEKTURA FOLDERÓW
 
 **Decyzja:** Aplikacja jest "głupia" – nie wie co to column, photo, margin. User sam buduje drzewo folderów.
 
@@ -202,42 +231,26 @@ Każdy folder ma:
 | **Nazwa/ścieżka** | User tworzy dowolną strukturę |
 | **Token prefix** | np. `v-col-`, `w-col-`, `mosaic-` |
 | **Modifiers** | Które z globalnej listy zastosować |
-| **Multiply by ratio?** | Toggle: tak/nie |
-| **Ratios** | Jeśli tak – które (tworzą subfolders) |
+| **Multiply by ratio?** | Toggle + wybór JEDNEGO ratio |
 | **Responsive variants** | Które (tworzą subfolders) |
-| **Width prefix** | Jeśli generuje szerokości |
-| **Height prefix** | Jeśli generuje wysokości |
-| **Generate height?** | Czy w ogóle obliczać wysokość |
 
 ### Semantyka = nazwy
 
 `column`, `photo/width`, `margin` to tylko nazwy które USER nadaje folderom. Scale nie interpretuje – składa tokeny według konfiguracji.
 
-### Przykład konfiguracji
-
-```
-📁 column
-   path: "column/{viewport}"
-   prefix: "v-col-"
-   modifiers: [-w-half, -w-margin, -to-edge, -1G, -2G]
-   generate height: NIE
-
-📁 photo-mosaic
-   path: "photo/{viewport}/mosaic"
-   prefix: "mosaic-"
-   modifiers: [-w-margin]
-   generate height: TAK
-   ratios: [square, horizontal]
-   responsive: [static]
-```
-
 ---
 
-## 15. Warstwy output jako foldery
+## 15. Responsive variants to subfoldery
 
-**Decyzja:** Stare "warstwy output" → nowe "foldery output" z pełną konfiguracją.
+**Decyzja:** Responsive variants tworzą subfoldery w ścieżce tokena.
 
-User nie wybiera z predefiniowanej listy warstw. User TWORZY foldery i konfiguruje każdy osobno.
+```
+photo/{viewport}/width/static/w-col-1
+photo/{viewport}/width/to-tab-6-col/w-col-1
+photo/{viewport}/width/to-mobile-6-col/w-col-1
+```
+
+NIE są to osobne wartości w modach Figma. Są to osobne TOKENY z różnymi wartościami.
 
 ---
 
@@ -248,3 +261,18 @@ User nie wybiera z predefiniowanej listy warstw. User TWORZY foldery i konfiguru
 - `0.x.y` – development
 - `1.0.0` – produkcyjna wersja z pełnym Grid
 - Minor dla nowych sekcji (Typography, Spacing, Radii)
+
+---
+
+## 17. Uproszczenia v0.3.7
+
+**Decyzja:** Usunięto zbędne opcje z UI folderów:
+
+| Usunięte | Zastąpione przez |
+|----------|------------------|
+| `generateHeight` toggle | Jeden folder = jeden typ tokena |
+| `widthPrefix` / `heightPrefix` | Jeden `tokenPrefix` |
+| Multi-select ratios | Jeden ratio na folder (radio) |
+| Responsive Variants UI | Ukryte (do reimplementacji) |
+
+Filozofia: **Jeden folder = jeden zestaw tokenów = jedna konfiguracja.**

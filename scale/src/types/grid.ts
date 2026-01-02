@@ -99,23 +99,18 @@ export interface OutputLayer {
 // === OUTPUT FOLDER (new architecture) ===
 export interface OutputFolder {
   id: string;
-  name: string;                          // e.g., "column", "photo/width"
+  name: string;                          // e.g., "column", "photo-width", "photo-height-horizontal"
   parentId: string | null;               // null = root level
   path: string;                          // full path e.g., "photo/{viewport}/width/{responsive}"
-  tokenPrefix: string;                   // e.g., "v-col-", "w-col-"
+  tokenPrefix: string;                   // e.g., "v-col-", "w-col-", "h-col-"
   
   // Configuration
   enabledModifiers: string[];            // modifier IDs to apply
   enabledResponsiveVariants: string[];   // responsive variant IDs
   
-  // Ratio options
-  multiplyByRatio: boolean;              // if true, generates subfolder per ratio
-  enabledRatios: string[];               // ratio family IDs (used if multiplyByRatio)
-  
-  // Height generation
-  generateHeight: boolean;               // if true, calculates height = width × ratio
-  widthPrefix: string;                   // e.g., "w-col-" (used if generateHeight)
-  heightPrefix: string;                  // e.g., "h-col-" (used if generateHeight)
+  // Ratio multiplication (optional)
+  multiplyByRatio: boolean;              // if true, values = baseValue × (ratioB/ratioA)
+  enabledRatios: string[];               // ratio family IDs (pick ONE for multiplication)
   
   // Computed (auto-calculated)
   tokenCount: number;
@@ -157,6 +152,7 @@ export interface GridActions {
   updateViewport: (id: string, updates: Partial<Viewport>) => void;
   removeViewport: (id: string) => void;
   selectViewport: (id: string | null) => void;
+  reorderViewports: (fromIndex: number, toIndex: number) => void;
   
   // Style actions
   addStyle: (style: Omit<Style, 'id'>) => void;
@@ -172,6 +168,7 @@ export interface GridActions {
   addModifier: (modifier: Omit<Modifier, 'id'>) => void;
   updateModifier: (id: string, updates: Partial<Modifier>) => void;
   removeModifier: (id: string) => void;
+  reorderModifiers: (fromIndex: number, toIndex: number) => void;
   
   // Ratio actions
   addRatioFamily: (ratio: Omit<RatioFamily, 'id'>) => void;
@@ -194,6 +191,7 @@ export interface GridActions {
   toggleFolderModifier: (folderId: string, modifierId: string, enabled: boolean) => void;
   toggleFolderResponsive: (folderId: string, variantId: string, enabled: boolean) => void;
   toggleFolderRatio: (folderId: string, ratioId: string, enabled: boolean) => void;
+  reorderOutputFolders: (fromIndex: number, toIndex: number, parentId: string | null) => void;
   
   // Tab navigation
   setActiveTab: (tab: 'parameters' | 'generators' | 'preview') => void;

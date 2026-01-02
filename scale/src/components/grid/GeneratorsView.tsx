@@ -4,6 +4,7 @@ import { useGridStore } from '../../store';
 import { ModifierModal, RatioModal, ConfirmDeleteModal, ResponsiveVariantModal, FolderModal } from '../Modals';
 import type { OutputFolder } from '../../types';
 import { getTokenPreviewForFolder, calculateFolderTokenCount, type FolderGeneratorContext } from '../../engine/generator';
+import { SortableList } from '../common/SortableList';
 
 export function GeneratorsView() {
   const {
@@ -21,11 +22,10 @@ export function GeneratorsView() {
     updateOutputFolder,
     removeOutputFolder,
     toggleFolderModifier,
-    toggleFolderResponsive,
-    toggleFolderRatio,
     addModifier,
     updateModifier,
     removeModifier,
+    reorderModifiers,
     addRatioFamily,
     updateRatioFamily,
     removeRatioFamily,
@@ -142,9 +142,6 @@ export function GeneratorsView() {
       enabledResponsiveVariants: [],
       multiplyByRatio: false,
       enabledRatios: [],
-      generateHeight: false,
-      widthPrefix: '',
-      heightPrefix: '',
     });
     setFolderModalOpen(false);
   };
@@ -448,26 +445,16 @@ export function GeneratorsView() {
                 </div>
               </div>
 
-              {/* Responsive Variants */}
-              <div className="config-group">
-                <label className="config-label">Responsive Variants</label>
-                <div className="config-checkboxes">
-                  {responsiveVariants.map(rv => (
-                    <label key={rv.id} className="config-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedFolder.enabledResponsiveVariants.includes(rv.id)}
-                        onChange={(e) => toggleFolderResponsive(selectedFolder.id, rv.id, e.target.checked)}
-                      />
-                      <span className="config-checkbox__box">
-                        {selectedFolder.enabledResponsiveVariants.includes(rv.id) && (
-                          <Icon name="check" size="xs" />
-                        )}
-                      </span>
-                      <span className="config-checkbox__label">{rv.name}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Responsive Variants - Coming Soon */}
+              <div className="config-group config-group--disabled">
+                <label className="config-label">
+                  Responsive Variants 
+                  <span className="config-label__badge">Coming soon</span>
+                </label>
+                <p className="config-hint">
+                  This feature will allow different configurations per viewport. 
+                  For now, create separate folders for each configuration.
+                </p>
               </div>
 
               {/* Multiply by Ratio toggle */}
@@ -485,21 +472,22 @@ export function GeneratorsView() {
                 </label>
               </div>
 
-              {/* Ratios (if multiplyByRatio enabled) */}
+              {/* Ratio selection (if multiplyByRatio enabled) - single selection */}
               {selectedFolder.multiplyByRatio && (
                 <div className="config-group config-group--nested">
-                  <label className="config-label">Ratios</label>
+                  <label className="config-label">Ratio (select one)</label>
                   <div className="config-checkboxes">
                     {ratioFamilies.map(ratio => (
                       <label key={ratio.id} className="config-checkbox">
                         <input
-                          type="checkbox"
-                          checked={selectedFolder.enabledRatios.includes(ratio.id)}
-                          onChange={(e) => toggleFolderRatio(selectedFolder.id, ratio.id, e.target.checked)}
+                          type="radio"
+                          name="selectedRatio"
+                          checked={selectedFolder.enabledRatios[0] === ratio.id}
+                          onChange={() => updateOutputFolder(selectedFolder.id, { enabledRatios: [ratio.id] })}
                         />
-                        <span className="config-checkbox__box">
-                          {selectedFolder.enabledRatios.includes(ratio.id) && (
-                            <Icon name="check" size="xs" />
+                        <span className="config-checkbox__box config-checkbox__box--radio">
+                          {selectedFolder.enabledRatios[0] === ratio.id && (
+                            <span className="config-radio__dot" />
                           )}
                         </span>
                         <div
@@ -510,47 +498,6 @@ export function GeneratorsView() {
                         <span className="config-checkbox__range">{ratio.ratioA}:{ratio.ratioB}</span>
                       </label>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Generate Height toggle */}
-              <div className="config-group">
-                <label className="config-toggle">
-                  <input
-                    type="checkbox"
-                    checked={selectedFolder.generateHeight}
-                    onChange={(e) => updateOutputFolder(selectedFolder.id, { generateHeight: e.target.checked })}
-                  />
-                  <span className="config-toggle__track">
-                    <span className="config-toggle__thumb" />
-                  </span>
-                  <span className="config-toggle__label">Generate height</span>
-                </label>
-              </div>
-
-              {/* Width/Height prefixes (if generateHeight enabled) */}
-              {selectedFolder.generateHeight && (
-                <div className="config-group config-group--nested config-group--row">
-                  <div className="config-field">
-                    <label className="config-label">Width prefix</label>
-                    <input
-                      type="text"
-                      className="config-input config-input--mono"
-                      value={selectedFolder.widthPrefix}
-                      onChange={(e) => updateOutputFolder(selectedFolder.id, { widthPrefix: e.target.value })}
-                      placeholder="w-col-"
-                    />
-                  </div>
-                  <div className="config-field">
-                    <label className="config-label">Height prefix</label>
-                    <input
-                      type="text"
-                      className="config-input config-input--mono"
-                      value={selectedFolder.heightPrefix}
-                      onChange={(e) => updateOutputFolder(selectedFolder.id, { heightPrefix: e.target.value })}
-                      placeholder="h-col-"
-                    />
                   </div>
                 </div>
               )}
@@ -589,33 +536,53 @@ export function GeneratorsView() {
             <span className="sidebar-section__count">{modifiers.length}</span>
           </div>
           <div className="sidebar-section__content">
-            {modifiers.map(mod => (
-              <div key={mod.id} className="modifier-row">
-                <span className="modifier-row__name">{mod.name}</span>
-                <span className="modifier-row__formula">{mod.formula}</span>
-                <div className="modifier-row__actions">
-                  <button
-                    className="action-btn"
-                    onClick={() => setEditingModifier({
-                      id: mod.id,
-                      name: mod.name,
-                      formula: mod.formula,
-                      applyFrom: mod.applyFrom,
-                      applyTo: mod.applyTo,
-                      hasFullVariant: mod.hasFullVariant,
-                    })}
-                  >
-                    <Icon name="edit" size="xs" />
-                  </button>
-                  <button
-                    className="action-btn action-btn--danger"
-                    onClick={() => setDeleteModifierId(mod.id)}
-                  >
-                    <Icon name="trash" size="xs" />
-                  </button>
+            <SortableList
+              items={modifiers}
+              onReorder={reorderModifiers}
+              renderItem={(mod) => (
+                <div className="modifier-row">
+                  <div className="drag-handle" onClick={(e) => e.stopPropagation()}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="9" cy="5" r="2"/>
+                      <circle cx="15" cy="5" r="2"/>
+                      <circle cx="9" cy="12" r="2"/>
+                      <circle cx="15" cy="12" r="2"/>
+                      <circle cx="9" cy="19" r="2"/>
+                      <circle cx="15" cy="19" r="2"/>
+                    </svg>
+                  </div>
+                  <span className="modifier-row__name">{mod.name}</span>
+                  <span className="modifier-row__formula">{mod.formula}</span>
+                  <div className="modifier-row__actions">
+                    <button
+                      className="action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingModifier({
+                          id: mod.id,
+                          name: mod.name,
+                          formula: mod.formula,
+                          applyFrom: mod.applyFrom,
+                          applyTo: mod.applyTo,
+                          hasFullVariant: mod.hasFullVariant,
+                        });
+                      }}
+                    >
+                      <Icon name="edit" size="xs" />
+                    </button>
+                    <button
+                      className="action-btn action-btn--danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteModifierId(mod.id);
+                      }}
+                    >
+                      <Icon name="trash" size="xs" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+            />
             <div className="add-row" onClick={() => setModifierModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
@@ -670,7 +637,7 @@ export function GeneratorsView() {
           </div>
         </div>
 
-        {/* Responsive Variants */}
+        {/* Responsive Variants - Hidden until redesigned
         <div className="sidebar-section">
           <div className="sidebar-section__header">
             <span className="sidebar-section__title">Responsive Variants</span>
@@ -701,6 +668,7 @@ export function GeneratorsView() {
             </div>
           </div>
         </div>
+        */}
       </div>
 
       {/* MODALS */}
