@@ -1,6 +1,6 @@
 # REZZON Scale – Briefing
 
-**Data aktualizacji:** 2025-01-02  
+**Data aktualizacji:** 2025-01-02 (v2)  
 **Status:** Implementacja w toku (v0.3.7)
 
 ---
@@ -400,3 +400,57 @@ Portal importuje bezpośrednio do Figmy.
 - **Responsive variants w generatorze** (typy gotowe, generator ignoruje)
 - ViewportBehaviors (override columns)
 - Pełna struktura R4-Grid (3590 tokenów)
+
+---
+
+## 18. OTWARTE PYTANIA – Responsive Variants
+
+Przed implementacją Fazy 4 wymagają decyzji:
+
+| # | Pytanie | Opcje |
+|---|---------|-------|
+| **O1** | Gdzie żyją definicje wariantów? | A) Globalnie (jak viewporty), B) Per folder |
+| **O2** | Czy "static" jest wbudowany? | A) Tak (zawsze istnieje), B) Nie (user tworzy) |
+| **O3** | Override columns – skąd opcje? | A) Stała lista, B) Z maxColumns, C) Input ręczny |
+| **O4** | Nazewnictwo samego wariantu | A) Ręczne, B) Auto, C) Ręczne z sugestią |
+| **O5** | Nazewnictwo pełnych ścieżek tokenów | Elastyczne placeholdery? Pozycja responsive w ścieżce? |
+
+### Szczegóły O5 – Elastyczne ścieżki
+
+Obecna struktura z R4-Grid:
+```
+photo/tablet/width/to-tab-6-col/w-col-6
+│     │      │     │            └── token
+│     │      │     └── responsive variant
+│     │      └── dimension
+│     └── viewport
+└── folder
+```
+
+Pytania:
+- Czy `static` pojawia się w ścieżce, czy jest "domyślny" (bez subfolderu)?
+- Czy user może zmienić kolejność segmentów?
+- Czy pozycja responsive variant jest konfigurowalna?
+
+Propozycja: **Path template z placeholderami**
+```
+{folder}/{viewport}/{dimension}/{responsive}/{token}
+```
+
+### Dowody z analizy JSON R4-Grid
+
+**Desktop – static vs to-tab-6-col (IDENTYCZNE):**
+```
+static/w-col-4  = 488     to-tab-6-col/w-col-4  = 488
+static/w-col-8  = 1000    to-tab-6-col/w-col-8  = 1000
+static/w-col-12 = 1512    to-tab-6-col/w-col-12 = 1512
+```
+↑ Na desktop wariant dziedzczy normalne wartości (inherit)
+
+**Tablet – static vs to-tab-6-col (COLLAPSED!):**
+```
+static/w-col-4  = 652     to-tab-6-col/w-col-4  = 316
+static/w-col-8  = 652     to-tab-6-col/w-col-8  = 316
+static/w-col-12 = 652     to-tab-6-col/w-col-12 = 316
+```
+↑ Na tablet WSZYSTKO = 316 (wartość dla 6 kolumn)

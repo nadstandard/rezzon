@@ -7,7 +7,7 @@ import type {
   VariableType,
   AliasType
 } from '../types';
-import { resolveAliasValue, getAliasType } from '../utils/aliasUtils';
+import { resolveAliasValue, getAliasType, findVariableInLibrary } from '../utils/aliasUtils';
 
 // Typ operacji do UNDO/REDO
 interface HistoryEntry {
@@ -754,6 +754,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       if (libIdx < 0) return state;
       
       const library = libs[libIdx];
+      
       const externalLib = libs.find((l) => l.name === externalLibraryName);
       if (!externalLib) {
         console.warn(`External library "${externalLibraryName}" not found`);
@@ -777,11 +778,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
             const aliasType = getAliasType(value, library, libs);
             
             if (aliasType === 'external') {
-              // Znajdź target variable w external library
-              const targetVar = externalLib.file.variables[value.variableId] 
-                || Object.values(externalLib.file.variables).find(v => 
-                    v.id === value.variableId || v.name === value.variableName
-                  );
+              // Znajdź target variable w external library używając findVariableInLibrary
+              // (obsługuje różne formaty nazw w tym prefix kolekcji)
+              const targetVar = findVariableInLibrary(externalLib, value.variableId, value.variableName);
               
               if (targetVar) {
                 // Zapisz poprzedni alias z ID i nazwami

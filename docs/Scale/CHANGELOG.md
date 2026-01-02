@@ -1,5 +1,31 @@
 # REZZON Scale – CHANGELOG
 
+## [0.3.8] – 2025-01-02
+
+### Added
+- **Analiza mechanizmu Responsive Variants z JSON R4-Grid**
+  - Udokumentowano ViewportBehaviors (inherit/override columns)
+  - Potwierdzono mechanizm "collapse" – wszystkie tokeny w override mają tę samą wartość
+  - Dowody: desktop inherit (normalne wartości) vs tablet override (wszystko = 6 col)
+
+- **5 otwartych decyzji do Responsive Variants**
+  - O1: Gdzie żyją definicje wariantów? (globalnie vs per-folder)
+  - O2: Czy "static" jest wbudowany?
+  - O3: Override columns – skąd opcje w dropdown?
+  - O4: Nazewnictwo wariantu (ręczne/auto/z sugestią)
+  - O5: Elastyczne nazewnictwo pełnych ścieżek tokenów
+
+- **Propozycja UI: Responsive Variants Editor**
+  - Globalna lista wariantów z ViewportBehaviors per viewport
+  - Inherit/Override radio + dropdown columns
+  - Checkbox włączania wariantów per folder
+
+### Documentation
+- Zaktualizowano briefing, decyzje, roadmap o otwarte pytania
+- Dodano ASCII mockup Responsive Variants Editor
+
+---
+
 ## [0.3.7] – 2025-01-02
 
 ### Changed

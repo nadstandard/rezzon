@@ -9,8 +9,22 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.3.7  
+**Wersja:** 0.3.8  
 **Faza:** Responsive Variants (~70% Grid MVP)
+
+### 🔓 Otwarte decyzje (5)
+
+Przed implementacją Fazy 4 wymagają podjęcia:
+
+| # | Pytanie |
+|---|---------|
+| O1 | Gdzie żyją definicje wariantów? (globalnie vs per-folder) |
+| O2 | Czy "static" jest wbudowany? |
+| O3 | Override columns – skąd opcje? |
+| O4 | Nazewnictwo wariantu |
+| O5 | Elastyczne nazewnictwo pełnych ścieżek tokenów |
+
+Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "OTWARTE DECYZJE"
 
 ## Funkcjonalności
 
@@ -121,6 +135,15 @@ v-full-to-edge = viewport
 ### Cel
 Pozwala na "collapse" layoutów na mniejszych ekranach bez ręcznego aliasowania.
 
+### ViewportBehaviors
+
+Każdy responsive variant definiuje zachowanie per viewport:
+
+| Behavior | Opis |
+|----------|------|
+| **Inherit** | Używa domyślnej liczby kolumn |
+| **Override** | Wymusza konkretną liczbę (collapse) |
+
 ### Przykład: `to-tab-6-col`
 
 | Viewport | Behavior | v-col-8 = |
@@ -131,10 +154,42 @@ Pozwala na "collapse" layoutów na mniejszych ekranach bez ręcznego aliasowania
 
 **WSZYSTKIE tokeny w tym wariancie** mają wartość dla 6 kolumn.
 
+### Dowody z analizy JSON R4-Grid
+
+**Desktop – static vs to-tab-6-col (IDENTYCZNE):**
+```
+static/w-col-4  = 488     to-tab-6-col/w-col-4  = 488
+static/w-col-8  = 1000    to-tab-6-col/w-col-8  = 1000
+```
+↑ Na desktop wariant dziedziczy normalne wartości (inherit)
+
+**Tablet – static vs to-tab-6-col (COLLAPSED!):**
+```
+static/w-col-4  = 652     to-tab-6-col/w-col-4  = 316
+static/w-col-8  = 652     to-tab-6-col/w-col-8  = 316
+```
+↑ Na tablet WSZYSTKO = 316 (wartość dla 6 kolumn)
+
 ### Status implementacji
 - ✅ Typy: `ViewportBehavior`, `ResponsiveVariant`
 - ✅ UI: Panel Viewport Behaviors w Generators
+- ✅ Analiza: Mechanizm udokumentowany z dowodami
 - ❌ Generator: **NIE UŻYWA** tych danych (linia 1153 generator.ts)
+
+### Propozycja UI: Responsive Variants Editor
+
+```
+┌────────────────────────────────────────────────────────┐
+│ to-tab-6-col                                [✎] [🗑]  │
+├────────────────────────────────────────────────────────┤
+│  Viewport   │ Behavior    │ Columns                   │
+│ ────────────┼─────────────┼─────────                  │
+│  Desktop    │ ○ Inherit   │ (default: 12)             │
+│  Laptop     │ ○ Inherit   │ (default: 12)             │
+│  Tablet     │ ● Override  │ [6 ▾]                     │
+│  Mobile     │ ● Override  │ [6 ▾]                     │
+└────────────────────────────────────────────────────────┘
+```
 
 ## Eksport
 
@@ -178,4 +233,6 @@ Format zgodny z Figma Variables API:
 // Just generate tokens per viewport
 ```
 
-**Do naprawy w Fazie 4 roadmapy.**
+**Status:** Do naprawy w Fazie 4 roadmapy.
+
+**Blokada:** 5 otwartych decyzji projektowych (O1-O5) musi zostać podjętych przed implementacją.

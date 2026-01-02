@@ -23,8 +23,9 @@ function getNameIndex(library: Library): Map<string, Variable> {
 
 /**
  * Znajduje zmienną w bibliotece po ID lub po nazwie
+ * Eksportowane żeby można było użyć w innych modułach
  */
-function findVariableInLibrary(
+export function findVariableInLibrary(
   library: Library,
   variableId: string,
   variableName?: string
@@ -41,8 +42,20 @@ function findVariableInLibrary(
     if (index.has(variableName)) {
       return index.get(variableName);
     }
-    // Szukaj po krótkiej nazwie
-    const shortName = variableName.split('/').pop();
+    
+    // Aliasy zewnętrzne mają format "CollectionName/VariablePath"
+    // Zmienne w bibliotece mają format "VariablePath" (bez prefiksu kolekcji)
+    // Spróbuj usunąć pierwszy segment (nazwę kolekcji) i szukać
+    const segments = variableName.split('/');
+    if (segments.length > 1) {
+      const withoutCollectionPrefix = segments.slice(1).join('/');
+      if (index.has(withoutCollectionPrefix)) {
+        return index.get(withoutCollectionPrefix);
+      }
+    }
+    
+    // Szukaj po krótkiej nazwie (ostatni segment)
+    const shortName = segments[segments.length - 1];
     if (shortName && index.has(shortName)) {
       return index.get(shortName);
     }

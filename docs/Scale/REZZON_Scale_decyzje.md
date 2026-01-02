@@ -1,6 +1,6 @@
 # REZZON Scale – Decyzje projektowe
 
-**Data aktualizacji:** 2025-01-02
+**Data aktualizacji:** 2025-01-02 (v2)
 
 ---
 
@@ -276,3 +276,112 @@ NIE są to osobne wartości w modach Figma. Są to osobne TOKENY z różnymi war
 | Responsive Variants UI | Ukryte (do reimplementacji) |
 
 Filozofia: **Jeden folder = jeden zestaw tokenów = jedna konfiguracja.**
+
+---
+
+## 🔓 OTWARTE DECYZJE – Responsive Variants
+
+**Status:** Do podjęcia przed implementacją Fazy 4
+
+### Decyzja O1: Gdzie żyją definicje wariantów?
+
+| Opcja | Opis | Konsekwencje |
+|-------|------|--------------|
+| **A) Globalnie** | Jak viewporty/modyfikatory. Definiujesz raz "to-tab-6-col", w folderze tylko checkbox włącza wariant | Prostsze, spójność, mniej duplikacji |
+| **B) Per folder** | Każdy folder ma własne warianty | Więcej elastyczności, ale duplikacja |
+
+**Rekomendacja:** A (globalnie) – zgodne z zasadą dla innych list
+
+---
+
+### Decyzja O2: Czy "static" jest wbudowany?
+
+| Opcja | Opis | Konsekwencje |
+|-------|------|--------------|
+| **A) Tak, zawsze istnieje** | Nie można usunąć. static = normalna generacja bez collapse | Bezpieczne, jasne domyślne zachowanie |
+| **B) User musi utworzyć** | Pełna kontrola, ale ryzyko że zapomni | Zgodne z "elastyczność", ale ryzyko błędów |
+
+**Rekomendacja:** A – static jako wbudowany baseline
+
+---
+
+### Decyzja O3: Override columns – skąd opcje w dropdown?
+
+| Opcja | Opis | Konsekwencje |
+|-------|------|--------------|
+| **A) Stała lista** | 1, 2, 3, 4, 6, 8, 12 | Proste, ale sztywne |
+| **B) Dynamicznie z maxColumns** | Dropdown 1 do maxColumns viewportu | Elastyczne, ale zależne od kontekstu |
+| **C) Input number** | User wpisuje ręcznie | Pełna kontrola, ryzyko błędów |
+
+**Rekomendacja:** B – dynamicznie z maxColumns
+
+---
+
+### Decyzja O4: Nazewnictwo samego wariantu
+
+| Opcja | Opis | Konsekwencje |
+|-------|------|--------------|
+| **A) Ręczne** | User wpisuje co chce ("heading", "sidebar") | Pełna elastyczność |
+| **B) Auto-generowane** | Wybierasz viewport + columns → nazwa się tworzy | Spójne, ale ograniczone |
+| **C) Ręczne z sugestią** | Podpowiedź "to-tablet-6-col" ale można zmienić | Kompromis |
+
+**Rekomendacja:** C – ręczne z sugestią
+
+---
+
+### Decyzja O5: Elastyczne nazewnictwo pełnych ścieżek tokenów
+
+**Problem:** Gdzie w ścieżce wstawiać nazwę responsive variant?
+
+Obecna struktura z R4-Grid:
+```
+photo/tablet/width/to-tab-6-col/w-col-6
+│     │      │     │            └── token
+│     │      │     └── responsive variant
+│     │      └── dimension
+│     └── viewport
+└── folder
+```
+
+**Pytania otwarte:**
+1. Czy user może zmienić kolejność segmentów?
+2. Czy `static` pojawia się w ścieżce, czy jest "domyślny" (bez subfolderu)?
+3. Czy pozycja responsive variant jest konfigurowalna per folder?
+
+**Propozycja:** Path template z placeholderami:
+```
+{folder}/{viewport}/{dimension}/{responsive}/{token}
+```
+User może zmieniać kolejność placeholderów lub pomijać niektóre.
+
+---
+
+### UI Propozycja: Responsive Variants Editor
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ RESPONSIVE VARIANTS                                          [+ Add]│
+├─────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ to-tab-6-col                                          [✎] [🗑]  │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │  Viewport   │ Behavior    │ Columns                             │ │
+│ │ ────────────┼─────────────┼─────────                            │ │
+│ │  Desktop    │ ○ Inherit   │ (uses default: 12)                  │ │
+│ │  Laptop     │ ○ Inherit   │ (uses default: 12)                  │ │
+│ │  Tablet     │ ● Override  │ [6 ▾]                               │ │
+│ │  Mobile     │ ● Override  │ [6 ▾]                               │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ to-mobile-4-col                                       [✎] [🗑]  │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │  Desktop    │ ○ Inherit   │ (uses default: 12)                  │ │
+│ │  Laptop     │ ○ Inherit   │ (uses default: 12)                  │ │
+│ │  Tablet     │ ○ Inherit   │ (uses default: 12)                  │ │
+│ │  Mobile     │ ● Override  │ [4 ▾]                               │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ │
+│   + Add Responsive Variant                                        │ │
+│ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```

@@ -1,6 +1,6 @@
 # REZZON Studio – Roadmapa implementacji v2
 
-**Status:** v0.7.3 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
+**Status:** v0.7.4 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
 **Data:** 2025-01-02
 
 ---
@@ -129,6 +129,12 @@
 ---
 
 ## 📋 CHANGELOG
+
+### v0.7.4 (2025-01-02)
+- **FIX:** CRITICAL - findVariableInLibrary nie rozpoznawał external aliasów bo nazwy mają prefix kolekcji
+  - Alias: `"Vertical/Spacing/Desktop/ref-2"` → zmienna: `"Spacing/Desktop/ref-2"`
+  - Teraz usuwamy prefix kolekcji przy szukaniu
+- **FIX:** disconnectLibrary używa findVariableInLibrary zamiast ręcznego szukania
 
 ### v0.7.3 (2025-01-02)
 - **FIX:** Disconnect modal — pokazuje modes z TARGET library zamiast z source (REZZON)
