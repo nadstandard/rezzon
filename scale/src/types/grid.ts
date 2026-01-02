@@ -207,6 +207,9 @@ export interface GridActions {
   importFromJSON: (json: unknown) => { success: boolean; errors: string[] };
   exportToJSON: () => unknown;
   exportSessionToJSON: () => ScaleSession;
+  
+  // Workspace
+  clearWorkspace: () => void;
 }
 
 // === FULL STORE TYPE ===

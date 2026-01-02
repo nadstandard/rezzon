@@ -13,7 +13,13 @@ import type {
   ScaleSession
 } from '../types';
 import { recalculateAllComputed } from '../engine/formulas';
-import { generateColumnTokensWithModifiers, countTokens, generateFigmaExport } from '../engine/generator';
+import { 
+  generateColumnTokensWithModifiers, 
+  countTokens, 
+  generateFigmaExport,
+  calculateFolderTokenCount,
+  type FolderGeneratorContext
+} from '../engine/generator';
 
 // === HELPER: Generate unique ID ===
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -47,8 +53,8 @@ const createDemoData = (): Partial<GridStore> => ({
   styles: [
     { id: 'st-1', name: 'Cross', columns: 12 },
     { id: 'st-2', name: 'Circle', columns: 12 },
-    { id: 'st-3', name: 'Triangle', columns: 6 },
-    { id: 'st-4', name: 'Square', columns: 4 },
+    { id: 'st-3', name: 'Triangle', columns: 12 },
+    { id: 'st-4', name: 'Square', columns: 12 },
   ],
   baseParameters: [
     {
@@ -173,13 +179,13 @@ const createDemoData = (): Partial<GridStore> => ({
       path: 'column/{viewport}',
       tokenPrefix: 'v-col-',
       enabledModifiers: ['mod-1', 'mod-2', 'mod-3', 'mod-4'],
-      enabledResponsiveVariants: ['rv-1'],
+      enabledResponsiveVariants: [],
       multiplyByRatio: false,
       enabledRatios: [],
       generateHeight: false,
       widthPrefix: '',
       heightPrefix: '',
-      tokenCount: 192,
+      tokenCount: 0, // Will be calculated
     },
     {
       id: 'of-2',
@@ -209,14 +215,14 @@ const createDemoData = (): Partial<GridStore> => ({
       generateHeight: false,
       widthPrefix: '',
       heightPrefix: '',
-      tokenCount: 384,
+      tokenCount: 0,
     },
     {
       id: 'of-4',
       name: 'height',
       parentId: 'of-2',
-      path: 'photo/{viewport}/height/{responsive}/{ratio}',
-      tokenPrefix: 'h-col-',
+      path: 'photo/{viewport}/height/{responsive}',
+      tokenPrefix: 'w-col-',  // Base is width
       enabledModifiers: ['mod-1', 'mod-2', 'mod-3'],
       enabledResponsiveVariants: ['rv-1', 'rv-2'],
       multiplyByRatio: true,
@@ -224,7 +230,7 @@ const createDemoData = (): Partial<GridStore> => ({
       generateHeight: true,
       widthPrefix: 'w-col-',
       heightPrefix: 'h-col-',
-      tokenCount: 1152,
+      tokenCount: 0,
     },
   ],
   selectedFolderId: 'of-1',
@@ -602,42 +608,26 @@ export const useGridStore = create<GridStore>((set, get) => ({
   recalculateFolderTokenCounts: () => {
     const state = get();
     
-    // Calculate token count for each folder based on its configuration
+    // Build context for token calculation
+    const ctx: FolderGeneratorContext = {
+      styles: state.styles,
+      viewports: state.viewports,
+      baseParameters: state.baseParameters,
+      computedParameters: state.computedParameters,
+      modifiers: state.modifiers,
+      ratioFamilies: state.ratioFamilies,
+      responsiveVariants: state.responsiveVariants,
+    };
+    
+    // Calculate token count for each folder
     const updatedFolders = state.outputFolders.map(folder => {
       // Skip parent folders (no path = organizational only)
       if (!folder.path) {
         return { ...folder, tokenCount: 0 };
       }
       
-      // Base count: columns × viewports × responsive variants
-      const maxColumns = Math.max(...state.styles.map(s => s.columns), 1);
-      const viewportCount = state.viewports.length;
-      const responsiveCount = folder.enabledResponsiveVariants.length || 1;
-      
-      let baseTokens = maxColumns * viewportCount * responsiveCount;
-      
-      // Add modifier tokens
-      const enabledMods = state.modifiers.filter(m => 
-        folder.enabledModifiers.includes(m.id)
-      );
-      
-      let modifierTokens = 0;
-      enabledMods.forEach(mod => {
-        const range = mod.applyTo - mod.applyFrom + 1;
-        modifierTokens += range * viewportCount * responsiveCount;
-        if (mod.hasFullVariant) {
-          modifierTokens += range * viewportCount * responsiveCount; // full variant
-        }
-      });
-      
-      // Multiply by ratios if enabled
-      const ratioMultiplier = folder.multiplyByRatio 
-        ? Math.max(folder.enabledRatios.length, 1) 
-        : 1;
-      
-      const totalTokens = (baseTokens + modifierTokens) * ratioMultiplier;
-      
-      return { ...folder, tokenCount: totalTokens };
+      const tokenCount = calculateFolderTokenCount(folder, ctx);
+      return { ...folder, tokenCount };
     });
     
     set({ outputFolders: updatedFolders });
@@ -735,5 +725,25 @@ export const useGridStore = create<GridStore>((set, get) => ({
       state.responsiveVariants,
       'Grid'  // Collection name
     );
+  },
+
+  // Clear workspace - reset to initial empty state
+  clearWorkspace: () => {
+    set({
+      viewports: [],
+      styles: [],
+      baseParameters: [],
+      computedParameters: [],
+      generatedTokens: [],
+      modifiers: [],
+      ratioFamilies: [],
+      responsiveVariants: [],
+      outputFolders: [],
+      outputLayers: [],
+      selectedViewportId: null,
+      selectedStyleId: null,
+      selectedFolderId: null,
+      activeTab: 'parameters',
+    });
   },
 }));

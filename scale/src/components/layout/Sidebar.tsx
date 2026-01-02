@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
 import { ViewportModal, ConfirmDeleteModal } from '../Modals';
 import type { Viewport } from '../../types/grid';
+import { calculateFolderTokenCount, type FolderGeneratorContext } from '../../engine/generator';
 
 export function Sidebar() {
   const {
@@ -13,10 +14,12 @@ export function Sidebar() {
     addViewport,
     updateViewport,
     removeViewport,
-    outputLayers,
+    outputFolders,
     modifiers,
     ratioFamilies,
     responsiveVariants,
+    baseParameters,
+    computedParameters,
   } = useGridStore();
 
   // Modal states
@@ -24,8 +27,17 @@ export function Sidebar() {
   const [editingViewport, setEditingViewport] = useState<{ id: string; name: string; width: number; icon: Viewport['icon'] } | null>(null);
   const [deleteViewportId, setDeleteViewportId] = useState<string | null>(null);
 
-  // Calculate total tokens
-  const totalTokens = outputLayers.reduce((sum, layer) => sum + layer.tokenCount, 0);
+  // Calculate total tokens from outputFolders
+  const totalTokens = useMemo(() => {
+    const ctx: FolderGeneratorContext = {
+      styles, viewports, baseParameters, computedParameters,
+      modifiers, ratioFamilies, responsiveVariants,
+    };
+    return outputFolders.reduce((sum, f) => {
+      if (!f.path) return sum;
+      return sum + calculateFolderTokenCount(f, ctx);
+    }, 0);
+  }, [outputFolders, styles, viewports, baseParameters, computedParameters, modifiers, ratioFamilies, responsiveVariants]);
 
   // Handlers
   const handleAddViewport = (data: { name: string; width: number; icon: string }) => {
@@ -142,23 +154,6 @@ export function Sidebar() {
           message="Are you sure you want to delete this viewport? This action cannot be undone."
           itemName={viewportToDelete?.name}
         />
-
-        {/* Output Layers section */}
-        <div className="sidebar__section">
-          <div className="sidebar__header">
-            <Icon name="chev-d" size="xs" className="sidebar__chevron" />
-            <span className="sidebar__title">Output Layers</span>
-          </div>
-          <div className="sidebar__content">
-            {outputLayers.map((layer) => (
-              <div key={layer.id} className="sidebar-item">
-                <Icon name="layers" />
-                <span className="sidebar-item__name">{layer.path}</span>
-                <span className="sidebar-item__count">{layer.tokenCount}</span>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Quick Stats */}
         <div className="sidebar__section">

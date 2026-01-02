@@ -1,5 +1,77 @@
 # REZZON Scale — Changelog
 
+## [0.3.4] - 2025-01-02
+
+### Added
+- **Clear Workspace** — Button in header to reset application to empty state with confirmation modal
+
+### Changed
+- **Preview tab completely rewritten** — Now shows ALL tokens from ALL outputFolders with working filters
+  - Filter by Folder, Viewport, Responsive variant
+  - Search across token paths
+  - Shows total token count with filter status
+  - Empty state when no folders configured
+- **Full token preview in Generators** — Panel shows ALL tokens for selected folder (no limit)
+- **Subfolder preview** — Selecting a grouping folder shows tokens from all its children recursively
+- **All styles default to 12 columns** — Triangle and Square changed from 6/4 to 12
+- **Statistics** — Sidebar and Statusbar now calculate totals from outputFolders dynamically
+
+### Removed
+- **Output Layers section** — Removed deprecated section from left sidebar (replaced by Output Folders in Generators)
+
+---
+
+## [0.3.3] - 2025-01-01
+
+### Fixed
+- **Statistics Total Tokens** — Now calculated dynamically using `calculateFolderTokenCount()`
+- **Duplicate Token Names** — Height tokens now include ratio name suffix: `h-col-1-horizontal`, `h-col-1-square`
+- **generateHeight Logic** — Folders with `generateHeight: true` now generate ONLY height tokens (width tokens are in separate folders)
+
+### Changed
+- `folderTokenCounts` computed map for real-time token count display in UI
+- Height folder no longer duplicates width tokens
+
+---
+
+## [0.3.2] - 2025-01-01
+
+### Added
+- **Path Template Parsing** — Full support for `{viewport}`, `{responsive}`, `{ratio}` variables in output paths
+  - `parsePathTemplate()` — Detects template variables
+  - `resolvePathTemplate()` — Resolves variables to actual values
+  - Token count calculation respects path template expansion
+
+- **Height Generation from Ratios** — Generate height tokens from width tokens
+  - `generateHeightTokensForRatio()` — Calculate heights using ratio multiplier
+  - Separate width/height prefixes (`widthPrefix`, `heightPrefix`)
+  - Preview shows both width and height tokens
+
+- **Full Token Export** — `generateAllTokensForFolder()` generates tokens with:
+  - Full paths resolved from templates
+  - Viewport/responsive/ratio metadata per token
+  - Expansion across all viewports and responsive variants
+
+### Changed
+- `generateBaseWidthTokens()` extracted as internal helper
+- `calculateFolderTokenCount()` now respects path template variables
+- Demo data updated with proper path templates
+
+---
+
+## [0.3.1] - 2025-01-01
+
+### Added
+- **Generator connected to OutputFolders** — Token preview shows real calculated values
+  - `getTokenPreviewForFolder()` — Get preview tokens for UI
+  - `FolderGeneratorContext` — Context object for token generation
+
+### Fixed
+- Token preview no longer shows hardcoded placeholder values
+- Token count dynamically recalculates on folder configuration changes
+
+---
+
 ## [0.3.0] - 2025-12-30
 
 ### Added

@@ -10,7 +10,6 @@ export function ParametersView() {
     baseParameters,
     computedParameters,
     modifiers,
-    outputLayers,
     updateBaseParameter,
     addStyle,
     updateStyle,
@@ -240,7 +239,7 @@ export function ParametersView() {
               <div className="section-divider__content">
                 <span className="section-divider__title">Generated Tokens</span>
                 <span className="section-divider__count">
-                  {outputLayers.find(l => l.path === 'grid/column')?.tokenCount ?? 0} tokens
+                  preview
                 </span>
               </div>
             </td>

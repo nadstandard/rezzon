@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Icon } from '../Icons';
 import { useGridStore } from '../../store';
 import { ModifierModal, RatioModal, ConfirmDeleteModal, ResponsiveVariantModal, FolderModal } from '../Modals';
 import type { OutputFolder } from '../../types';
+import { getTokenPreviewForFolder, calculateFolderTokenCount, type FolderGeneratorContext } from '../../engine/generator';
 
 export function GeneratorsView() {
   const {
@@ -13,6 +14,8 @@ export function GeneratorsView() {
     responsiveVariants,
     viewports,
     styles,
+    baseParameters,
+    computedParameters,
     selectFolder,
     addOutputFolder,
     updateOutputFolder,
@@ -52,6 +55,45 @@ export function GeneratorsView() {
   // Get selected folder
   const selectedFolder = outputFolders.find(f => f.id === selectedFolderId);
 
+  // Generator context for token calculations
+  const generatorContext: FolderGeneratorContext = useMemo(() => ({
+    styles,
+    viewports,
+    baseParameters,
+    computedParameters,
+    modifiers,
+    ratioFamilies,
+    responsiveVariants,
+  }), [styles, viewports, baseParameters, computedParameters, modifiers, ratioFamilies, responsiveVariants]);
+
+  // Preview tokens for selected folder (including children if grouping folder)
+  const previewTokens = useMemo(() => {
+    if (!selectedFolder) return [];
+    
+    // If folder has path, it generates tokens directly
+    if (selectedFolder.path) {
+      return getTokenPreviewForFolder(selectedFolder, generatorContext);
+    }
+    
+    // Grouping folder - collect tokens from all children recursively
+    const collectChildTokens = (parentId: string): { name: string; values: Record<string, number> }[] => {
+      const children = outputFolders.filter(f => f.parentId === parentId);
+      let allTokens: { name: string; values: Record<string, number> }[] = [];
+      
+      for (const child of children) {
+        if (child.path) {
+          allTokens = [...allTokens, ...getTokenPreviewForFolder(child, generatorContext)];
+        } else {
+          // Nested grouping folder
+          allTokens = [...allTokens, ...collectChildTokens(child.id)];
+        }
+      }
+      return allTokens;
+    };
+    
+    return collectChildTokens(selectedFolder.id);
+  }, [selectedFolder, generatorContext, outputFolders]);
+
   // Get max columns from styles
   const maxColumns = Math.max(...styles.map(s => s.columns), 12);
 
@@ -71,8 +113,23 @@ export function GeneratorsView() {
     });
   };
 
-  // Calculate total tokens
-  const totalTokens = outputFolders.reduce((sum, f) => sum + f.tokenCount, 0);
+  // Calculate total tokens dynamically
+  const totalTokens = useMemo(() => {
+    return outputFolders.reduce((sum, f) => {
+      // Skip folders without path (grouping folders)
+      if (!f.path) return sum;
+      return sum + calculateFolderTokenCount(f, generatorContext);
+    }, 0);
+  }, [outputFolders, generatorContext]);
+
+  // Calculate token count per folder
+  const folderTokenCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    outputFolders.forEach(f => {
+      counts[f.id] = f.path ? calculateFolderTokenCount(f, generatorContext) : 0;
+    });
+    return counts;
+  }, [outputFolders, generatorContext]);
 
   // === FOLDER HANDLERS ===
   const handleAddFolder = (data: { name: string; path: string; tokenPrefix: string; parentId: string | null }) => {
@@ -193,8 +250,8 @@ export function GeneratorsView() {
           )}
           <Icon name="folder" size="sm" />
           <span className="folder-tree-item__name">{folder.name}</span>
-          {folder.tokenCount > 0 && (
-            <span className="folder-tree-item__count">{folder.tokenCount}</span>
+          {folderTokenCounts[folder.id] > 0 && (
+            <span className="folder-tree-item__count">{folderTokenCounts[folder.id]}</span>
           )}
           <div className="folder-tree-item__actions">
             <button
@@ -261,74 +318,70 @@ export function GeneratorsView() {
                 <span>{selectedFolder.name}</span>
               </div>
               <div className="preview-panel__stats">
-                <span className="preview-panel__stat">{selectedFolder.tokenCount} tokens</span>
+                <span className="preview-panel__stat">{folderTokenCounts[selectedFolder.id]} tokens</span>
                 <span className="preview-panel__stat">{selectedFolder.enabledModifiers.length} modifiers</span>
                 <span className="preview-panel__stat">{selectedFolder.enabledResponsiveVariants.length} variants</span>
               </div>
             </div>
             <div className="preview-panel__content">
-              {/* Token preview table */}
-              {viewports.map(vp => (
-                <div key={vp.id} className="preview-section">
-                  <div className="preview-section__header">
-                    <Icon name={vp.icon} size="sm" />
-                    <span>{vp.name}</span>
-                    <span className="preview-section__viewport">{vp.width}px</span>
-                  </div>
-                  <table className="preview-table">
-                    <thead>
-                      <tr>
-                        <th>Token</th>
+              {/* Token preview table - real calculated values */}
+              <table className="preview-table">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    {styles.map(s => (
+                      <th key={s.id}>{s.name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewTokens.map((token, idx) => {
+                    // Check if token has a modifier
+                    const hasModifier = modifiers.some(m => token.name.includes(m.name));
+                    const modifierMatch = modifiers.find(m => token.name.includes(m.name));
+                    
+                    return (
+                      <tr key={idx}>
+                        <td className="preview-table__token">
+                          <span className="token-name">
+                            {hasModifier && modifierMatch ? (
+                              <>
+                                {token.name.replace(modifierMatch.name, '')}
+                                <span className="token-modifier">{modifierMatch.name}</span>
+                              </>
+                            ) : (
+                              token.name
+                            )}
+                          </span>
+                        </td>
                         {styles.map(s => (
-                          <th key={s.id}>{s.name}</th>
+                          <td key={s.id} className="preview-table__value">
+                            {token.values[s.id] !== undefined ? token.values[s.id] : '—'}
+                          </td>
                         ))}
                       </tr>
-                    </thead>
-                    <tbody>
-                      {/* Base tokens */}
-                      {Array.from({ length: Math.min(styles[0]?.columns || 12, 4) }, (_, i) => i + 1).map(col => (
-                        <tr key={col}>
-                          <td className="preview-table__token">
-                            <span className="token-name">{selectedFolder.tokenPrefix}{col}</span>
-                          </td>
-                          {styles.map(s => (
-                            <td key={s.id} className="preview-table__value">
-                              {col <= s.columns ? Math.round(130 * col + 24 * (col - 1)) : '—'}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                      {/* Modifier tokens preview */}
-                      {selectedFolder.enabledModifiers.slice(0, 2).map(modId => {
-                        const mod = modifiers.find(m => m.id === modId);
-                        if (!mod) return null;
-                        return (
-                          <tr key={modId}>
-                            <td className="preview-table__token">
-                              <span className="token-name">
-                                {selectedFolder.tokenPrefix}1
-                                <span className="token-modifier">{mod.name}</span>
-                              </span>
-                            </td>
-                            {styles.map(s => (
-                              <td key={s.id} className="preview-table__value">
-                                {Math.round(130 + 65)}
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                      {selectedFolder.enabledModifiers.length > 2 && (
-                        <tr>
-                          <td colSpan={styles.length + 1} className="preview-table__more">
-                            + {selectedFolder.enabledModifiers.length - 2} more modifiers...
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
+                    );
+                  })}
+                  {previewTokens.length === 0 && (
+                    <tr>
+                      <td colSpan={styles.length + 1} className="preview-table__more">
+                        No tokens generated
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              
+              {/* Viewport info */}
+              <div className="preview-viewports">
+                <span className="preview-viewports__label">Across {viewports.length} viewports:</span>
+                {viewports.map(vp => (
+                  <span key={vp.id} className="preview-viewports__badge">
+                    <Icon name={vp.icon} size="xs" />
+                    {vp.name}
+                  </span>
+                ))}
+              </div>
             </div>
           </>
         ) : (

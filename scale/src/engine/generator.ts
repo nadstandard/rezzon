@@ -7,7 +7,10 @@ import type {
   Modifier, 
   RatioFamily,
   ResponsiveVariant,
-  Viewport
+  Viewport,
+  OutputFolder,
+  BaseParameter,
+  ComputedParameter
 } from '../types';
 
 /**
@@ -765,4 +768,397 @@ export function generateExportData(
       totalTokens: tokens.length,
     },
   };
+}
+
+// ============================================
+// OUTPUT FOLDER GENERATION (v0.3.0 architecture)
+// ============================================
+
+/**
+ * Token generated for a folder
+ */
+export interface FolderToken {
+  name: string;
+  path?: string;                    // Full path with resolved template
+  values: Record<string, number>;   // styleId -> value
+  modifier?: string;
+  ratio?: string;
+  viewport?: string;                // If generated per viewport
+  responsive?: string;              // If generated per responsive variant
+}
+
+/**
+ * Context for folder token generation
+ */
+export interface FolderGeneratorContext {
+  styles: Style[];
+  viewports: Viewport[];
+  baseParameters: BaseParameter[];
+  computedParameters: ComputedParameter[];
+  modifiers: Modifier[];
+  ratioFamilies: RatioFamily[];
+  responsiveVariants: ResponsiveVariant[];
+}
+
+/**
+ * Parse path template and return expansion info
+ */
+export function parsePathTemplate(template: string): {
+  hasViewport: boolean;
+  hasResponsive: boolean;
+  hasRatio: boolean;
+} {
+  return {
+    hasViewport: template.includes('{viewport}'),
+    hasResponsive: template.includes('{responsive}'),
+    hasRatio: template.includes('{ratio}'),
+  };
+}
+
+/**
+ * Resolve path template with actual values
+ */
+export function resolvePathTemplate(
+  template: string,
+  viewport?: string,
+  responsive?: string,
+  ratio?: string
+): string {
+  let path = template;
+  if (viewport) path = path.replace('{viewport}', viewport.toLowerCase());
+  if (responsive) path = path.replace('{responsive}', responsive);
+  if (ratio) path = path.replace('{ratio}', ratio);
+  return path;
+}
+
+/**
+ * Get base/computed values for a specific style
+ */
+function getStyleContext(
+  styleId: string,
+  style: Style,
+  baseParameters: BaseParameter[],
+  computedParameters: ComputedParameter[]
+): { base: BaseValues; computed: ComputedValues } {
+  const getBase = (name: string): number => 
+    baseParameters.find(p => p.name === name)?.values[styleId] ?? 0;
+  const getComputed = (name: string): number =>
+    computedParameters.find(p => p.name === name)?.values[styleId] ?? 0;
+
+  return {
+    base: {
+      viewport: getBase('viewport'),
+      gutter: getBase('gutter-width'),
+      'margin-m': getBase('margin-m'),
+      'margin-xs': getBase('margin-xs'),
+      columns: style.columns,
+    },
+    computed: {
+      'column-width': getComputed('column-width'),
+      'ingrid': getComputed('ingrid'),
+      'photo-margin': getComputed('photo-margin'),
+      'number-of-gutters': getComputed('number-of-gutters'),
+    },
+  };
+}
+
+/**
+ * Generate base width tokens (without viewport/responsive expansion)
+ */
+function generateBaseWidthTokens(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext
+): FolderToken[] {
+  const tokens: FolderToken[] = [];
+  const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
+  const maxColumns = Math.max(...ctx.styles.map(s => s.columns));
+  const prefix = folder.generateHeight ? (folder.widthPrefix || 'w-col-') : folder.tokenPrefix;
+  
+  // Generate base column tokens (1 to maxColumns)
+  for (let col = 1; col <= maxColumns; col++) {
+    const token: FolderToken = {
+      name: `${prefix}${col}`,
+      values: {},
+    };
+    
+    ctx.styles.forEach(style => {
+      if (col <= style.columns) {
+        const { base, computed } = getStyleContext(
+          style.id, style, ctx.baseParameters, ctx.computedParameters
+        );
+        const colWidth = computed['column-width'];
+        const gutter = base.gutter;
+        token.values[style.id] = Math.round(colWidth * col + gutter * (col - 1));
+      }
+    });
+    
+    if (Object.keys(token.values).length > 0) {
+      tokens.push(token);
+    }
+    
+    // Apply modifiers to this column
+    enabledMods.forEach(mod => {
+      if (col >= mod.applyFrom && col <= mod.applyTo) {
+        const modToken: FolderToken = {
+          name: `${prefix}${col}${mod.name}`,
+          values: {},
+          modifier: mod.name,
+        };
+        
+        ctx.styles.forEach(style => {
+          if (col <= style.columns) {
+            const { base, computed } = getStyleContext(
+              style.id, style, ctx.baseParameters, ctx.computedParameters
+            );
+            const genCtx: GeneratorContext = {
+              styleId: style.id,
+              styleName: style.name,
+              columns: style.columns,
+              base,
+              computed,
+            };
+            const colWidth = computed['column-width'];
+            const gutter = base.gutter;
+            const baseValue = colWidth * col + gutter * (col - 1);
+            modToken.values[style.id] = Math.round(applyModifier(baseValue, mod, genCtx));
+          }
+        });
+        
+        if (Object.keys(modToken.values).length > 0) {
+          tokens.push(modToken);
+        }
+      }
+    });
+  }
+  
+  // Add 'full' token
+  const fullPrefix = prefix.replace(/col-?$/, '');
+  const fullToken: FolderToken = {
+    name: `${fullPrefix}full`,
+    values: {},
+  };
+  ctx.styles.forEach(style => {
+    const { computed } = getStyleContext(
+      style.id, style, ctx.baseParameters, ctx.computedParameters
+    );
+    fullToken.values[style.id] = Math.round(computed['ingrid']);
+  });
+  tokens.push(fullToken);
+  
+  // Add full variants for modifiers with hasFullVariant
+  enabledMods.filter(m => m.hasFullVariant).forEach(mod => {
+    const fullModToken: FolderToken = {
+      name: `${fullPrefix}full${mod.name}`,
+      values: {},
+      modifier: mod.name,
+    };
+    
+    ctx.styles.forEach(style => {
+      const { base, computed } = getStyleContext(
+        style.id, style, ctx.baseParameters, ctx.computedParameters
+      );
+      const ingrid = computed['ingrid'];
+      const photoMargin = computed['photo-margin'];
+      const viewport = base.viewport;
+      
+      let value = ingrid;
+      if (mod.formula.includes('photo-margin')) {
+        value = ingrid + 2 * photoMargin;
+      } else if (mod.formula.includes('margin-m')) {
+        value = viewport;
+      }
+      fullModToken.values[style.id] = Math.round(value);
+    });
+    tokens.push(fullModToken);
+  });
+  
+  return tokens;
+}
+
+/**
+ * Generate height tokens from width tokens for a specific ratio
+ */
+function generateHeightTokensForRatio(
+  widthTokens: FolderToken[],
+  ratio: RatioFamily,
+  folder: OutputFolder
+): FolderToken[] {
+  const ratioMultiplier = ratio.ratioB / ratio.ratioA;
+  const widthPrefix = folder.widthPrefix || 'w-col-';
+  const heightPrefix = folder.heightPrefix || 'h-col-';
+  
+  return widthTokens.map(widthToken => {
+    // Replace width prefix with height prefix, then append ratio name
+    let heightName = widthToken.name.replace(widthPrefix, heightPrefix).replace('w-full', 'h-full');
+    // Append ratio name to prevent conflicts between different ratios
+    heightName = `${heightName}-${ratio.name}`;
+    
+    return {
+      name: heightName,
+      values: Object.fromEntries(
+        Object.entries(widthToken.values).map(([styleId, widthValue]) => [
+          styleId,
+          Math.round(widthValue * ratioMultiplier)
+        ])
+      ),
+      modifier: widthToken.modifier,
+      ratio: ratio.name,
+    };
+  });
+}
+
+/**
+ * Generate tokens for an OutputFolder (for preview - single set)
+ */
+export function generateTokensForFolder(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext
+): FolderToken[] {
+  const widthTokens = generateBaseWidthTokens(folder, ctx);
+  
+  // If generateHeight is true, generate ONLY height tokens (width tokens are in separate folder)
+  if (folder.generateHeight && folder.enabledRatios.length > 0) {
+    const enabledRatios = ctx.ratioFamilies.filter(r => folder.enabledRatios.includes(r.id));
+    const allHeightTokens: FolderToken[] = [];
+    
+    enabledRatios.forEach(ratio => {
+      const heightTokens = generateHeightTokensForRatio(widthTokens, ratio, folder);
+      allHeightTokens.push(...heightTokens);
+    });
+    
+    // Return ONLY height tokens, not width tokens
+    return allHeightTokens;
+  }
+  
+  return widthTokens;
+}
+
+/**
+ * Generate all tokens for export with full path expansion
+ */
+export function generateAllTokensForFolder(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext
+): FolderToken[] {
+  const templateInfo = parsePathTemplate(folder.path);
+  const baseTokens = generateBaseWidthTokens(folder, ctx);
+  const allTokens: FolderToken[] = [];
+  
+  // Determine viewports to iterate
+  const viewportsToUse = templateInfo.hasViewport 
+    ? ctx.viewports 
+    : [{ id: 'default', name: 'default', width: 0, icon: 'monitor' as const }];
+  
+  // Determine responsive variants to iterate
+  const responsivesToUse = templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0
+    ? ctx.responsiveVariants.filter(rv => folder.enabledResponsiveVariants.includes(rv.id))
+    : [{ id: 'default', name: 'default', ratioConfigs: [], viewportBehaviors: [] }];
+  
+  // Determine ratios
+  const enabledRatios = folder.generateHeight && folder.enabledRatios.length > 0
+    ? ctx.ratioFamilies.filter(r => folder.enabledRatios.includes(r.id))
+    : [];
+  
+  // Expand tokens across viewports and responsive variants
+  viewportsToUse.forEach(viewport => {
+    responsivesToUse.forEach(responsive => {
+      const vpName = viewport.name !== 'default' ? viewport.name : undefined;
+      const rvName = responsive.name !== 'default' ? responsive.name : undefined;
+      
+      // If generateHeight, generate ONLY height tokens
+      if (enabledRatios.length > 0) {
+        // Height tokens per ratio
+        enabledRatios.forEach(ratio => {
+          const heightTokens = generateHeightTokensForRatio(baseTokens, ratio, folder);
+          const ratioPath = folder.multiplyByRatio
+            ? resolvePathTemplate(folder.path.replace('{ratio}', ratio.name), vpName, rvName)
+            : resolvePathTemplate(folder.path, vpName, rvName);
+          
+          heightTokens.forEach(token => {
+            allTokens.push({
+              ...token,
+              path: `${ratioPath}/${token.name}`,
+              viewport: vpName,
+              responsive: rvName,
+            });
+          });
+        });
+      } else {
+        // Width tokens only
+        baseTokens.forEach(token => {
+          const basePath = resolvePathTemplate(folder.path, vpName, rvName);
+          allTokens.push({
+            ...token,
+            path: `${basePath}/${token.name}`,
+            viewport: vpName,
+            responsive: rvName,
+          });
+        });
+      }
+    });
+  });
+  
+  return allTokens;
+}
+
+/**
+ * Calculate token count for an OutputFolder
+ */
+export function calculateFolderTokenCount(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext
+): number {
+  const maxColumns = Math.max(...ctx.styles.map(s => s.columns));
+  const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
+  const templateInfo = parsePathTemplate(folder.path);
+  
+  // Base tokens: 1 per column + full
+  let baseCount = maxColumns + 1;
+  
+  // Modifier tokens per column
+  enabledMods.forEach(mod => {
+    const applicableColumns = Math.min(mod.applyTo, maxColumns) - mod.applyFrom + 1;
+    if (applicableColumns > 0) {
+      baseCount += applicableColumns;
+    }
+  });
+  
+  // Full variants for modifiers with hasFullVariant
+  baseCount += enabledMods.filter(m => m.hasFullVariant).length;
+  
+  // If generateHeight, count ONLY height tokens (width tokens are in separate folder)
+  let totalCount: number;
+  if (folder.generateHeight && folder.enabledRatios.length > 0) {
+    // Height tokens only: base × number of ratios
+    totalCount = baseCount * folder.enabledRatios.length;
+  } else {
+    // Width tokens only
+    totalCount = baseCount;
+  }
+  
+  // Multiply by viewports (if {viewport} in path)
+  if (templateInfo.hasViewport) {
+    totalCount *= ctx.viewports.length;
+  }
+  
+  // Multiply by responsive variants (if {responsive} in path and variants enabled)
+  if (templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0) {
+    totalCount *= folder.enabledResponsiveVariants.length;
+  }
+  
+  return totalCount;
+}
+
+/**
+ * Get preview data for a folder (first N tokens, first viewport)
+ */
+export function getTokenPreviewForFolder(
+  folder: OutputFolder,
+  ctx: FolderGeneratorContext
+): { name: string; values: Record<string, number> }[] {
+  const tokens = generateTokensForFolder(folder, ctx);
+  return tokens.map(t => ({
+    name: t.name,
+    values: t.values,
+  }));
 }

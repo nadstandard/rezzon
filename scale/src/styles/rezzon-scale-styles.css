@@ -1093,6 +1093,25 @@
   font-size: 10px;
 }
 
+.token-path-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.token-path-cell .token-path {
+  font-family: 'SF Mono', monospace;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.token-table__empty {
+  padding: 48px 24px !important;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* ==================== GENERATORS V2 LAYOUT ==================== */
 
 .generators-layout-v2 {
@@ -1327,6 +1346,33 @@
 
 .token-modifier {
   color: var(--accent);
+}
+
+/* Preview viewports info */
+.preview-viewports {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-app);
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.preview-viewports__label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.preview-viewports__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 /* Config Panel */

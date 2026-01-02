@@ -1,10 +1,24 @@
+import { useMemo } from 'react';
 import { useGridStore } from '../../store';
+import { calculateFolderTokenCount, type FolderGeneratorContext } from '../../engine/generator';
 
 export function Statusbar() {
-  const { viewports, styles, outputLayers } = useGridStore();
+  const { 
+    viewports, styles, outputFolders, 
+    baseParameters, computedParameters, modifiers, ratioFamilies, responsiveVariants 
+  } = useGridStore();
   
-  // Calculate total tokens
-  const totalTokens = outputLayers.reduce((sum, layer) => sum + layer.tokenCount, 0);
+  // Calculate total tokens from outputFolders
+  const totalTokens = useMemo(() => {
+    const ctx: FolderGeneratorContext = {
+      styles, viewports, baseParameters, computedParameters,
+      modifiers, ratioFamilies, responsiveVariants,
+    };
+    return outputFolders.reduce((sum, f) => {
+      if (!f.path) return sum;
+      return sum + calculateFolderTokenCount(f, ctx);
+    }, 0);
+  }, [outputFolders, styles, viewports, baseParameters, computedParameters, modifiers, ratioFamilies, responsiveVariants]);
 
   return (
     <footer className="statusbar">
