@@ -1,7 +1,7 @@
 # REZZON Scale – Briefing
 
-**Data aktualizacji:** 2025-01-02 (v2)  
-**Status:** Implementacja w toku (v0.3.7)
+**Data aktualizacji:** 2025-01-04 (v3)  
+**Status:** Implementacja w toku (v0.3.13)
 
 ---
 
@@ -29,7 +29,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) – user widz
 |---------|---------------------|-----------------|
 | Viewporty | 1920, 1366, 768, 390 | dowolne |
 | Style | Cross, Circle, Triangle, Square | dowolne |
-| Parametry base | viewport, columns, gutter, margin-m, margin-xs | własne |
+| Parametry base | viewport, gutter, margin-m, margin-xs | własne |
 | Modyfikatory | -w-half, -w-margin, -to-edge | własne (-1g, -2g, cokolwiek) |
 | Ratio families | horizontal, vertical, square, panoramic-high, panoramic-low | własne |
 | Warianty responsywne | static, to-tab-6-col, to-mobile-2col | własne |
@@ -54,6 +54,7 @@ Scale to **kalkulator z UI** w formie **edytora** (nie generatora) – user widz
 
 **Viewporty = Wiersze w macierzy** (max 10, lista otwarta)
 - Desktop (1920px), Laptop (1366px), Tablet (768px), Mobile (390px)
+- **Każdy viewport ma własną liczbę kolumn** (v0.3.10)
 
 **Style = Mode'y / Kolumny w Figma** (max 10, lista otwarta)
 - CROSS, CIRCLE, TRIANGLE, SQUARE
@@ -90,32 +91,52 @@ User edytuje tylko **Base**. Reszta się przelicza automatycznie.
 Obecne w arkuszu:
 ```
 viewport
-number-of-columns
-number-of-gutters      (computed: columns - 1)
-column-width           (computed)
 gutter-width
 margin-m
 margin-xs
-photo-margin           (computed: margin-m - margin-xs)
-ingrid                 (computed)
 ```
+
+**UWAGA (v0.3.10):** `number-of-columns` zostało przeniesione do Viewport jako `columns`.
 
 User może dodać własne parametry.
 
 ---
 
-## 7. Formuły Computed
+## 7. Właściwości Viewport (v0.3.10)
+
+Każdy viewport ma:
+
+| Pole | Opis | Domyślne |
+|------|------|----------|
+| `name` | Nazwa (Desktop, Mobile, etc.) | - |
+| `width` | Szerokość w px | - |
+| `columns` | Liczba kolumn dla tego viewportu | 12 |
+
+**Przykład:**
+
+| Viewport | Width | Columns |
+|----------|-------|---------|
+| Desktop  | 1920  | 12      |
+| Laptop   | 1366  | 12      |
+| Tablet   | 768   | 12      |
+| Mobile   | 390   | 2       |
+
+---
+
+## 8. Formuły Computed (per viewport.columns)
 
 ```
-number-of-gutters = number-of-columns - 1
-column-width = (viewport - (2 × margin-m) - ((number-of-columns - 1) × gutter-width)) / number-of-columns
+number-of-gutters = viewport.columns - 1
+column-width = (viewport - (2 × margin-m) - ((viewport.columns - 1) × gutter-width)) / viewport.columns
 ingrid = viewport - (2 × margin-m)
 photo-margin = margin-m - margin-xs
 ```
 
+**UWAGA (v0.3.13):** Computed są przeliczane per viewport.columns. Mobile (2 kolumny) pokazuje inny `column-width` niż Desktop (12 kolumn).
+
 ---
 
-## 8. Generowane serie tokenów
+## 9. Generowane serie tokenów
 
 ```
 v-col-1 = column-width × 1 + gutter × 0
@@ -125,9 +146,24 @@ v-col-viewport = viewport
 v-full = ingrid
 ```
 
+### Clamp to ingrid (v0.3.10)
+
+Tokeny `v-col-N` gdzie `N > viewport.columns` są ustawiane na wartość `ingrid`:
+
+**Mobile (390px, 2 kolumny):**
+```
+column-width = 135
+v-col-1 = 135
+v-col-2 = 294 (ingrid)
+v-col-3 = 294 (clamped!)
+v-col-4 = 294 (clamped!)
+...
+v-col-12 = 294 (clamped!)
+```
+
 ---
 
-## 9. Modyfikatory (lista otwarta)
+## 10. Modyfikatory (lista otwarta)
 
 ### Obecne w arkuszu:
 
@@ -157,7 +193,7 @@ h-col-1-to-edge     ← modifier jako sufiks
 
 ---
 
-## 10. Ratio Families (lista otwarta)
+## 11. Ratio Families (lista otwarta)
 
 ### Obecne w arkuszu:
 
@@ -185,7 +221,7 @@ height = width × (ratio-b / ratio-a)
 
 ---
 
-## 11. Warianty responsywne (lista otwarta)
+## 12. Warianty responsywne (lista otwarta)
 
 ### Obecne w arkuszu:
 
@@ -203,7 +239,7 @@ User może dodać własne.
 
 ---
 
-## 12. MECHANIZM RESPONSIVE VARIANTS (KLUCZOWE!)
+## 13. MECHANIZM RESPONSIVE VARIANTS (KLUCZOWE!)
 
 ### Czym są responsive variants?
 
@@ -215,7 +251,7 @@ Każdy responsive variant definiuje zachowanie per viewport:
 
 | Behavior | Opis |
 |----------|------|
-| **Inherit** | Używa domyślnej liczby kolumn z parametrów |
+| **Inherit** | Używa domyślnej liczby kolumn z viewportu |
 | **Override columns** | Wymusza konkretną liczbę kolumn (collapse) |
 
 ### Przykład: `to-tab-6-col`
@@ -285,7 +321,7 @@ Dla każdego tokena v-col-N:
 
 ---
 
-## 13. ARCHITEKTURA FOLDERÓW OUTPUT
+## 14. ARCHITEKTURA FOLDERÓW OUTPUT
 
 ### Filozofia: "Głupi" generator
 
@@ -337,14 +373,14 @@ Każdy folder ma:
 
 ---
 
-## 14. Eksport – Format Figma Variables API
+## 15. Eksport – Format Figma Variables API
 
 Eksport w formacie zgodnym z Figma REST API:
 
 ```json
 {
   "version": "1.0",
-  "exportedAt": "2025-01-02T...",
+  "exportedAt": "2025-01-04T...",
   "fileName": "Grid",
   "collections": [{
     "id": "VariableCollectionId:new:1",
@@ -370,7 +406,7 @@ Portal importuje bezpośrednio do Figmy.
 
 ---
 
-## 15. Ograniczenia techniczne
+## 16. Ograniczenia techniczne
 
 - Max **10 viewportów** – ograniczenie Figmy (modes)
 - Max **10 stylów** – ograniczenie Figmy (modes)
@@ -378,7 +414,7 @@ Portal importuje bezpośrednio do Figmy.
 
 ---
 
-## 16. Pliki referencyjne
+## 17. Pliki referencyjne
 
 - Arkusz Excel: `R4_1_GRID.xlsx`
 - JSON eksport R4-Grid: `1-R4-Grid_2025-12-30.json` (3590 zmiennych)
@@ -386,7 +422,7 @@ Portal importuje bezpośrednio do Figmy.
 
 ---
 
-## 17. Status implementacji
+## 18. Status implementacji
 
 ### ✅ Zaimplementowane
 - Macierz viewport × style
@@ -395,39 +431,45 @@ Portal importuje bezpośrednio do Figmy.
 - Eksport Figma Variables API
 - OutputFolders architecture
 - Ratio multiplication (jeden ratio na folder)
+- **Columns per viewport (v0.3.10)**
+- **Dynamic column-width per viewport (v0.3.12)**
+- **Computed per viewport.columns (v0.3.13)**
+- **Clamp to ingrid (v0.3.10)**
+
+### ⏳ Częściowo zaimplementowane
+- **Responsive variants w generatorze** (override columns działa, brakuje iteracji po wariantach)
 
 ### ❌ Niezaimplementowane
-- **Responsive variants w generatorze** (typy gotowe, generator ignoruje)
-- ViewportBehaviors (override columns)
+- Iteracja po `enabledResponsiveVariants` per folder
 - Pełna struktura R4-Grid (3590 tokenów)
 
 ---
 
-## 18. PODJĘTE DECYZJE – Responsive Variants (2025-01-03)
+## 19. PODJĘTE DECYZJE – Responsive Variants (2025-01-03)
 
 | # | Pytanie | Decyzja |
 |---|---------|---------|
 | **O1** | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
 | **O2** | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
-| **O3** | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
+| **O3** | Override columns – skąd opcje? | **Dynamicznie z viewport.columns** |
 | **O4** | Nazewnictwo wariantu | **Ręczne** (user wpisuje) |
 | **O5** | Nazewnictwo ścieżek | **Placeholder `{responsive}`** jako mnożnik |
 
 ### Kluczowe zasady
 
-1. **Globalna definicja, lokalne włączanie** — warianty definiujesz raz w Generators View, w folderze tylko checkbox włącza/wyłącza
-2. **User tworzy `static`** — brak wbudowanych wariantów, pełna kontrola
-3. **Placeholder `{responsive}`** — działa jak `{viewport}`, mnoży folder przez włączone warianty
-4. **Pozycja w ścieżce konfigurowalna** — user decyduje gdzie wstawić `{responsive}`
+1. **Globalna definicja, lokalne włączanie** – warianty definiujesz raz w Generators View, w folderze tylko checkbox włącza/wyłącza
+2. **User tworzy `static`** – brak wbudowanych wariantów, pełna kontrola
+3. **Placeholder `{responsive}`** – działa jak `{viewport}`, mnoży folder przez włączone warianty
+4. **Pozycja w ścieżce konfigurowalna** – user decyduje gdzie wstawić `{responsive}`
 
 ### Przykład pełnego flow
 
 ```
 GENERATORS VIEW:
-┌─────────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────┐
 │ static         → All: Inherit                               │
 │ to-tab-6-col   → Desktop/Laptop: Inherit, Tablet/Mobile: →6 │
-└─────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────┘
 
 OUTPUT FOLDER:
 📁 photo-width

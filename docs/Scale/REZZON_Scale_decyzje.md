@@ -1,6 +1,6 @@
 # REZZON Scale – Decyzje projektowe
 
-**Data aktualizacji:** 2025-01-02 (v2)
+**Data aktualizacji:** 2025-01-04 (v3)
 
 ---
 
@@ -76,7 +76,7 @@ interface ViewportBehavior {
 ```
 
 ### Opcje per viewport:
-- **Inherit** – używa domyślnej liczby kolumn z parametrów
+- **Inherit** – używa domyślnej liczby kolumn z viewportu
 - **Override columns** – wymusza konkretną liczbę (collapse)
 
 ### Logika generatora
@@ -279,6 +279,84 @@ Filozofia: **Jeden folder = jeden zestaw tokenów = jedna konfiguracja.**
 
 ---
 
+## 18. COLUMNS PER VIEWPORT (v0.3.10)
+
+**Decyzja:** Liczba kolumn jest właściwością **viewportu**, nie parametrem globalnym.
+
+### Uzasadnienie
+
+Z analizy R4-Grid JSON: Mobile ma 4 kolumny ale wszystkie tokeny v-col-X = 352 (ingrid). To celowe override viewportu, nie bug.
+
+### Model danych
+
+```typescript
+interface Viewport {
+  id: string;
+  name: string;
+  width: number;
+  columns: number;  // ← NOWE
+}
+```
+
+### Domyślne wartości
+
+| Viewport | Width | Columns |
+|----------|-------|---------|
+| Desktop  | 1920  | 12      |
+| Laptop   | 1366  | 12      |
+| Tablet   | 768   | 12      |
+| Mobile   | 390   | 2       |
+
+### Logika Clamp to ingrid
+
+Tokeny `v-col-N` gdzie `N > viewport.columns` są ustawiane na wartość `ingrid`:
+
+```typescript
+// W generateColumnTokens():
+const maxCols = ctx.maxColumns || ctx.columns;
+for (let col = 1; col <= ctx.columns; col++) {
+  if (col <= maxCols) {
+    value = colWidth * col + gutter * (col - 1);
+  } else {
+    value = ingrid;  // CLAMP
+  }
+}
+```
+
+### Efekt
+
+**Mobile (390px, 2 kolumny):**
+```
+column-width = 135
+v-col-1 = 135
+v-col-2 = 294 (ingrid)
+v-col-3 = 294 (clamped)
+v-col-4 = 294 (clamped)
+...
+v-col-12 = 294 (clamped)
+```
+
+### Computed per viewport (v0.3.13)
+
+`column-width` i `number-of-gutters` są teraz przeliczane per viewport.columns:
+
+```typescript
+// W recalculateAllComputed():
+const viewportColumns = selectedViewport?.columns ?? 12;
+const newComputed = recalculateAllComputed(baseParameters, styles, viewportColumns);
+```
+
+### UI
+
+ViewportModal ma pole "Columns" z hintem:
+```
+Columns (max for this viewport):
+[2            ]
+Tokens v-col-N where N > columns will be clamped to ingrid
+```
+
+---
+
 ## ✅ PODJĘTE DECYZJE – Responsive Variants (2025-01-03)
 
 ### Decyzja O1: Gdzie żyją definicje wariantów?
@@ -314,13 +392,13 @@ User musi sam utworzyć wariant `static` (wszystkie viewporty na Inherit). Pełn
 
 ### Decyzja O3: Override columns – skąd opcje?
 
-**Decyzja: DYNAMICZNIE Z maxColumns**
+**Decyzja: DYNAMICZNIE Z viewport.columns**
 
-Dropdown pokazuje opcje 1 do maxColumns danego viewportu.
+Dropdown pokazuje opcje 1 do `viewport.columns` danego viewportu.
 
 ```
 Desktop (12 kolumn) → dropdown: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-Mobile (6 kolumn)   → dropdown: [1, 2, 3, 4, 5, 6]
+Mobile (2 kolumny)  → dropdown: [1, 2]
 ```
 
 Elastyczne i bezpieczne — nie można wybrać więcej kolumn niż viewport ma.
@@ -390,7 +468,7 @@ User kontroluje pozycję `{responsive}` w ścieżce:
 │ │  Desktop    │ ● Inherit   │                                     │ │
 │ │  Laptop     │ ● Inherit   │                                     │ │
 │ │  Tablet     │ ○ Override  │ [6 ▾] (max: 12)                     │ │
-│ │  Mobile     │ ○ Override  │ [6 ▾] (max: 6)                      │ │
+│ │  Mobile     │ ○ Override  │ [6 ▾] (max: 2)                      │ │
 │ └─────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────┘
 ```

@@ -79,7 +79,7 @@ interface AppState {
   setAlias: (libraryId: string, variableId: string, modeId: string, targetVariableId: string) => void;
   removeAlias: (libraryId: string, variableId: string, modeId: string) => void;
   bulkAlias: (libraryId: string, matches: { sourceId: string; targetId: string }[], modeIds: string[]) => { created: number };
-  disconnectLibrary: (libraryId: string, externalLibraryName: string, resolveModeId: string) => void;
+  disconnectLibrary: (libraryId: string, externalLibraryName: string, modeByCollection: Record<string, string>) => void;
   restoreLibrary: (libraryName: string) => { restored: number; broken: number };
   
   // Akcje - UNDO/REDO
@@ -633,6 +633,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const variable = libs[libIdx].file.variables[variableId];
       if (!variable) return state;
       
+      // Znajdź target variable żeby pobrać nazwę
+      let targetName: string | undefined;
+      for (const lib of libs) {
+        const targetVar = lib.file.variables[targetVariableId];
+        if (targetVar) {
+          targetName = targetVar.name;
+          break;
+        }
+      }
+      
       const varName = variable.name.split('/').pop() || variable.name;
       const newHistory = saveToHistory(state, 'setAlias', `Set alias on "${varName}"`);
       
@@ -647,6 +657,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
           [modeId]: {
             type: 'VARIABLE_ALIAS',
             variableId: targetVariableId,
+            variableName: targetName,
           },
         },
       };
@@ -716,11 +727,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
         const variable = updatedLib.file.variables[sourceId];
         if (!variable) continue;
         
+        // Znajdź target variable żeby pobrać nazwę
+        let targetName: string | undefined;
+        for (const lib of libs) {
+          const targetVar = lib.file.variables[targetId];
+          if (targetVar) {
+            targetName = targetVar.name;
+            break;
+          }
+        }
+        
         const newValuesByMode = { ...variable.valuesByMode };
         for (const modeId of modeIds) {
           newValuesByMode[modeId] = {
             type: 'VARIABLE_ALIAS',
             variableId: targetId,
+            variableName: targetName,
           };
           created++;
         }
@@ -739,7 +761,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
   
   // Aliasy - Disconnect library (WITH UNDO)
-  disconnectLibrary: (libraryId, externalLibraryName, resolveModeId) => {
+  disconnectLibrary: (libraryId, externalLibraryName, modeByCollection) => {
     set((state) => {
       // Sprawdź czy biblioteka już nie jest odłączona
       if (state.disconnectedLibraries.some(d => d.libraryName === externalLibraryName)) {
@@ -761,6 +783,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return state;
       }
       
+      // Helper: znajdź collectionId dla zmiennej
+      const findCollectionId = (varId: string): string | null => {
+        for (const [colId, col] of Object.entries(externalLib.file.variableCollections)) {
+          if (col.variableIds.includes(varId)) {
+            return colId;
+          }
+        }
+        return null;
+      };
+      
       const previousAliases: { sourceVarId: string; sourceVarName: string; targetVarId: string; targetVarName: string; modeId: string }[] = [];
       
       const updatedLib = { ...library };
@@ -779,7 +811,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
             
             if (aliasType === 'external') {
               // Znajdź target variable w external library używając findVariableInLibrary
-              // (obsługuje różne formaty nazw w tym prefix kolekcji)
               const targetVar = findVariableInLibrary(externalLib, value.variableId, value.variableName);
               
               if (targetVar) {
@@ -792,16 +823,39 @@ export const useAppStore = create<AppState>()((set, get) => ({
                   modeId,
                 });
                 
-                // Rozwiąż do wartości z wybranego mode
-                const resolvedValue = targetVar.valuesByMode[resolveModeId];
+                // Znajdź kolekcję target variable
+                const targetCollectionId = findCollectionId(targetVar.id);
+                
+                // Pobierz wybrany mode dla tej kolekcji
+                let selectedModeId: string | null = null;
+                if (targetCollectionId && modeByCollection[targetCollectionId]) {
+                  selectedModeId = modeByCollection[targetCollectionId];
+                }
+                
+                // Rozwiąż do wartości
+                let resolvedValue = selectedModeId 
+                  ? targetVar.valuesByMode[selectedModeId]
+                  : null;
+                
+                // Fallback: jeśli nie ma wartości dla wybranego mode, użyj pierwszego dostępnego
+                if (!resolvedValue) {
+                  const availableModeIds = Object.keys(targetVar.valuesByMode);
+                  if (availableModeIds.length > 0) {
+                    resolvedValue = targetVar.valuesByMode[availableModeIds[0]];
+                  }
+                }
+                
                 if (resolvedValue && resolvedValue.type !== 'VARIABLE_ALIAS') {
                   newValuesByMode[modeId] = { ...resolvedValue };
-                } else {
+                } else if (resolvedValue && resolvedValue.type === 'VARIABLE_ALIAS') {
                   // Jeśli target też jest aliasem, użyj pełnego resolve
-                  const fullyResolved = resolveAliasValue(value, resolveModeId, library, libs);
+                  const fullyResolved = resolveAliasValue(value, selectedModeId || Object.keys(targetVar.valuesByMode)[0], library, libs);
                   newValuesByMode[modeId] = fullyResolved.type !== 'VARIABLE_ALIAS' 
                     ? { ...fullyResolved }
                     : { type: 'DIRECT', value: undefined };
+                } else {
+                  // Brak wartości - ustaw undefined
+                  newValuesByMode[modeId] = { type: 'DIRECT', value: undefined };
                 }
                 changed = true;
               }
@@ -822,16 +876,35 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return state;
       }
       
+      // DEBUG - analiza zapisywanych aliasów
+      console.log('=== DISCONNECT DEBUG ===');
+      console.log('Library:', externalLibraryName);
+      console.log('Total aliases saved:', previousAliases.length);
+      const uniqueSourceVars = new Set(previousAliases.map(a => a.sourceVarId));
+      console.log('Unique source variables:', uniqueSourceVars.size);
+      const aliasesPerVar: Record<string, string[]> = {};
+      previousAliases.forEach(a => {
+        if (!aliasesPerVar[a.sourceVarId]) aliasesPerVar[a.sourceVarId] = [];
+        aliasesPerVar[a.sourceVarId].push(a.modeId);
+      });
+      console.log('Variables with multiple modes (first 5):');
+      Object.entries(aliasesPerVar)
+        .filter(([_, modes]) => modes.length > 1)
+        .slice(0, 5)
+        .forEach(([varId, modes]) => {
+          console.log(`  ${varId}: [${modes.join(', ')}]`);
+        });
+      console.log('=== END DISCONNECT DEBUG ===');
+      
       const disconnected: typeof state.disconnectedLibraries[0] = {
         libraryName: externalLibraryName,
         disconnectedAt: new Date().toISOString(),
-        resolvedWithMode: resolveModeId,
+        resolvedWithMode: JSON.stringify(modeByCollection), // Zapisz jako JSON dla kompatybilności
         previousAliases: previousAliases.map(a => ({
           sourceVar: a.sourceVarId,
           targetVar: a.targetVarId,
           modeId: a.modeId,
         })),
-        // Dodatkowo zachowaj nazwy do wyświetlania
         aliasCount: previousAliases.length,
       };
       
@@ -849,34 +922,66 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const disconnected = state.disconnectedLibraries.find((d) => d.libraryName === libraryName);
     if (!disconnected) return { restored: 0, broken: 0 };
     
-    const externalLib = state.libraries.find((l) => l.name === libraryName);
-    let restored = 0;
-    let broken = 0;
+    console.log('=== RESTORE DEBUG ===');
+    console.log('Restoring library:', libraryName);
+    console.log('previousAliases count:', disconnected.previousAliases.length);
+    
+    // Wynik będzie zapisany tutaj przez set()
+    const result = { restored: 0, broken: 0 };
     
     set((s) => {
       const newHistory = saveToHistory(s, 'restore', `Restore connection to "${libraryName}"`);
       
+      // WAŻNE: Pobierz externalLib z AKTUALNEGO stanu wewnątrz set()
+      const externalLib = s.libraries.find((l) => l.name === libraryName);
+      console.log('externalLib found:', !!externalLib);
+      if (!externalLib) {
+        console.error('External library not found:', libraryName);
+        return s;
+      }
+      
       const libs = [...s.libraries];
       
+      // Musimy deep clone biblioteki które będziemy modyfikować
+      // żeby uniknąć nadpisywania zmian przy wielu aliasach do tej samej zmiennej
+      const libClones: Record<number, typeof libs[0]> = {};
+      
+      // Debug: śledź unikalne zmienne źródłowe
+      const uniqueSourceVars = new Set<string>();
+      const aliasesPerVar: Record<string, number> = {};
+      let notFoundSourceVars = 0;
+      let notFoundTargetVars = 0;
+      
       for (const prevAlias of disconnected.previousAliases) {
-        // Szukaj source variable po ID (sourceVar teraz zawiera ID)
-        let found = false;
+        uniqueSourceVars.add(prevAlias.sourceVar);
+        aliasesPerVar[prevAlias.sourceVar] = (aliasesPerVar[prevAlias.sourceVar] || 0) + 1;
         
+        let sourceFound = false;
+        
+        // Szukaj source variable
         for (let libIdx = 0; libIdx < libs.length; libIdx++) {
-          const lib = libs[libIdx];
-          // Szukaj po ID
+          // Użyj sklonowanej wersji jeśli istnieje, inaczej sklonuj
+          if (!libClones[libIdx]) {
+            libClones[libIdx] = {
+              ...libs[libIdx],
+              file: {
+                ...libs[libIdx].file,
+                variables: { ...libs[libIdx].file.variables },
+              },
+            };
+          }
+          
+          const lib = libClones[libIdx];
           const sourceVar = lib.file.variables[prevAlias.sourceVar];
           
           if (sourceVar) {
+            sourceFound = true;
             // Znajdź target variable po ID
-            const targetVar = externalLib?.file.variables[prevAlias.targetVar];
+            const targetVar = externalLib.file.variables[prevAlias.targetVar];
             
             if (targetVar) {
-              // Przywróć alias
-              const updatedLib = { ...libs[libIdx] };
-              updatedLib.file = { ...updatedLib.file };
-              updatedLib.file.variables = { ...updatedLib.file.variables };
-              updatedLib.file.variables[prevAlias.sourceVar] = {
+              // Przywróć alias - modyfikujemy sklonowaną wersję
+              lib.file.variables[prevAlias.sourceVar] = {
                 ...sourceVar,
                 valuesByMode: {
                   ...sourceVar.valuesByMode,
@@ -887,19 +992,41 @@ export const useAppStore = create<AppState>()((set, get) => ({
                   },
                 },
               };
-              libs[libIdx] = updatedLib;
-              restored++;
+              result.restored++;
             } else {
-              broken++;
+              result.broken++;
+              notFoundTargetVars++;
             }
-            found = true;
             break;
           }
         }
         
-        if (!found) {
-          broken++;
+        if (!sourceFound) {
+          notFoundSourceVars++;
+          result.broken++;
         }
+      }
+      
+      console.log('Unique source variables:', uniqueSourceVars.size);
+      console.log('Variables with multiple modes:');
+      Object.entries(aliasesPerVar)
+        .filter(([_, count]) => count > 1)
+        .slice(0, 5)
+        .forEach(([varId, count]) => {
+          console.log(`  ${varId}: ${count} modes`);
+        });
+      console.log('Source vars not found:', notFoundSourceVars);
+      console.log('Target vars not found:', notFoundTargetVars);
+      console.log('Restored:', result.restored);
+      console.log('Broken:', result.broken);
+      console.log('libClones keys:', Object.keys(libClones));
+      console.log('libClones size:', Object.keys(libClones).length);
+      console.log('=== END RESTORE DEBUG ===');
+      
+      // Zastąp zmodyfikowane biblioteki
+      for (const [idxStr, lib] of Object.entries(libClones)) {
+        console.log(`Replacing library at index ${idxStr}`);
+        libs[parseInt(idxStr)] = lib;
       }
       
       return {
@@ -909,7 +1036,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       };
     });
     
-    return { restored, broken };
+    return result;
   },
   
   // UNDO - przywróć poprzedni stan

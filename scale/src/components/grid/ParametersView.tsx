@@ -7,6 +7,8 @@ import { StyleModal, ConfirmDeleteModal, AddBaseParameterModal } from '../Modals
 export function ParametersView() {
   const {
     styles,
+    viewports,
+    selectedViewportId,
     baseParameters,
     computedParameters,
     modifiers,
@@ -18,6 +20,9 @@ export function ParametersView() {
     removeBaseParameter,
     recalculateComputed,
   } = useGridStore();
+  
+  // Get selected viewport for maxColumns clamp
+  const selectedViewport = viewports.find(vp => vp.id === selectedViewportId);
 
   // Modal states
   const [styleModalOpen, setStyleModalOpen] = useState(false);
@@ -45,11 +50,6 @@ export function ParametersView() {
   const handleEditStyle = (data: { name: string; columns: number }) => {
     if (editingStyle) {
       updateStyle(editingStyle.id, data);
-      // Also update number-of-columns parameter
-      const colsParam = baseParameters.find(p => p.name === 'number-of-columns');
-      if (colsParam) {
-        updateBaseParameter(colsParam.id, editingStyle.id, data.columns);
-      }
       setEditingStyle(null);
     }
   };
@@ -89,7 +89,7 @@ export function ParametersView() {
   const paramToDelete = baseParameters.find(p => p.id === deleteParamId);
 
   // Core parameters that cannot be deleted
-  const coreParamNames = ['viewport', 'number-of-columns', 'gutter-width', 'margin-m', 'margin-xs'];
+  const coreParamNames = ['viewport', 'gutter-width', 'margin-m', 'margin-xs'];
 
   return (
     <div className="table-wrap">
@@ -253,11 +253,14 @@ export function ParametersView() {
 
             // Generate all token values per style
             const tokensByStyle: Record<string, Record<string, number>> = {};
+            const viewportMaxColumns = selectedViewport?.columns ?? 12;
+            
             styles.forEach(style => {
               const ctx = {
                 styleId: style.id,
                 styleName: style.name,
                 columns: style.columns,
+                maxColumns: viewportMaxColumns,  // clamp to viewport's columns
                 base: {
                   viewport: baseParameters.find(p => p.name === 'viewport')?.values[style.id] ?? 0,
                   gutter: baseParameters.find(p => p.name === 'gutter-width')?.values[style.id] ?? 0,

@@ -10,6 +10,7 @@ export interface Viewport {
   id: string;
   name: string;        // e.g., "Desktop", "Tablet", "Mobile"
   width: number;       // e.g., 1920, 768, 390
+  columns: number;     // number of columns for this viewport (e.g., 12 for desktop, 2 for mobile)
   icon: 'monitor' | 'laptop' | 'tablet' | 'phone';
 }
 

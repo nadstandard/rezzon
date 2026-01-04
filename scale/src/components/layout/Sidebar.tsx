@@ -26,7 +26,7 @@ export function Sidebar() {
 
   // Modal states
   const [viewportModalOpen, setViewportModalOpen] = useState(false);
-  const [editingViewport, setEditingViewport] = useState<{ id: string; name: string; width: number; icon: Viewport['icon'] } | null>(null);
+  const [editingViewport, setEditingViewport] = useState<{ id: string; name: string; width: number; columns: number; icon: Viewport['icon'] } | null>(null);
   const [deleteViewportId, setDeleteViewportId] = useState<string | null>(null);
 
   // Calculate total tokens from outputFolders
@@ -42,19 +42,21 @@ export function Sidebar() {
   }, [outputFolders, styles, viewports, baseParameters, computedParameters, modifiers, ratioFamilies, responsiveVariants]);
 
   // Handlers
-  const handleAddViewport = (data: { name: string; width: number; icon: string }) => {
+  const handleAddViewport = (data: { name: string; width: number; columns: number; icon: string }) => {
     addViewport({
       name: data.name,
       width: data.width,
+      columns: data.columns,
       icon: data.icon as Viewport['icon'],
     });
   };
 
-  const handleEditViewport = (data: { name: string; width: number; icon: string }) => {
+  const handleEditViewport = (data: { name: string; width: number; columns: number; icon: string }) => {
     if (editingViewport) {
       updateViewport(editingViewport.id, {
         name: data.name,
         width: data.width,
+        columns: data.columns,
         icon: data.icon as Viewport['icon'],
       });
       setEditingViewport(null);
@@ -70,7 +72,7 @@ export function Sidebar() {
 
   const openEditModal = (vp: typeof viewports[0], e: React.MouseEvent) => {
     e.stopPropagation();
-    setEditingViewport({ id: vp.id, name: vp.name, width: vp.width, icon: vp.icon });
+    setEditingViewport({ id: vp.id, name: vp.name, width: vp.width, columns: vp.columns, icon: vp.icon });
     setViewportModalOpen(true);
   };
 

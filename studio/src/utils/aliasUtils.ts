@@ -168,6 +168,9 @@ export function calculateAliasStats(
 ): { internal: number; external: number; broken: number } {
   const stats = { internal: 0, external: 0, broken: 0 };
   const seen = new Set<string>(); // Unikaj duplikatów (ta sama zmienna w różnych modes)
+  
+  // Debug: policz broken z podziałem na powody
+  const brokenReasons: string[] = [];
 
   for (const variable of Object.values(library.file.variables)) {
     for (const [, value] of Object.entries(variable.valuesByMode)) {
@@ -180,7 +183,20 @@ export function calculateAliasStats(
       const type = getAliasType(value, library, allLibraries);
       if (type === 'internal') stats.internal++;
       else if (type === 'external') stats.external++;
-      else if (type === 'broken') stats.broken++;
+      else if (type === 'broken') {
+        stats.broken++;
+        if (brokenReasons.length < 5) {
+          brokenReasons.push(`${variable.name} → ${value.variableName || value.variableId}`);
+        }
+      }
+    }
+  }
+  
+  // Log tylko dla głównej biblioteki (REZZON)
+  if (library.name === 'REZZON' || library.isMain) {
+    console.log(`[calculateAliasStats] ${library.name}: internal=${stats.internal}, external=${stats.external}, broken=${stats.broken}`);
+    if (brokenReasons.length > 0) {
+      console.log('[calculateAliasStats] Sample broken aliases:', brokenReasons);
     }
   }
 

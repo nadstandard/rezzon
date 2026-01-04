@@ -1,7 +1,7 @@
 # REZZON Scale – Roadmapa implementacji
 
-**Status:** v0.3.7 – Architektura uproszczona  
-**Data aktualizacji:** 2025-01-02 (v2)
+**Status:** v0.3.13 – Columns per Viewport  
+**Data aktualizacji:** 2025-01-04
 
 ---
 
@@ -39,6 +39,7 @@
 - [x] `calculateComputed()` – oblicza computed values
 - [x] `recalculateAllComputed()` – przelicza wszystkie computed
 - [x] Auto-recalculation przy zmianie base parameter
+- [x] **Dynamic viewport.columns** – computed per viewport (v0.3.13)
 
 #### 2.3 Token Generator
 - [x] `generateColumnTokens()` – v-col-1...n, v-full, v-col-viewport
@@ -47,6 +48,8 @@
 - [x] `generatePhotoWidthTokens()` – w-col-X
 - [x] `generatePhotoHeightTokens()` – h-col-X z ratio
 - [x] `generateFigmaExport()` – format Figma Variables API
+- [x] **Clamp to ingrid** – col > viewport.columns = ingrid (v0.3.10)
+- [x] **Dynamic column-width** – per viewport.columns (v0.3.12)
 
 #### 2.4 Generators View (globalne listy)
 - [x] Panel Modifiers z CRUD
@@ -79,15 +82,25 @@
 - [x] Jeden ratio na folder (radio buttons)
 - [x] Ukryto UI Responsive Variants (do reimplementacji)
 
+### Faza 3.6 – Columns per Viewport (DONE - v0.3.10-v0.3.13)
+
+- [x] Pole `columns` w interfejsie Viewport
+- [x] UI: pole "Columns" w ViewportModal
+- [x] Generator: clamp to ingrid dla col > viewport.columns
+- [x] Generator: dynamic column-width per viewport
+- [x] Formula Engine: computed przeliczane per viewport.columns
+- [x] Usunięto `number-of-columns` z baseParameters
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧪 TEST CHECKPOINT #2 – PASSED                             │
-│  Zakres: Architektura folderów + uproszczenia               │
-│  ☑ User tworzy własną strukturę folderów                    │
-│  ☑ Każdy folder ma własną konfigurację                      │
-│  ☑ Modifiers przypisane per folder                          │
-│  ☑ Ratio multiplication działa (jeden ratio)                │
-│  ☑ Eksport generuje według konfiguracji                     │
+│  🧪 TEST CHECKPOINT #2.5 – COLUMNS PER VIEWPORT – PASSED    │
+├─────────────────────────────────────────────────────────────┤
+│  Zakres: Architektura columns per viewport                  │
+│  ☑ Viewport ma pole columns (default: 12, Mobile: 2)        │
+│  ☑ column-width obliczane dynamicznie per viewport          │
+│  ☑ v-col-N > columns = ingrid (clamp działa)                │
+│  ☑ Computed parameters per viewport.columns                 │
+│  ☑ UI ViewportModal z polem Columns                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -97,9 +110,9 @@
 
 ### Faza 4 – Responsive Variants w generatorze (Est. 2-3 dni)
 
-**Problem:** Typy `ViewportBehavior` i `ResponsiveVariant` są gotowe, ale generator ich **NIE UŻYWA**.
+**Problem:** Generator częściowo używa ViewportBehaviors (override columns), ale nie iteruje po `enabledResponsiveVariants` w folderze.
 
-**Cel:** Implementacja mechanizmu "collapse to N columns" w generatorze.
+**Cel:** Pełna implementacja mechanizmu "collapse to N columns" z subfolder per variant.
 
 #### ✅ PODJĘTE DECYZJE (2025-01-03)
 
@@ -107,7 +120,7 @@
 |---|---------|---------|
 | **O1** | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
 | **O2** | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
-| **O3** | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
+| **O3** | Override columns – skąd opcje? | **Dynamicznie z viewport.columns** |
 | **O4** | Nazewnictwo wariantu | **Ręczne** |
 | **O5** | Nazewnictwo ścieżek | **Placeholder `{responsive}`** jako mnożnik |
 
@@ -120,54 +133,30 @@
 - [x] Propozycja UI dla Responsive Variants Editor
 - [x] Podjęcie decyzji O1-O5
 
-#### 4.2 UI – Responsive Variants Editor
-- [ ] Panel globalnych definicji wariantów
-- [ ] Tabela ViewportBehaviors per variant (Inherit/Override radio)
-- [ ] Dropdown columns (dynamicznie z maxColumns)
-- [ ] Nazwa wariantu (ręczna)
-- [ ] Checkbox włączania wariantów per folder
-- [ ] Obsługa placeholdera `{responsive}` w ścieżce
+#### 4.2 UI – Responsive Variants Editor (DONE - v0.3.9)
+- [x] Panel globalnych definicji wariantów
+- [x] Tabela ViewportBehaviors per variant (Inherit/Override radio)
+- [x] Dropdown columns (dynamicznie z viewport.columns)
+- [x] Nazwa wariantu (ręczna)
+- [x] Checkbox włączania wariantów per folder
+- [x] Obsługa placeholdera `{responsive}` w ścieżce
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│ RESPONSIVE VARIANTS                                   [+ Add]│
-├──────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ static                                          [✎] [🗑] │ │
-│ │  Desktop: Inherit  Laptop: Inherit                       │ │
-│ │  Tablet: Inherit   Mobile: Inherit                       │ │
-│ └──────────────────────────────────────────────────────────┘ │
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ to-tab-6-col                                    [✎] [🗑] │ │
-│ │  Desktop: Inherit  Laptop: Inherit                       │ │
-│ │  Tablet: Override→6  Mobile: Override→6                  │ │
-│ └──────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-
-OUTPUT FOLDER:
-path: "photo/{viewport}/width/{responsive}"
-Responsive Variants: ☑ static ☑ to-tab-6-col ☐ heading
-```
-
-#### 4.3 Implementacja generatora
+#### 4.3 Implementacja generatora (CZĘŚCIOWO)
+- [x] Logika: `inherit` vs `override` columns (działa w override)
+- [x] Generowanie wartości z `overrideColumns`
 - [ ] Iteracja po `enabledResponsiveVariants` w folderze
-- [ ] Pobieranie `viewportBehaviors` dla każdego variant
-- [ ] Logika: `inherit` vs `override` columns
-- [ ] Generowanie ścieżek z responsive variant w nazwie (placeholder `{responsive}`)
-- [ ] Obliczanie wartości z `overrideColumns`
+- [ ] Generowanie ścieżek z responsive variant w nazwie
 
 #### 4.4 Logika collapse
 ```typescript
-// Pseudokod
+// Pseudokod - DO IMPLEMENTACJI
 for (variant of folder.enabledResponsiveVariants) {
   for (viewport of viewports) {
     const behavior = variant.viewportBehaviors[viewport.id];
     
     if (behavior === 'inherit') {
-      // Normalne wartości
-      columns = style.columns;
+      columns = viewport.columns;  // ← teraz per viewport!
     } else {
-      // Collapse: WSZYSTKIE tokeny = wartość dla N kolumn
       columns = behavior.overrideColumns;
     }
     
@@ -183,11 +172,11 @@ for (variant of folder.enabledResponsiveVariants) {
 │  Zakres: Pełny flow z responsive variants                   │
 │                                                             │
 │  Checklistka:                                               │
+│  ☑ Override columns działa (v0.3.10)                        │
 │  ☐ Variant "static" generuje normalne wartości              │
 │  ☐ Variant "to-tab-6-col" kolapsuje tablet/mobile do 6 col  │
 │  ☐ Eksport zawiera subfoldery responsive                    │
 │  ☐ Wartości collapse są poprawne (sprawdzić z JSON R4-Grid) │
-│  ☐ UI pozwala konfigurować ViewportBehaviors                │
 │  ☐ Nazewnictwo ścieżek zgodne z R4-Grid                     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -304,36 +293,33 @@ Po responsive variants – walidacja przez odtworzenie R4-Grid:
 | **Szkielet React** | 1 | ✅ DONE |
 | **Grid Core** | 2 | ✅ DONE |
 | **Architektura Folderów** | 3, 3.5 | ✅ DONE |
-| **Responsive Variants** | 4 | 🔄 NEXT |
+| **Columns per Viewport** | 3.6 | ✅ DONE |
+| **Responsive Variants** | 4 | 🔄 80% |
 | **Walidacja R4-Grid** | 5-7 | ☐ TODO |
 | **Pozostałe sekcje** | 8-10 | ☐ TODO |
 | **Polish** | 11-13 | ☐ TODO |
 
-**Szacowany postęp Grid MVP:** ~70%
+**Szacowany postęp Grid MVP:** ~80%
 
 ---
 
 ## 🎯 NASTĘPNY KROK
 
-**Faza 4: Responsive Variants w generatorze**
+**Faza 4.3: Dokończenie Responsive Variants w generatorze**
 
-1. Implementacja logiki `inherit` / `override` w `generateAllTokensForFolder()`
-2. Iteracja po `enabledResponsiveVariants`
-3. Sprawdzanie `viewportBehaviors` dla każdego viewport
-4. Generowanie ścieżek z responsive variant
-5. Test na danych R4-Grid
+1. Iteracja po `enabledResponsiveVariants` w `generateAllTokensForFolder()`
+2. Generowanie ścieżek z `{responsive}` placeholder
+3. Test na danych R4-Grid
+4. Porównanie z oryginalnym JSON
 
 ---
 
 ## 📝 ZNANE PROBLEMY
 
-### Generator ignoruje responsive variants
+### Generator nie iteruje po responsive variants
 
-**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
+**Lokalizacja:** `src/engine/generator.ts`
 
-```typescript
-// For now, skip responsive variants (will be redesigned later)
-// Just generate tokens per viewport
-```
+**Status:** Override columns działa (v0.3.10), brakuje iteracji po wariantach per folder.
 
-**Do naprawy w Fazie 4.**
+**Do naprawy:** Implementacja pętli po `folder.enabledResponsiveVariants` z generowaniem subfolderów.

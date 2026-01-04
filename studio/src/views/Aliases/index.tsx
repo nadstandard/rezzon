@@ -404,23 +404,27 @@ export function AliasesView() {
 
       {/* Modals */}
       {disconnectModal && activeLibrary && (() => {
-        // Pobierz modes z TARGET library (nie z active/source library)
+        // Pobierz WSZYSTKIE kolekcje z TARGET library
         const targetLibrary = libraries.find(l => l.name === disconnectModal.libraryName);
-        const targetModes = targetLibrary 
-          ? Object.values(targetLibrary.file.variableCollections)[0]?.modes || []
+        const targetCollections = targetLibrary 
+          ? Object.values(targetLibrary.file.variableCollections).map(col => ({
+              id: col.id,
+              name: col.name,
+              modes: col.modes,
+            }))
           : [];
         
         return (
           <DisconnectModal
             isOpen={disconnectModal.isOpen}
             onClose={() => setDisconnectModal(null)}
-            onDisconnect={(modeId) => { 
-              disconnectLibrary(activeLibrary.id, disconnectModal.libraryName, modeId); 
+            onDisconnect={(modeByCollection) => { 
+              disconnectLibrary(activeLibrary.id, disconnectModal.libraryName, modeByCollection); 
               setDisconnectModal(null); 
             }}
             libraryName={disconnectModal.libraryName}
             aliasCount={disconnectModal.aliasCount}
-            modes={targetModes}
+            collections={targetCollections}
           />
         );
       })()}

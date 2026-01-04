@@ -1,5 +1,65 @@
 # REZZON Scale – CHANGELOG
 
+## [0.3.13] – 2025-01-04
+
+### Changed
+- **Computed parameters przeliczane dla viewport.columns**
+  - `recalculateAllComputed()` przyjmuje teraz parametr `viewportColumns`
+  - `column-width` i `number-of-gutters` pokazują wartości dla aktualnego viewportu
+  - Spójność: tabela COMPUTED pokazuje te same wartości co GENERATED TOKENS
+
+### Fixed
+- Computed parameter `column-width` pokazywał wartość dla 12 kolumn nawet na Mobile
+- Teraz Mobile (2 kolumny) pokazuje `column-width = 135` (nie 2.5)
+
+---
+
+## [0.3.12] – 2025-01-04
+
+### Changed
+- **column-width obliczane dynamicznie per viewport**
+  - Generator oblicza `column-width` dla `viewport.columns` (nie `style.columns`)
+  - Formuła: `(viewport - 2×margin-m - (maxCols-1)×gutter) / maxCols`
+  - Mobile (2 kolumny): `column-width = 135` zamiast `2.5`
+
+### Fixed
+- v-col-1 na Mobile miało wartość 2.5 (dla 12 kolumn) zamiast 135 (dla 2 kolumn)
+
+---
+
+## [0.3.11] – 2025-01-04
+
+### Fixed
+- **ParametersView przekazuje maxColumns do generatora**
+  - Dodano `viewports` i `selectedViewportId` do ParametersView
+  - Kontekst generatora zawiera `maxColumns: selectedViewport.columns`
+  - Clamp do ingrid działa w widoku Parameters
+
+---
+
+## [0.3.10] – 2025-01-04
+
+### Added
+- **Columns per viewport** – nowa architektura
+  - Dodano pole `columns: number` do interfejsu `Viewport`
+  - Każdy viewport ma własną liczbę kolumn (np. Desktop=12, Mobile=2)
+  - UI: pole "Columns" w ViewportModal z hintem o clamp
+
+### Changed
+- **Usunięto `number-of-columns` z baseParameters**
+  - Liczba kolumn to teraz właściwość viewportu, nie parametr per-style
+  - Domyślne viewporty: Desktop/Laptop/Tablet = 12, Mobile = 2
+
+### Architecture
+- **Clamp to ingrid** – tokeny v-col-N > viewport.columns = ingrid
+  - Mobile (2 kolumny): v-col-1, v-col-2 = obliczone, v-col-3...12 = ingrid (294)
+  - Generator sprawdza `maxColumns` z `viewport.columns`
+
+### Migration
+- **WYMAGANE:** Wyczyść localStorage – stare viewporty nie mają pola `columns`
+
+---
+
 ## [0.3.9] – 2025-01-03
 
 ### Decided
@@ -11,12 +71,12 @@
   - O5: Ścieżki tokenów przez **placeholder `{responsive}`** jako mnożnik
 
 ### Architecture
-- Placeholder `{responsive}` działa jak `{viewport}` — mnoży folder przez włączone warianty
+- Placeholder `{responsive}` działa jak `{viewport}` – mnoży folder przez włączone warianty
 - User kontroluje pozycję `{responsive}` w path template
 - Przykład: `"photo/{viewport}/width/{responsive}"` → `photo/desktop/width/static/w-col-1`
 
 ### Documentation
-- Zaktualizowano decyzje, briefing, roadmap — status: PODJĘTE
+- Zaktualizowano decyzje, briefing, roadmap – status: PODJĘTE
 - Faza 4.1 (analiza) oznaczona jako DONE
 
 ---
@@ -275,20 +335,3 @@
   - Grid briefing complete (macierz, formuły, modyfikatory, ratios, responsive)
   - Excel analysis (R4_1_GRID.xlsx)
   - JSON analysis (1-R4-Grid_2025-12-18.json)
-
----
-
-## Known Issues
-
-### Generator nie używa Responsive Variants
-
-**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
-
-```typescript
-// For now, skip responsive variants (will be redesigned later)
-// Just generate tokens per viewport
-```
-
-**Status:** Do naprawy w Fazie 4 roadmapy.
-
-**Obejście:** Typy `ViewportBehavior` i `ResponsiveVariant` są zdefiniowane, UI ViewportBehaviors istnieje (v0.2.6), ale generator ignoruje te dane.

@@ -18,14 +18,16 @@ interface FormulaContext {
 
 /**
  * Build context from base parameters for a specific style
+ * columns is passed separately as it comes from viewport, not style
  */
 export function buildContext(
   baseParameters: BaseParameter[],
-  styleId: string
+  styleId: string,
+  columns: number = 12
 ): FormulaContext {
   const context: FormulaContext = {
     viewport: 0,
-    columns: 0,
+    columns: columns,
     gutter: 0,
     'margin-m': 0,
     'margin-xs': 0,
@@ -38,9 +40,6 @@ export function buildContext(
     switch (param.name) {
       case 'viewport':
         context.viewport = value;
-        break;
-      case 'number-of-columns':
-        context.columns = value;
         break;
       case 'gutter-width':
         context.gutter = value;
@@ -86,9 +85,14 @@ export function calculateComputed(ctx: FormulaContext): Record<string, number> {
 /**
  * Recalculate all computed parameters for all styles
  */
+/**
+ * Recalculate all computed parameters for all styles
+ * viewportColumns: number of columns for current viewport (e.g., 2 for mobile, 12 for desktop)
+ */
 export function recalculateAllComputed(
   baseParameters: BaseParameter[],
-  styles: Style[]
+  styles: Style[],
+  viewportColumns: number = 12
 ): ComputedParameter[] {
   // Define computed parameters structure
   const computedDefs = [
@@ -102,7 +106,8 @@ export function recalculateAllComputed(
     const values: Record<string, number> = {};
 
     styles.forEach((style) => {
-      const ctx = buildContext(baseParameters, style.id);
+      // Use viewportColumns for column-width calculation (e.g., 2 for mobile)
+      const ctx = buildContext(baseParameters, style.id, viewportColumns);
       const computed = calculateComputed(ctx);
       values[style.id] = computed[def.name] ?? 0;
     });

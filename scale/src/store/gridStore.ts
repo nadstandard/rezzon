@@ -45,10 +45,10 @@ const initialState: Omit<GridStore, keyof import('../types').GridActions> = {
 // === DEMO DATA ===
 const createDemoData = (): Partial<GridStore> => ({
   viewports: [
-    { id: 'vp-1', name: 'Desktop', width: 1920, icon: 'monitor' },
-    { id: 'vp-2', name: 'Laptop', width: 1366, icon: 'monitor' },
-    { id: 'vp-3', name: 'Tablet', width: 768, icon: 'tablet' },
-    { id: 'vp-4', name: 'Mobile', width: 390, icon: 'phone' },
+    { id: 'vp-1', name: 'Desktop', width: 1920, columns: 12, icon: 'monitor' },
+    { id: 'vp-2', name: 'Laptop', width: 1366, columns: 12, icon: 'monitor' },
+    { id: 'vp-3', name: 'Tablet', width: 768, columns: 12, icon: 'tablet' },
+    { id: 'vp-4', name: 'Mobile', width: 390, columns: 2, icon: 'phone' },
   ],
   styles: [
     { id: 'st-1', name: 'Cross', columns: 12 },
@@ -63,13 +63,6 @@ const createDemoData = (): Partial<GridStore> => ({
       type: 'base',
       values: { 'st-1': 1920, 'st-2': 1920, 'st-3': 1920, 'st-4': 1920 },
       editable: false,
-    },
-    {
-      id: 'bp-2',
-      name: 'number-of-columns',
-      type: 'base',
-      values: { 'st-1': 12, 'st-2': 12, 'st-3': 6, 'st-4': 4 },
-      editable: true,
     },
     {
       id: 'bp-3',
@@ -597,7 +590,10 @@ export const useGridStore = create<GridStore>((set, get) => ({
   // === RECALCULATION ===
   recalculateComputed: () => {
     const state = get();
-    const newComputed = recalculateAllComputed(state.baseParameters, state.styles);
+    const selectedViewport = state.viewports.find(vp => vp.id === state.selectedViewportId);
+    const viewportColumns = selectedViewport?.columns ?? 12;
+    
+    const newComputed = recalculateAllComputed(state.baseParameters, state.styles, viewportColumns);
     
     // Update output layers with token counts
     const counts = countTokens(
@@ -633,7 +629,7 @@ export const useGridStore = create<GridStore>((set, get) => ({
         gutter: state.baseParameters.find(p => p.name === 'gutter-width')?.values[style.id] ?? 0,
         'margin-m': state.baseParameters.find(p => p.name === 'margin-m')?.values[style.id] ?? 0,
         'margin-xs': state.baseParameters.find(p => p.name === 'margin-xs')?.values[style.id] ?? 0,
-        columns: state.baseParameters.find(p => p.name === 'number-of-columns')?.values[style.id] ?? 0,
+        columns: style.columns,
       };
       
       const computedValues = {
@@ -647,6 +643,7 @@ export const useGridStore = create<GridStore>((set, get) => ({
         styleId: style.id,
         styleName: style.name,
         columns: style.columns,
+        maxColumns: selectedViewport.columns,  // clamp to ingrid above this
         base: baseValues,
         computed: computedValues,
       };

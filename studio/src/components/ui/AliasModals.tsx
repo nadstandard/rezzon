@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, Link2Off, RefreshCw, Check, ArrowRight, X, Folder, Box } from 'lucide-react';
 import type { Library, Variable, VariableCollection, DisconnectedLibrary } from '../../types';
 import { matchVariablesByName } from '../../utils/aliasUtils';
@@ -320,13 +320,19 @@ export function BulkAliasModal({
 
 // ==================== DISCONNECT MODAL ====================
 
+interface CollectionWithModes {
+  id: string;
+  name: string;
+  modes: { modeId: string; name: string }[];
+}
+
 interface DisconnectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDisconnect: (modeId: string) => void;
+  onDisconnect: (modeByCollection: Record<string, string>) => void;
   libraryName: string;
   aliasCount: number;
-  modes: { modeId: string; name: string }[];
+  collections: CollectionWithModes[];
 }
 
 export function DisconnectModal({
@@ -335,15 +341,44 @@ export function DisconnectModal({
   onDisconnect,
   libraryName,
   aliasCount,
-  modes,
+  collections,
 }: DisconnectModalProps) {
-  const [selectedMode, setSelectedMode] = useState(modes[0]?.modeId || '');
+  // Inicjalizuj state z pierwszym mode dla każdej kolekcji
+  const [selectedModes, setSelectedModes] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    collections.forEach(col => {
+      if (col.modes.length > 0) {
+        initial[col.id] = col.modes[0].modeId;
+      }
+    });
+    return initial;
+  });
+
+  // Reset state gdy modal się otwiera z nowymi kolekcjami
+  useEffect(() => {
+    if (isOpen) {
+      const initial: Record<string, string> = {};
+      collections.forEach(col => {
+        if (col.modes.length > 0) {
+          initial[col.id] = col.modes[0].modeId;
+        }
+      });
+      setSelectedModes(initial);
+    }
+  }, [isOpen, collections]);
 
   if (!isOpen) return null;
 
+  const handleModeChange = (collectionId: string, modeId: string) => {
+    setSelectedModes(prev => ({
+      ...prev,
+      [collectionId]: modeId,
+    }));
+  };
+
   return (
     <div className="modal-overlay open">
-      <div className="modal">
+      <div className="modal" style={{ width: collections.length > 1 ? '480px' : '420px' }}>
         <div className="modal__header">
           <span className="modal__title">Disconnect Library</span>
           <button className="modal__close" onClick={onClose}>
@@ -360,27 +395,77 @@ export function DisconnectModal({
               <span className="modal__info-label">Aliases affected</span>
               <span className="modal__info-value modal__info-value--warning">{aliasCount} aliases</span>
             </div>
+            {collections.length > 1 && (
+              <div className="modal__info-row">
+                <span className="modal__info-label">Collections</span>
+                <span className="modal__info-value">{collections.length}</span>
+              </div>
+            )}
           </div>
+          
           <div className="modal__label">Resolve values from mode</div>
-          <select
-            className="modal__select"
-            value={selectedMode}
-            onChange={(e) => setSelectedMode(e.target.value)}
-          >
-            {modes.map((mode) => (
-              <option key={mode.modeId} value={mode.modeId}>
-                {mode.name}
-              </option>
-            ))}
-          </select>
+          
+          {collections.length === 1 ? (
+            // Pojedyncza kolekcja - prosty dropdown
+            <select
+              className="modal__select"
+              value={selectedModes[collections[0].id] || ''}
+              onChange={(e) => handleModeChange(collections[0].id, e.target.value)}
+            >
+              {collections[0].modes.map((mode) => (
+                <option key={mode.modeId} value={mode.modeId}>
+                  {mode.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            // Wiele kolekcji - lista z dropdownami
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {collections.map((collection) => (
+                <div 
+                  key={collection.id} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    padding: '8px 12px',
+                    background: 'var(--bg-app)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <span style={{ 
+                    flex: 1, 
+                    fontSize: '12px', 
+                    color: 'var(--text-secondary)',
+                    minWidth: '100px',
+                  }}>
+                    {collection.name}
+                  </span>
+                  <select
+                    className="modal__select"
+                    style={{ flex: 1, margin: 0 }}
+                    value={selectedModes[collection.id] || ''}
+                    onChange={(e) => handleModeChange(collection.id, e.target.value)}
+                  >
+                    {collection.modes.map((mode) => (
+                      <option key={mode.modeId} value={mode.modeId}>
+                        {mode.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+          
           <p className="modal__hint">
-            All aliases to this library will be replaced with resolved values from the selected mode.
+            All aliases to this library will be replaced with resolved values from the selected mode{collections.length > 1 ? 's' : ''}.
             You can restore this connection later.
           </p>
         </div>
         <div className="modal__footer">
           <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn--danger" onClick={() => onDisconnect(selectedMode)}>
+          <button className="btn btn--danger" onClick={() => onDisconnect(selectedModes)}>
             <Link2Off className="icon sm" />
             Disconnect
           </button>

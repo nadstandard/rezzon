@@ -98,30 +98,33 @@ export function ConfirmDeleteModal({
 interface ViewportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (viewport: { name: string; width: number; icon: string }) => void;
-  editData?: { name: string; width: number; icon: string } | null;
+  onSave: (viewport: { name: string; width: number; columns: number; icon: string }) => void;
+  editData?: { name: string; width: number; columns: number; icon: string } | null;
 }
 
 export function ViewportModal({ isOpen, onClose, onSave, editData }: ViewportModalProps) {
   const [name, setName] = useState('');
   const [width, setWidth] = useState(1440);
+  const [columns, setColumns] = useState(12);
   const [icon, setIcon] = useState('monitor');
 
   useEffect(() => {
     if (editData) {
       setName(editData.name);
       setWidth(editData.width);
+      setColumns(editData.columns);
       setIcon(editData.icon);
     } else {
       setName('');
       setWidth(1440);
+      setColumns(12);
       setIcon('monitor');
     }
   }, [editData, isOpen]);
 
   const handleSubmit = () => {
     if (!name.trim() || width <= 0) return;
-    onSave({ name: name.trim(), width, icon });
+    onSave({ name: name.trim(), width, columns, icon });
     onClose();
   };
 
@@ -162,6 +165,18 @@ export function ViewportModal({ isOpen, onClose, onSave, editData }: ViewportMod
         min={1}
       />
 
+      <div className="modal__label" style={{ marginTop: 16 }}>Columns (max for this viewport)</div>
+      <input
+        type="number"
+        className="modal__input"
+        placeholder="12"
+        value={columns}
+        onChange={(e) => setColumns(parseInt(e.target.value) || 12)}
+        min={1}
+        max={12}
+      />
+      <p className="modal__hint">Tokens above this column count will be clamped to ingrid</p>
+
       <div className="modal__label" style={{ marginTop: 16 }}>Icon</div>
       <select
         className="modal__select"
@@ -178,10 +193,10 @@ export function ViewportModal({ isOpen, onClose, onSave, editData }: ViewportMod
       <div className="modal__label" style={{ marginTop: 16 }}>Quick presets</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {[
-          { name: 'Desktop', width: 1920, icon: 'monitor' },
-          { name: 'Laptop', width: 1366, icon: 'laptop' },
-          { name: 'Tablet', width: 768, icon: 'tablet' },
-          { name: 'Mobile', width: 390, icon: 'phone' },
+          { name: 'Desktop', width: 1920, columns: 12, icon: 'monitor' },
+          { name: 'Laptop', width: 1366, columns: 12, icon: 'laptop' },
+          { name: 'Tablet', width: 768, columns: 12, icon: 'tablet' },
+          { name: 'Mobile', width: 390, columns: 2, icon: 'phone' },
         ].map((preset) => (
           <button
             key={preset.name}
@@ -190,6 +205,7 @@ export function ViewportModal({ isOpen, onClose, onSave, editData }: ViewportMod
             onClick={() => {
               setName(preset.name);
               setWidth(preset.width);
+              setColumns(preset.columns);
               setIcon(preset.icon);
             }}
           >

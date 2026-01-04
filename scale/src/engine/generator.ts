@@ -42,7 +42,8 @@ interface BaseValues {
 interface GeneratorContext {
   styleId: string;
   styleName: string;
-  columns: number;
+  columns: number;      // always 12 for grid structure
+  maxColumns?: number;  // viewport's max columns (e.g., 2 for mobile) - clamp to ingrid above this
   base: BaseValues;
   computed: ComputedValues;
 }
@@ -58,12 +59,28 @@ export function generateColumnTokens(
   ctx: GeneratorContext
 ): { name: string; value: number }[] {
   const tokens: { name: string; value: number }[] = [];
-  const colWidth = ctx.computed['column-width'];
   const gutter = ctx.base.gutter;
+  const marginM = ctx.base['margin-m'];
+  const viewport = ctx.base.viewport;
+  const ingrid = ctx.computed['ingrid'];
+  const maxCols = ctx.maxColumns || ctx.columns; // viewport's columns (e.g., 2 for mobile)
+  
+  // Calculate column-width for THIS viewport's column count
+  // Formula: (viewport - 2×margin-m - (maxCols-1)×gutter) / maxCols
+  const colWidth = (viewport - 2 * marginM - (maxCols - 1) * gutter) / maxCols;
 
-  // v-col-1 to v-col-n (where n = number of columns)
+  // v-col-1 to v-col-n (where n = style.columns, typically 12)
   for (let col = 1; col <= ctx.columns; col++) {
-    const value = colWidth * col + gutter * (col - 1);
+    let value: number;
+    
+    if (col <= maxCols) {
+      // Within viewport's column count - calculate normally
+      value = colWidth * col + gutter * (col - 1);
+    } else {
+      // Exceeds viewport's columns - clamp to ingrid
+      value = ingrid;
+    }
+    
     tokens.push({
       name: `v-col-${col}`,
       value: Math.round(value * 100) / 100, // Round to 2 decimals
@@ -411,6 +428,7 @@ export function generateAllTokens(
     styleId: style.id,
     styleName: style.name,
     columns: style.columns,
+    maxColumns: viewport.columns,  // clamp to ingrid above this
     base,
     computed,
   };
@@ -704,6 +722,7 @@ export function generateFigmaExport(
         styleId: style.id,
         styleName: style.name,
         columns: style.columns,
+        maxColumns: viewport.columns,  // clamp to ingrid above this
         base,
         computed,
       };
@@ -822,6 +841,7 @@ export function generateExportData(
         styleId: style.id,
         styleName: style.name,
         columns: style.columns,
+        maxColumns: viewport.columns,  // clamp to ingrid above this
         base: {
           viewport: getBase('viewport', style.id) || viewport.width,
           gutter: getBase('gutter-width', style.id),

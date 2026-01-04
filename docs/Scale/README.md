@@ -9,20 +9,47 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.3.9  
-**Faza:** Responsive Variants (~75% Grid MVP)
+**Wersja:** 0.3.13  
+**Faza:** Responsive Variants (~80% Grid MVP)
 
-### ✅ Podjęte decyzje – Responsive Variants (2025-01-03)
+## Ostatnie zmiany (v0.3.10-v0.3.13)
 
-| # | Pytanie | Decyzja |
-|---|---------|---------|
-| O1 | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
-| O2 | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
-| O3 | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
-| O4 | Nazewnictwo wariantu | **Ręczne** |
-| O5 | Nazewnictwo ścieżek | **Placeholder `{responsive}`** |
+### ✅ Columns per Viewport (v0.3.10)
 
-Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "PODJĘTE DECYZJE"
+Nowa architektura: liczba kolumn jest właściwością **viewportu**, nie parametrem globalnym.
+
+| Viewport | Columns | Efekt |
+|----------|---------|-------|
+| Desktop  | 12      | v-col-1...12 obliczone normalnie |
+| Laptop   | 12      | v-col-1...12 obliczone normalnie |
+| Tablet   | 12      | v-col-1...12 obliczone normalnie |
+| Mobile   | 2       | v-col-1,2 obliczone, v-col-3...12 = ingrid (clamp) |
+
+**Clamp to ingrid:** Tokeny v-col-N gdzie N > viewport.columns są ustawiane na wartość `ingrid`.
+
+### ✅ Dynamic column-width (v0.3.12-v0.3.13)
+
+`column-width` jest teraz obliczane per viewport:
+
+```
+Mobile (390px, 2 kolumny):
+  column-width = (390 - 2×24 - 1×24) / 2 = 135
+  v-col-1 = 135
+  v-col-2 = 294 (ingrid)
+
+Desktop (1920px, 12 kolumn):
+  column-width = (1920 - 2×24 - 11×24) / 12 = 134
+  v-col-1 = 134
+  v-col-12 = 1872
+```
+
+### ⚠️ Migracja
+
+**Wyczyść localStorage przed użyciem!** Stare viewporty nie mają pola `columns`.
+
+```
+DevTools → Application → Local Storage → localhost:5173 → Delete "rezzon-scale"
+```
 
 ## Funkcjonalności
 
@@ -30,23 +57,26 @@ Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "PODJĘTE DECYZJE"
 
 **Parameters View**
 - Macierz viewport × style z inline editing
-- CRUD viewportów (add/edit/delete)
+- CRUD viewportów (add/edit/delete) + **pole columns**
 - CRUD stylów (add/edit/delete)
 - Sekcje: Base / Computed / Generated
+- **Computed przeliczane per viewport.columns**
 
 **Formula Engine**
 - Automatyczne przeliczanie computed values
 - Auto-recalculation przy zmianie base parameters
+- **Dynamic column-width per viewport**
 
 **Token Generator**
 - Generowanie v-col-X, w-col-X, h-col-X
 - Aplikowanie modyfikatorów
-- **Eksport w formacie Figma Variables API**
+- **Clamp to ingrid dla col > viewport.columns**
+- Eksport w formacie Figma Variables API
 
 **Generators View**
 - CRUD Modifiers (name, formula, range, full variant)
 - CRUD Ratio Families (name, ratio A:B)
-- CRUD Responsive Variants (name, description)
+- CRUD Responsive Variants (name, ViewportBehaviors)
 - Viewport Behaviors UI (inherit/override columns)
 
 **Output Folders**
@@ -66,19 +96,13 @@ Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "PODJĘTE DECYZJE"
 - Smooth hover transitions
 - Compact layout
 
-### ❌ Niezaimplementowane
+### 🔄 W toku
 
 **Responsive Variants w generatorze**
 - Typy `ViewportBehavior` i `ResponsiveVariant` są gotowe
 - UI do konfiguracji ViewportBehaviors istnieje
-- **Generator NIE UŻYWA tych danych** (do naprawy)
-
-### 🔄 W toku
-
-**Faza 4: Responsive Variants**
-- Implementacja mechanizmu "collapse to N columns"
-- Iteracja po `enabledResponsiveVariants` w folderze
-- Logika: `inherit` vs `override` columns
+- Generator częściowo używa tych danych (override columns działa)
+- Brakuje: iteracja po `enabledResponsiveVariants` w folderze
 
 ## Uruchomienie
 
@@ -94,7 +118,7 @@ src/
 ├── components/
 │   ├── layout/          # Header, Sidebar, Statusbar
 │   ├── grid/            # ParametersView, GeneratorsView, PreviewView
-│   └── Icons.tsx        # SVG sprites
+│   └── Modals.tsx       # ViewportModal, StyleModal, ResponsiveVariantModal
 ├── engine/
 │   ├── formulas.ts      # Silnik formuł (computed values)
 │   └── generator.ts     # Generator tokenów + eksport Figma
@@ -110,22 +134,59 @@ src/
 ## Formuły
 
 **Base parameters (edytowalne):**
-- viewport, number-of-columns, gutter-width, margin-m, margin-xs
+- viewport, gutter-width, margin-m, margin-xs
 
-**Computed parameters (automatyczne):**
+**Viewport properties:**
+- columns (per viewport, edytowalne w ViewportModal)
+
+**Computed parameters (automatyczne, per viewport):**
 ```
-number-of-gutters = columns - 1
-column-width = (viewport - 2×margin-m - (columns-1)×gutter) / columns
+number-of-gutters = viewport.columns - 1
+column-width = (viewport - 2×margin-m - (viewport.columns-1)×gutter) / viewport.columns
 ingrid = viewport - 2×margin-m
 photo-margin = margin-m - margin-xs
 ```
 
 **Generated tokens:**
 ```
-v-col-n = column-width × n + gutter × (n-1)
+v-col-n = column-width × n + gutter × (n-1)   // dla n ≤ viewport.columns
+v-col-n = ingrid                               // dla n > viewport.columns (clamp)
 v-full = ingrid
 v-full-w-margin = ingrid + 2×photo-margin
 v-full-to-edge = viewport
+```
+
+## Mechanizm Columns per Viewport
+
+### Cel
+Pozwala na różną liczbę kolumn w różnych viewportach – Mobile może mieć 2 kolumny, Desktop 12.
+
+### Konfiguracja
+
+W ViewportModal:
+```
+┌─────────────────────────────────────────────────┐
+│ Edit Viewport                                   │
+├─────────────────────────────────────────────────┤
+│ Name:     [Mobile        ]                      │
+│ Width:    [390           ] px                   │
+│ Columns:  [2             ]                      │
+│           Tokens v-col-N where N > columns      │
+│           will be clamped to ingrid             │
+└─────────────────────────────────────────────────┘
+```
+
+### Efekt na tokeny
+
+**Mobile (390px, 2 kolumny):**
+```
+column-width = 135
+v-col-1 = 135
+v-col-2 = 294 (ingrid)
+v-col-3 = 294 (clamped)
+v-col-4 = 294 (clamped)
+...
+v-col-12 = 294 (clamped)
 ```
 
 ## Mechanizm Responsive Variants
@@ -149,45 +210,6 @@ Każdy responsive variant definiuje zachowanie per viewport:
 | Desktop  | Inherit  | 888 (8 kolumn) |
 | Tablet   | Override 6 | **316** (6 kolumn!) |
 | Mobile   | Override 6 | **316** (6 kolumn!) |
-
-**WSZYSTKIE tokeny w tym wariancie** mają wartość dla 6 kolumn.
-
-### Dowody z analizy JSON R4-Grid
-
-**Desktop – static vs to-tab-6-col (IDENTYCZNE):**
-```
-static/w-col-4  = 488     to-tab-6-col/w-col-4  = 488
-static/w-col-8  = 1000    to-tab-6-col/w-col-8  = 1000
-```
-↑ Na desktop wariant dziedziczy normalne wartości (inherit)
-
-**Tablet – static vs to-tab-6-col (COLLAPSED!):**
-```
-static/w-col-4  = 652     to-tab-6-col/w-col-4  = 316
-static/w-col-8  = 652     to-tab-6-col/w-col-8  = 316
-```
-↑ Na tablet WSZYSTKO = 316 (wartość dla 6 kolumn)
-
-### Status implementacji
-- ✅ Typy: `ViewportBehavior`, `ResponsiveVariant`
-- ✅ UI: Panel Viewport Behaviors w Generators
-- ✅ Analiza: Mechanizm udokumentowany z dowodami
-- ❌ Generator: **NIE UŻYWA** tych danych (linia 1153 generator.ts)
-
-### Propozycja UI: Responsive Variants Editor
-
-```
-┌────────────────────────────────────────────────────────┐
-│ to-tab-6-col                                [✎] [🗑]  │
-├────────────────────────────────────────────────────────┤
-│  Viewport   │ Behavior    │ Columns                   │
-│ ────────────┼─────────────┼─────────                  │
-│  Desktop    │ ○ Inherit   │ (default: 12)             │
-│  Laptop     │ ○ Inherit   │ (default: 12)             │
-│  Tablet     │ ● Override  │ [6 ▾]                     │
-│  Mobile     │ ● Override  │ [6 ▾]                     │
-└────────────────────────────────────────────────────────┘
-```
 
 ## Eksport
 
@@ -219,18 +241,3 @@ Format zgodny z Figma Variables API:
 - Vite + React 19 + TypeScript
 - Zustand (state management)
 - CSS (bez frameworków)
-
-## Known Issues
-
-### Generator ignoruje Responsive Variants
-
-**Lokalizacja:** `src/engine/generator.ts`, linia 1153-1154
-
-```typescript
-// For now, skip responsive variants (will be redesigned later)
-// Just generate tokens per viewport
-```
-
-**Status:** Do naprawy w Fazie 4 roadmapy.
-
-**Decyzje podjęte:** ✅ Wszystkie 5 decyzji (O1-O5) zostało podjętych 2025-01-03. Implementacja gotowa do rozpoczęcia.
