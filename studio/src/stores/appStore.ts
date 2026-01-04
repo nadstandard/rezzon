@@ -980,14 +980,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
             const targetVar = externalLib.file.variables[prevAlias.targetVar];
             
             if (targetVar) {
+              // Debug: sprawdź czy targetVar.id istnieje
+              if (!targetVar.id) {
+                console.warn('RESTORE: targetVar.id is undefined!', {
+                  targetVarName: targetVar.name,
+                  prevAliasTargetVar: prevAlias.targetVar,
+                  targetVarKeys: Object.keys(targetVar),
+                });
+              }
+              
               // Przywróć alias - modyfikujemy sklonowaną wersję
+              // UWAGA: używamy prevAlias.targetVar jako variableId (to jest oryginalny ID)
               lib.file.variables[prevAlias.sourceVar] = {
                 ...sourceVar,
                 valuesByMode: {
                   ...sourceVar.valuesByMode,
                   [prevAlias.modeId]: {
                     type: 'VARIABLE_ALIAS',
-                    variableId: targetVar.id,
+                    variableId: prevAlias.targetVar,  // Używamy zapisanego ID, nie targetVar.id!
                     variableName: targetVar.name,
                   },
                 },

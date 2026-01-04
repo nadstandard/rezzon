@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, AlertTriangle, Copy, Trash2, Edit3, CheckCircle, XCircle } from 'lucide-react';
+import { X, AlertTriangle, Copy, Trash2, Edit3, CheckCircle, XCircle, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import { exportLibraryToFigma, validateForExport, downloadJson, type ExportValidationResult } from '../../utils/figmaParser';
 import type { Variable } from '../../types';
 
 // ============================================
@@ -465,6 +466,235 @@ export function DuplicateFolderModal({ isOpen, onClose, folderPath, libraryId, c
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// EXPORT MODAL
+// ============================================
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  libraryId: string | null;
+}
+
+export function ExportModal({ isOpen, onClose, libraryId }: ExportModalProps) {
+  const [validation, setValidation] = useState<ExportValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [exported, setExported] = useState(false);
+  
+  const libraries = useAppStore((state) => state.libraries);
+  const library = libraries.find((l) => l.id === libraryId);
+  
+  // Uruchom walidację po otwarciu
+  useEffect(() => {
+    if (isOpen && library) {
+      setIsValidating(true);
+      setValidation(null);
+      setExported(false);
+      
+      // Symuluj małe opóźnienie dla UX
+      setTimeout(() => {
+        const result = validateForExport(library, libraries);
+        setValidation(result);
+        setIsValidating(false);
+      }, 300);
+    }
+  }, [isOpen, library, libraries]);
+  
+  const handleExport = () => {
+    if (!library) return;
+    
+    const data = exportLibraryToFigma(library);
+    const fileName = `${library.name}_export_${new Date().toISOString().slice(0, 10)}.json`;
+    downloadJson(data, fileName);
+    setExported(true);
+  };
+  
+  const handleClose = () => {
+    setValidation(null);
+    setExported(false);
+    onClose();
+  };
+  
+  if (!isOpen) return null;
+  
+  return (
+    <div className="modal-overlay open">
+      <div className="modal" style={{ width: '520px' }}>
+        <div className="modal__header">
+          <span className="modal__title">Export to Figma</span>
+          <button className="modal__close" onClick={handleClose}>
+            <X className="icon" />
+          </button>
+        </div>
+        
+        <div className="modal__body">
+          {/* Library info */}
+          <div className="modal__info" style={{ marginBottom: '16px' }}>
+            <div className="modal__info-row">
+              <span className="modal__info-label">Library</span>
+              <span className="modal__info-value">{library?.name || 'None selected'}</span>
+            </div>
+            {validation && (
+              <>
+                <div className="modal__info-row">
+                  <span className="modal__info-label">Variables</span>
+                  <span className="modal__info-value">{validation.stats.totalVariables.toLocaleString()}</span>
+                </div>
+                <div className="modal__info-row">
+                  <span className="modal__info-label">Aliases</span>
+                  <span className="modal__info-value">
+                    {validation.stats.internalAliases} internal, {validation.stats.externalAliases} external
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Validation status */}
+          {isValidating && (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
+              Validating...
+            </div>
+          )}
+          
+          {validation && !exported && (
+            <>
+              {/* Errors */}
+              {validation.errors.length > 0 && (
+                <div style={{ 
+                  background: 'var(--red-bg)', 
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <XCircle className="icon sm" style={{ color: 'var(--red)' }} />
+                    <span style={{ fontWeight: 600, color: 'var(--red)' }}>
+                      {validation.errors.length} Error{validation.errors.length > 1 ? 's' : ''} - Cannot Export
+                    </span>
+                  </div>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: '24px', 
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    maxHeight: '100px',
+                    overflow: 'auto'
+                  }}>
+                    {validation.errors.slice(0, 5).map((err, i) => (
+                      <li key={i}>{err.message}</li>
+                    ))}
+                    {validation.errors.length > 5 && (
+                      <li>...and {validation.errors.length - 5} more</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Warnings */}
+              {validation.warnings.length > 0 && (
+                <div style={{ 
+                  background: 'var(--orange-bg)', 
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <AlertCircle className="icon sm" style={{ color: 'var(--orange)' }} />
+                    <span style={{ fontWeight: 600, color: 'var(--orange)' }}>
+                      {validation.warnings.length} Warning{validation.warnings.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: '24px', 
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    maxHeight: '100px',
+                    overflow: 'auto'
+                  }}>
+                    {validation.warnings.slice(0, 5).map((warn, i) => (
+                      <li key={i}>
+                        <strong>{warn.variableName}</strong>: {warn.message}
+                      </li>
+                    ))}
+                    {validation.warnings.length > 5 && (
+                      <li>...and {validation.warnings.length - 5} more</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Success - no issues */}
+              {validation.valid && validation.warnings.length === 0 && (
+                <div style={{ 
+                  background: 'var(--green-bg)', 
+                  border: '1px solid var(--green-dim)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <CheckCircle2 className="icon" style={{ color: 'var(--green)' }} />
+                  <span style={{ color: 'var(--green)', fontWeight: 500 }}>
+                    Validation passed - ready to export
+                  </span>
+                </div>
+              )}
+              
+              {/* Valid with warnings */}
+              {validation.valid && validation.warnings.length > 0 && (
+                <p className="modal__hint" style={{ marginTop: '8px' }}>
+                  Export will proceed with warnings. Broken aliases will be exported as-is and may cause issues in Figma.
+                </p>
+              )}
+            </>
+          )}
+          
+          {/* Export success */}
+          {exported && (
+            <div style={{ 
+              background: 'var(--green-bg)', 
+              border: '1px solid var(--green-dim)',
+              borderRadius: '8px',
+              padding: '20px',
+              textAlign: 'center'
+            }}>
+              <CheckCircle2 className="icon lg" style={{ color: 'var(--green)', marginBottom: '8px' }} />
+              <div style={{ color: 'var(--green)', fontWeight: 600, marginBottom: '4px' }}>
+                Export Complete!
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                File downloaded: {library?.name}_export_{new Date().toISOString().slice(0, 10)}.json
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal__footer">
+          <button className="btn btn--ghost" onClick={handleClose}>
+            {exported ? 'Close' : 'Cancel'}
+          </button>
+          {!exported && (
+            <button 
+              className="btn btn--primary" 
+              onClick={handleExport}
+              disabled={!validation || !validation.valid || isValidating}
+            >
+              <Download className="icon sm" />
+              Export JSON
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

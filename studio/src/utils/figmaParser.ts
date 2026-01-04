@@ -228,3 +228,246 @@ export function getFileStats(jsonContent: string): {
     totalVariables,
   };
 }
+
+// ============================================
+// EXPORT TO FIGMA
+// ============================================
+
+/**
+ * Format eksportu do Figma (zgodny z importem)
+ */
+interface FigmaExportOutput {
+  version: string;
+  exportedAt: string;
+  fileName: string;
+  collections: FigmaExportCollection[];
+}
+
+/**
+ * Konwertuje naszą wartość z powrotem na format Figma
+ */
+function convertValueToFigma(value: VariableValue, resolvedType: VariableType): FigmaExportValue {
+  if (value.type === 'VARIABLE_ALIAS') {
+    return {
+      type: 'ALIAS',
+      variableId: value.variableId,
+      variableName: value.variableName,
+      collectionName: value.collectionName,
+    };
+  }
+  
+  // Dla kolorów
+  if (resolvedType === 'COLOR' && value.value && typeof value.value === 'object' && 'r' in value.value) {
+    const color = value.value as { r: number; g: number; b: number; a?: number };
+    const r = Math.round(color.r * 255);
+    const g = Math.round(color.g * 255);
+    const b = Math.round(color.b * 255);
+    const a = color.a !== undefined ? color.a : 1;
+    
+    const hex = '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('').toUpperCase();
+    
+    return {
+      type: 'COLOR',
+      hex,
+      rgba: { r: color.r, g: color.g, b: color.b, a },
+    };
+  }
+  
+  // Dla pozostałych typów
+  return {
+    type: resolvedType,
+    value: value.value,
+  };
+}
+
+/**
+ * Eksportuje bibliotekę do formatu Figma JSON
+ */
+export function exportLibraryToFigma(library: Library): FigmaExportOutput {
+  const collections: FigmaExportCollection[] = [];
+  
+  // Grupuj zmienne po kolekcjach
+  for (const [collectionId, collection] of Object.entries(library.file.variableCollections)) {
+    const variables: FigmaExportVariable[] = [];
+    
+    for (const variableId of collection.variableIds) {
+      const variable = library.file.variables[variableId];
+      if (!variable) continue;
+      
+      const valuesByMode: Record<string, FigmaExportValue> = {};
+      for (const [modeId, value] of Object.entries(variable.valuesByMode)) {
+        valuesByMode[modeId] = convertValueToFigma(value, variable.resolvedType);
+      }
+      
+      variables.push({
+        id: variable.id,
+        name: variable.name,
+        type: variable.resolvedType,
+        description: variable.description || '',
+        hiddenFromPublishing: variable.hiddenFromPublishing,
+        scopes: variable.scopes,
+        codeSyntax: variable.codeSyntax || {},
+        valuesByMode,
+      });
+    }
+    
+    collections.push({
+      id: collectionId,
+      name: collection.name,
+      defaultModeId: collection.defaultModeId,
+      hiddenFromPublishing: collection.hiddenFromPublishing,
+      modes: collection.modes.map(m => ({ id: m.modeId, name: m.name })),
+      variables,
+    });
+  }
+  
+  return {
+    version: library.file.version || '1.0',
+    exportedAt: new Date().toISOString(),
+    fileName: library.name,
+    collections,
+  };
+}
+
+/**
+ * Wynik walidacji przed eksportem
+ */
+export interface ExportValidationResult {
+  valid: boolean;
+  warnings: ExportWarning[];
+  errors: ExportError[];
+  stats: {
+    totalVariables: number;
+    totalAliases: number;
+    internalAliases: number;
+    externalAliases: number;
+    brokenAliases: number;
+  };
+}
+
+export interface ExportWarning {
+  type: 'broken_alias' | 'missing_value';
+  variableId: string;
+  variableName: string;
+  modeId: string;
+  message: string;
+}
+
+export interface ExportError {
+  type: 'duplicate_name' | 'invalid_value';
+  variableId: string;
+  variableName: string;
+  message: string;
+}
+
+/**
+ * Waliduje bibliotekę przed eksportem
+ */
+export function validateForExport(
+  library: Library,
+  allLibraries: Library[]
+): ExportValidationResult {
+  const warnings: ExportWarning[] = [];
+  const errors: ExportError[] = [];
+  
+  let totalAliases = 0;
+  let internalAliases = 0;
+  let externalAliases = 0;
+  let brokenAliases = 0;
+  
+  // Sprawdź duplikaty nazw
+  const nameCount: Record<string, string[]> = {};
+  
+  for (const [varId, variable] of Object.entries(library.file.variables)) {
+    if (!nameCount[variable.name]) {
+      nameCount[variable.name] = [];
+    }
+    nameCount[variable.name].push(varId);
+    
+    // Sprawdź wartości w każdym mode
+    for (const [modeId, value] of Object.entries(variable.valuesByMode)) {
+      if (value.type === 'VARIABLE_ALIAS') {
+        totalAliases++;
+        
+        // Sprawdź czy alias jest valid
+        const isInternal = library.file.variables[value.variableId!];
+        
+        if (isInternal) {
+          internalAliases++;
+        } else {
+          // Sprawdź w innych bibliotekach
+          let found = false;
+          for (const otherLib of allLibraries) {
+            if (otherLib.id === library.id) continue;
+            if (otherLib.file.variables[value.variableId!]) {
+              found = true;
+              externalAliases++;
+              break;
+            }
+          }
+          
+          if (!found) {
+            brokenAliases++;
+            warnings.push({
+              type: 'broken_alias',
+              variableId: varId,
+              variableName: variable.name,
+              modeId,
+              message: `Alias to "${value.variableName || value.variableId}" not found`,
+            });
+          }
+        }
+      } else if (value.value === undefined || value.value === null) {
+        warnings.push({
+          type: 'missing_value',
+          variableId: varId,
+          variableName: variable.name,
+          modeId,
+          message: 'Value is undefined',
+        });
+      }
+    }
+  }
+  
+  // Zgłoś duplikaty nazw jako błędy
+  for (const [name, ids] of Object.entries(nameCount)) {
+    if (ids.length > 1) {
+      errors.push({
+        type: 'duplicate_name',
+        variableId: ids[0],
+        variableName: name,
+        message: `Duplicate variable name "${name}" (${ids.length} occurrences)`,
+      });
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    warnings,
+    errors,
+    stats: {
+      totalVariables: Object.keys(library.file.variables).length,
+      totalAliases,
+      internalAliases,
+      externalAliases,
+      brokenAliases,
+    },
+  };
+}
+
+/**
+ * Generuje i pobiera plik JSON
+ */
+export function downloadJson(data: object, fileName: string): void {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

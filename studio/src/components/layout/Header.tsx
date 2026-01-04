@@ -4,13 +4,18 @@ import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2, X
 import { useAppStore } from '../../stores/appStore';
 import { ImportModal } from '../ui/ImportModal';
 import { ClearWorkspaceModal } from '../ui/ClearWorkspaceModal';
+import { ExportModal } from '../ui/CrudModals';
 
 export function Header() {
   const location = useLocation();
   const searchQuery = useAppStore((state) => state.ui.searchQuery);
   const setSearchQuery = useAppStore((state) => state.setSearchQuery);
+  const selectedLibraryId = useAppStore((state) => state.ui.selectedLibraryId);
+  const libraries = useAppStore((state) => state.libraries);
+  
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Variables', icon: Grid3X3 },
@@ -25,6 +30,8 @@ export function Header() {
       default: return 'Search variables...';
     }
   };
+  
+  const canExport = libraries.length > 0 && selectedLibraryId;
 
   return (
     <header className="header">
@@ -96,7 +103,12 @@ export function Header() {
           <Download className="icon sm" />
           Import
         </button>
-        <button className="btn btn--primary">
+        <button 
+          className="btn btn--primary"
+          onClick={() => setExportModalOpen(true)}
+          disabled={!canExport}
+          title={canExport ? 'Export selected library' : 'Select a library first'}
+        >
           <Upload className="icon sm" />
           Export
         </button>
@@ -104,6 +116,11 @@ export function Header() {
       
       <ImportModal isOpen={importModalOpen} onClose={() => setImportModalOpen(false)} />
       <ClearWorkspaceModal isOpen={clearModalOpen} onClose={() => setClearModalOpen(false)} />
+      <ExportModal 
+        isOpen={exportModalOpen} 
+        onClose={() => setExportModalOpen(false)} 
+        libraryId={selectedLibraryId}
+      />
     </header>
   );
 }
