@@ -1,5 +1,26 @@
 # REZZON Scale – CHANGELOG
 
+## [0.3.9] – 2025-01-03
+
+### Decided
+- **Podjęto wszystkie 5 decyzji dot. Responsive Variants:**
+  - O1: Definicje wariantów żyją **globalnie** (checkbox per folder)
+  - O2: `static` **NIE jest wbudowany** (user tworzy sam)
+  - O3: Override columns **dynamicznie z maxColumns**
+  - O4: Nazewnictwo wariantu **ręczne**
+  - O5: Ścieżki tokenów przez **placeholder `{responsive}`** jako mnożnik
+
+### Architecture
+- Placeholder `{responsive}` działa jak `{viewport}` — mnoży folder przez włączone warianty
+- User kontroluje pozycję `{responsive}` w path template
+- Przykład: `"photo/{viewport}/width/{responsive}"` → `photo/desktop/width/static/w-col-1`
+
+### Documentation
+- Zaktualizowano decyzje, briefing, roadmap — status: PODJĘTE
+- Faza 4.1 (analiza) oznaczona jako DONE
+
+---
+
 ## [0.3.8] – 2025-01-02
 
 ### Added

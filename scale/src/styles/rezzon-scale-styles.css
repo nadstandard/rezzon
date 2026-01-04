@@ -1806,3 +1806,221 @@
   background: var(--bg-elevated);
   border-radius: 4px;
 }
+
+/* ==================== VIEWPORT BEHAVIORS TABLE ==================== */
+
+.viewport-behaviors-table {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.viewport-behaviors-header {
+  display: grid;
+  grid-template-columns: 1fr 140px 90px;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.viewport-behaviors-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 90px;
+  gap: 8px;
+  padding: 8px 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.viewport-behaviors-row:last-child {
+  border-bottom: none;
+}
+
+.viewport-behaviors-row__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.viewport-behaviors-row__radios {
+  display: flex;
+  gap: 12px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.radio-label input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.radio-label:has(input:checked) {
+  color: var(--text);
+}
+
+.viewport-behaviors-select {
+  width: 100%;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.viewport-behaviors-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.viewport-behaviors-row__default {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.viewport-behaviors-row__columns {
+  display: flex;
+  justify-content: center;
+}
+
+/* ==================== RESPONSIVE VARIANT CARD ==================== */
+
+.variant-card {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.variant-card:hover {
+  border-color: var(--text-muted);
+}
+
+.variant-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.variant-card__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.variant-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.variant-card__behaviors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.variant-card__behavior {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.variant-card__behavior--inherit {
+  color: var(--text-muted);
+}
+
+.variant-card__behavior--override {
+  background: var(--accent-bg, rgba(99, 102, 241, 0.15));
+  color: var(--accent);
+}
+
+/* ==================== RESPONSIVE VARIANTS CHECKBOXES IN FOLDER CONFIG ==================== */
+
+.responsive-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.responsive-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.responsive-checkbox-item:hover {
+  border-color: var(--text-muted);
+}
+
+.responsive-checkbox-item.checked {
+  background: var(--bg-selected);
+  border-color: var(--accent);
+}
+
+.responsive-checkbox-item__checkbox {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.responsive-checkbox-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.responsive-checkbox-item__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.responsive-checkbox-item__summary {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ==================== EMPTY HINTS ==================== */
+
+.empty-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 12px;
+  text-align: center;
+  background: var(--bg-app);
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+}

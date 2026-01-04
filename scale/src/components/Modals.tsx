@@ -656,43 +656,112 @@ export function RatioModal({ isOpen, onClose, onSave, editData }: RatioModalProp
 interface ResponsiveVariantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (variant: { name: string; description?: string }) => void;
-  editData?: { name: string; description?: string } | null;
+  onSave: (variant: { 
+    name: string; 
+    description?: string;
+    viewportBehaviors: Array<{
+      viewportId: string;
+      behavior: 'inherit' | 'override';
+      overrideColumns?: number;
+    }>;
+  }) => void;
+  editData?: { 
+    id: string;
+    name: string; 
+    description?: string;
+    viewportBehaviors: Array<{
+      viewportId: string;
+      behavior: 'inherit' | 'override';
+      overrideColumns?: number;
+    }>;
+  } | null;
+  viewports: Array<{ id: string; name: string; icon: string }>;
+  styles: Array<{ id: string; columns: number }>;
 }
 
-export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: ResponsiveVariantModalProps) {
+export function ResponsiveVariantModal({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  editData,
+  viewports,
+  styles,
+}: ResponsiveVariantModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [behaviors, setBehaviors] = useState<Record<string, { behavior: 'inherit' | 'override'; columns: number }>>({});
+
+  // Get max columns from styles
+  const maxColumns = Math.max(...styles.map(s => s.columns), 12);
 
   useEffect(() => {
     if (editData) {
       setName(editData.name);
       setDescription(editData.description || '');
+      // Convert viewportBehaviors array to map
+      const behaviorMap: Record<string, { behavior: 'inherit' | 'override'; columns: number }> = {};
+      for (const vp of viewports) {
+        const existing = editData.viewportBehaviors.find(vb => vb.viewportId === vp.id);
+        behaviorMap[vp.id] = {
+          behavior: existing?.behavior || 'inherit',
+          columns: existing?.overrideColumns || 6,
+        };
+      }
+      setBehaviors(behaviorMap);
     } else {
       setName('');
       setDescription('');
+      // Default all to inherit
+      const defaultBehaviors: Record<string, { behavior: 'inherit' | 'override'; columns: number }> = {};
+      for (const vp of viewports) {
+        defaultBehaviors[vp.id] = { behavior: 'inherit', columns: 6 };
+      }
+      setBehaviors(defaultBehaviors);
     }
-  }, [editData, isOpen]);
+  }, [editData, isOpen, viewports]);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
+    
+    // Convert behaviors map to array
+    const viewportBehaviors = viewports.map(vp => ({
+      viewportId: vp.id,
+      behavior: behaviors[vp.id]?.behavior || 'inherit' as const,
+      overrideColumns: behaviors[vp.id]?.behavior === 'override' ? behaviors[vp.id]?.columns : undefined,
+    }));
+
     onSave({ 
       name: name.trim().toLowerCase().replace(/\s+/g, '-'),
       description: description.trim() || undefined,
+      viewportBehaviors,
     });
     onClose();
   };
 
+  const updateBehavior = (vpId: string, field: 'behavior' | 'columns', value: string | number) => {
+    setBehaviors(prev => ({
+      ...prev,
+      [vpId]: {
+        ...prev[vpId],
+        [field]: value,
+      },
+    }));
+  };
+
   const isEdit = !!editData;
 
-  // Name presets
-  const namePresets = [
-    { name: 'static', desc: 'Same columns across all viewports' },
-    { name: 'to-tab-6-col', desc: 'Switch to 6 columns on tablet' },
-    { name: 'to-mob-4-col', desc: 'Switch to 4 columns on mobile' },
-    { name: 'to-mob-2-col', desc: 'Switch to 2 columns on mobile' },
-    { name: 'fluid', desc: 'Fluid columns based on viewport' },
-  ];
+  // Check if all inherit (for "static" style variant)
+  const isAllInherit = Object.values(behaviors).every(b => b.behavior === 'inherit');
+
+  // Generate suggested name based on config
+  const suggestedName = (() => {
+    if (isAllInherit) return 'static';
+    const overrides = viewports
+      .filter(vp => behaviors[vp.id]?.behavior === 'override')
+      .map(vp => `${vp.name.toLowerCase().slice(0, 3)}-${behaviors[vp.id]?.columns}-col`)
+      .join('-');
+    return `to-${overrides}`;
+  })();
 
   return (
     <Modal
@@ -709,33 +778,79 @@ export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: Re
         </>
       }
     >
+      {/* Name input */}
       <div className="modal__label">Name</div>
       <input
         type="text"
         className="modal__input"
-        placeholder="e.g., static, to-tab-6-col, fluid"
+        placeholder="e.g., static, to-tab-6-col"
         value={name}
         onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
         autoFocus
       />
-      <p className="modal__hint">Used in token names: v-col-3-<strong>{name || 'variant'}</strong></p>
+      {name !== suggestedName && (
+        <p className="modal__hint" style={{ cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setName(suggestedName)}>
+          💡 Suggested: <strong>{suggestedName}</strong> (click to use)
+        </p>
+      )}
 
-      {/* Quick presets */}
-      <div className="modal__label" style={{ marginTop: 12 }}>Presets</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {namePresets.map((preset) => (
-          <button
-            key={preset.name}
-            className="btn btn--ghost"
-            style={{ padding: '6px 10px', fontSize: 11, justifyContent: 'flex-start', textAlign: 'left' }}
-            onClick={() => { setName(preset.name); setDescription(preset.desc); }}
-          >
-            <strong style={{ minWidth: 100 }}>{preset.name}</strong>
-            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{preset.desc}</span>
-          </button>
-        ))}
+      {/* Viewport Behaviors Table */}
+      <div className="modal__label" style={{ marginTop: 16 }}>Viewport Behaviors</div>
+      <div className="viewport-behaviors-table">
+        <div className="viewport-behaviors-header">
+          <span>Viewport</span>
+          <span>Behavior</span>
+          <span>Columns</span>
+        </div>
+        {viewports.map(vp => {
+          const vpBehavior = behaviors[vp.id] || { behavior: 'inherit', columns: 6 };
+          return (
+            <div key={vp.id} className="viewport-behaviors-row">
+              <span className="viewport-behaviors-row__name">
+                <Icon name={vp.icon as 'monitor' | 'laptop' | 'tablet' | 'phone'} size="sm" />
+                {vp.name}
+              </span>
+              <div className="viewport-behaviors-row__radios">
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name={`behavior-${vp.id}`}
+                    checked={vpBehavior.behavior === 'inherit'}
+                    onChange={() => updateBehavior(vp.id, 'behavior', 'inherit')}
+                  />
+                  <span>Inherit</span>
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name={`behavior-${vp.id}`}
+                    checked={vpBehavior.behavior === 'override'}
+                    onChange={() => updateBehavior(vp.id, 'behavior', 'override')}
+                  />
+                  <span>Override</span>
+                </label>
+              </div>
+              <div className="viewport-behaviors-row__columns">
+                {vpBehavior.behavior === 'override' ? (
+                  <select
+                    value={vpBehavior.columns}
+                    onChange={(e) => updateBehavior(vp.id, 'columns', parseInt(e.target.value))}
+                    className="viewport-behaviors-select"
+                  >
+                    {Array.from({ length: maxColumns }, (_, i) => i + 1).map(col => (
+                      <option key={col} value={col}>{col} col{col > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="viewport-behaviors-row__default">default</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
+      {/* Description */}
       <div className="modal__label" style={{ marginTop: 16 }}>Description (optional)</div>
       <textarea
         className="modal__textarea"
@@ -744,9 +859,6 @@ export function ResponsiveVariantModal({ isOpen, onClose, onSave, editData }: Re
         onChange={(e) => setDescription(e.target.value)}
         rows={2}
       />
-      <p className="modal__hint">
-        After creating, configure which ratios and modifiers are enabled in the main panel.
-      </p>
     </Modal>
   );
 }

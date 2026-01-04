@@ -1,5 +1,29 @@
 # REZZON Scale — Changelog
 
+## [0.3.9] - 2025-01-04
+
+### Added
+- **Responsive Variants Editor** — Full UI implementation:
+  - Modal with ViewportBehaviors table (Inherit/Override radio + columns dropdown)
+  - Variant cards in sidebar with visual behavior summary
+  - Folder config checkboxes to enable variants per folder
+  - Warning when `{responsive}` placeholder missing from path
+
+### Changed
+- **Generator supports `{responsive}` placeholder** — Multiplies folder by enabled variants
+- **Override columns implemented** — Tokens for override viewports use reduced column count
+- **Token count calculation** — Now includes responsive variants multiplier
+
+### Decided
+- All 5 architectural decisions (O1-O5) for Responsive Variants completed:
+  - O1: Global definitions (checkbox per folder)
+  - O2: No built-in "static" (user creates manually)
+  - O3: Override columns from maxColumns dynamically
+  - O4: Manual naming
+  - O5: `{responsive}` placeholder as multiplier
+
+---
+
 ## [0.3.7] - 2025-01-02
 
 ### Breaking Changes

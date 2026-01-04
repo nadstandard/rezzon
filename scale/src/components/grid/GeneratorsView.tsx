@@ -22,6 +22,7 @@ export function GeneratorsView() {
     updateOutputFolder,
     removeOutputFolder,
     toggleFolderModifier,
+    toggleFolderResponsive,
     addModifier,
     updateModifier,
     removeModifier,
@@ -30,6 +31,7 @@ export function GeneratorsView() {
     updateRatioFamily,
     removeRatioFamily,
     addResponsiveVariant,
+    updateResponsiveVariant,
     removeResponsiveVariant,
   } = useGridStore();
 
@@ -50,6 +52,7 @@ export function GeneratorsView() {
   const [deleteRatioId, setDeleteRatioId] = useState<string | null>(null);
 
   const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [editingVariant, setEditingVariant] = useState<typeof responsiveVariants[0] | null>(null);
   const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null);
 
   // Get selected folder
@@ -201,14 +204,41 @@ export function GeneratorsView() {
   };
 
   // === RESPONSIVE VARIANT HANDLERS ===
-  const handleAddVariant = (data: { name: string; description?: string }) => {
+  const handleAddVariant = (data: { 
+    name: string; 
+    description?: string;
+    viewportBehaviors: Array<{
+      viewportId: string;
+      behavior: 'inherit' | 'override';
+      overrideColumns?: number;
+    }>;
+  }) => {
     addResponsiveVariant({
       name: data.name,
       description: data.description,
       ratioConfigs: [],
-      viewportBehaviors: [],
+      viewportBehaviors: data.viewportBehaviors,
     });
     setVariantModalOpen(false);
+  };
+
+  const handleEditVariant = (data: { 
+    name: string; 
+    description?: string;
+    viewportBehaviors: Array<{
+      viewportId: string;
+      behavior: 'inherit' | 'override';
+      overrideColumns?: number;
+    }>;
+  }) => {
+    if (editingVariant) {
+      updateResponsiveVariant(editingVariant.id, {
+        name: data.name,
+        description: data.description,
+        viewportBehaviors: data.viewportBehaviors,
+      });
+      setEditingVariant(null);
+    }
   };
 
   const handleDeleteVariant = () => {
@@ -216,6 +246,16 @@ export function GeneratorsView() {
       removeResponsiveVariant(deleteVariantId);
       setDeleteVariantId(null);
     }
+  };
+
+  // Helper: Get behavior summary for a variant
+  const getVariantBehaviorSummary = (variant: typeof responsiveVariants[0]) => {
+    const overrides = variant.viewportBehaviors.filter(vb => vb.behavior === 'override');
+    if (overrides.length === 0) return 'All inherit';
+    return overrides.map(vb => {
+      const vp = viewports.find(v => v.id === vb.viewportId);
+      return `${vp?.name || 'Unknown'}→${vb.overrideColumns}`;
+    }).join(', ');
   };
 
   // Render folder tree item
@@ -445,16 +485,49 @@ export function GeneratorsView() {
                 </div>
               </div>
 
-              {/* Responsive Variants - Coming Soon */}
-              <div className="config-group config-group--disabled">
+              {/* Responsive Variants */}
+              <div className="config-group">
                 <label className="config-label">
-                  Responsive Variants 
-                  <span className="config-label__badge">Coming soon</span>
+                  Responsive Variants
+                  {responsiveVariants.length === 0 && (
+                    <span className="config-label__badge">Add variants first</span>
+                  )}
                 </label>
-                <p className="config-hint">
-                  This feature will allow different configurations per viewport. 
-                  For now, create separate folders for each configuration.
-                </p>
+                {responsiveVariants.length === 0 ? (
+                  <p className="config-hint">
+                    Define responsive variants in the left sidebar first, then enable them here.
+                  </p>
+                ) : (
+                  <div className="responsive-checkbox-list">
+                    {responsiveVariants.map(rv => {
+                      const isEnabled = selectedFolder.enabledResponsiveVariants.includes(rv.id);
+                      return (
+                        <div 
+                          key={rv.id} 
+                          className={`responsive-checkbox-item ${isEnabled ? 'checked' : ''}`}
+                          onClick={() => toggleFolderResponsive(selectedFolder.id, rv.id, !isEnabled)}
+                        >
+                          <div className="responsive-checkbox-item__checkbox">
+                            <div className={`checkbox ${isEnabled ? 'checked' : ''}`}>
+                              {isEnabled && <Icon name="check" size="xs" />}
+                            </div>
+                          </div>
+                          <div className="responsive-checkbox-item__info">
+                            <div className="responsive-checkbox-item__name">{rv.name}</div>
+                            <div className="responsive-checkbox-item__summary">
+                              {getVariantBehaviorSummary(rv)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedFolder.enabledResponsiveVariants.length > 0 && !selectedFolder.path.includes('{responsive}') && (
+                  <p className="config-hint" style={{ marginTop: 8, color: 'var(--orange)' }}>
+                    ⚠️ Add <code>{'{responsive}'}</code> to path template to generate variant subfolders
+                  </p>
+                )}
               </div>
 
               {/* Multiply by Ratio toggle */}
@@ -637,29 +710,55 @@ export function GeneratorsView() {
           </div>
         </div>
 
-        {/* Responsive Variants - Hidden until redesigned
+        {/* Responsive Variants */}
         <div className="sidebar-section">
           <div className="sidebar-section__header">
             <span className="sidebar-section__title">Responsive Variants</span>
             <span className="sidebar-section__count">{responsiveVariants.length}</span>
           </div>
           <div className="sidebar-section__content">
-            {responsiveVariants.map(rv => (
-              <div key={rv.id} className="modifier-row">
-                <span className="modifier-row__name">{rv.name}</span>
-                {rv.description && (
-                  <span className="modifier-row__formula">{rv.description}</span>
-                )}
-                <div className="modifier-row__actions">
-                  <button
-                    className="action-btn action-btn--danger"
-                    onClick={() => setDeleteVariantId(rv.id)}
-                  >
-                    <Icon name="trash" size="xs" />
-                  </button>
+            {responsiveVariants.length === 0 ? (
+              <p className="empty-hint">
+                No variants yet. Add variants like "static" or "to-tab-6-col" to control column behavior per viewport.
+              </p>
+            ) : (
+              responsiveVariants.map(rv => (
+                <div key={rv.id} className="variant-card" onClick={() => setEditingVariant(rv)}>
+                  <div className="variant-card__header">
+                    <span className="variant-card__name">{rv.name}</span>
+                    <div className="variant-card__actions" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="action-btn"
+                        onClick={() => setEditingVariant(rv)}
+                      >
+                        <Icon name="edit" size="xs" />
+                      </button>
+                      <button
+                        className="action-btn action-btn--danger"
+                        onClick={() => setDeleteVariantId(rv.id)}
+                      >
+                        <Icon name="trash" size="xs" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="variant-card__behaviors">
+                    {viewports.map(vp => {
+                      const behavior = rv.viewportBehaviors.find(vb => vb.viewportId === vp.id);
+                      const isOverride = behavior?.behavior === 'override';
+                      return (
+                        <span 
+                          key={vp.id} 
+                          className={`variant-card__behavior ${isOverride ? 'variant-card__behavior--override' : 'variant-card__behavior--inherit'}`}
+                        >
+                          {vp.name.slice(0, 3)}
+                          {isOverride ? `→${behavior?.overrideColumns}` : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
             <div className="add-row" onClick={() => setVariantModalOpen(true)}>
               <div className="add-row__icon">
                 <Icon name="plus" size="xs" />
@@ -668,7 +767,6 @@ export function GeneratorsView() {
             </div>
           </div>
         </div>
-        */}
       </div>
 
       {/* MODALS */}
@@ -746,6 +844,17 @@ export function GeneratorsView() {
         isOpen={variantModalOpen}
         onClose={() => setVariantModalOpen(false)}
         onSave={handleAddVariant}
+        viewports={viewports}
+        styles={styles}
+      />
+
+      <ResponsiveVariantModal
+        isOpen={!!editingVariant}
+        onClose={() => setEditingVariant(null)}
+        onSave={handleEditVariant}
+        editData={editingVariant}
+        viewports={viewports}
+        styles={styles}
       />
 
       <ConfirmDeleteModal

@@ -9,22 +9,20 @@ Część ekosystemu REZZON:
 
 ## Status
 
-**Wersja:** 0.3.8  
-**Faza:** Responsive Variants (~70% Grid MVP)
+**Wersja:** 0.3.9  
+**Faza:** Responsive Variants (~75% Grid MVP)
 
-### 🔓 Otwarte decyzje (5)
+### ✅ Podjęte decyzje – Responsive Variants (2025-01-03)
 
-Przed implementacją Fazy 4 wymagają podjęcia:
+| # | Pytanie | Decyzja |
+|---|---------|---------|
+| O1 | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
+| O2 | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
+| O3 | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
+| O4 | Nazewnictwo wariantu | **Ręczne** |
+| O5 | Nazewnictwo ścieżek | **Placeholder `{responsive}`** |
 
-| # | Pytanie |
-|---|---------|
-| O1 | Gdzie żyją definicje wariantów? (globalnie vs per-folder) |
-| O2 | Czy "static" jest wbudowany? |
-| O3 | Override columns – skąd opcje? |
-| O4 | Nazewnictwo wariantu |
-| O5 | Elastyczne nazewnictwo pełnych ścieżek tokenów |
-
-Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "OTWARTE DECYZJE"
+Szczegóły: `REZZON_Scale_decyzje.md` → sekcja "PODJĘTE DECYZJE"
 
 ## Funkcjonalności
 
@@ -235,4 +233,4 @@ Format zgodny z Figma Variables API:
 
 **Status:** Do naprawy w Fazie 4 roadmapy.
 
-**Blokada:** 5 otwartych decyzji projektowych (O1-O5) musi zostać podjętych przed implementacją.
+**Decyzje podjęte:** ✅ Wszystkie 5 decyzji (O1-O5) zostało podjętych 2025-01-03. Implementacja gotowa do rozpoczęcia.

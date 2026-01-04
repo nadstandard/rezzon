@@ -1137,6 +1137,7 @@ export function generateTokensForFolder(
 
 /**
  * Generate all tokens for export with full path expansion
+ * Now supports responsive variants with inherit/override column logic
  */
 export function generateAllTokensForFolder(
   folder: OutputFolder,
@@ -1150,20 +1151,43 @@ export function generateAllTokensForFolder(
     ? ctx.viewports 
     : [{ id: 'default', name: 'default', width: 0, icon: 'monitor' as const }];
   
-  // For now, skip responsive variants (will be redesigned later)
-  // Just generate tokens per viewport
+  // Determine responsive variants to iterate
+  const variantsToUse = templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0
+    ? ctx.responsiveVariants.filter(rv => folder.enabledResponsiveVariants.includes(rv.id))
+    : [null]; // null means no responsive variant (single iteration)
+  
+  // Iterate: viewports × responsive variants
   viewportsToUse.forEach(viewport => {
     const vpName = viewport.name !== 'default' ? viewport.name : undefined;
     
-    // Generate tokens with ratio multiplication if enabled
-    const baseTokens = generateBaseTokensWithOverride(folder, ctx);
-    
-    baseTokens.forEach(token => {
-      const basePath = resolvePathTemplate(folder.path, vpName, undefined);
-      allTokens.push({
-        ...token,
-        path: `${basePath}/${token.name}`,
-        viewport: vpName,
+    variantsToUse.forEach(variant => {
+      // Determine effective columns for this viewport + variant combination
+      let effectiveColumns: number | undefined = undefined;
+      
+      if (variant) {
+        // Find behavior for this viewport
+        const behavior = variant.viewportBehaviors.find(vb => vb.viewportId === viewport.id);
+        if (behavior?.behavior === 'override' && behavior.overrideColumns) {
+          effectiveColumns = behavior.overrideColumns;
+        }
+        // If inherit or no behavior defined, use default (undefined = use style's columns)
+      }
+      
+      // Generate tokens with optional column override
+      const baseTokens = generateBaseTokensWithOverride(folder, ctx, effectiveColumns);
+      
+      baseTokens.forEach(token => {
+        const basePath = resolvePathTemplate(
+          folder.path, 
+          vpName, 
+          variant?.name // responsive variant name or undefined
+        );
+        allTokens.push({
+          ...token,
+          path: `${basePath}/${token.name}`,
+          viewport: vpName,
+          responsive: variant?.name,
+        });
       });
     });
   });
@@ -1338,6 +1362,11 @@ export function calculateFolderTokenCount(
   // Multiply by viewports (if {viewport} in path)
   if (templateInfo.hasViewport) {
     totalCount *= ctx.viewports.length;
+  }
+  
+  // Multiply by responsive variants (if {responsive} in path and variants enabled)
+  if (templateInfo.hasResponsive && folder.enabledResponsiveVariants.length > 0) {
+    totalCount *= folder.enabledResponsiveVariants.length;
   }
   
   return totalCount;

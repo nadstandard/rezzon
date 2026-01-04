@@ -403,38 +403,42 @@ Portal importuje bezpośrednio do Figmy.
 
 ---
 
-## 18. OTWARTE PYTANIA – Responsive Variants
+## 18. PODJĘTE DECYZJE – Responsive Variants (2025-01-03)
 
-Przed implementacją Fazy 4 wymagają decyzji:
+| # | Pytanie | Decyzja |
+|---|---------|---------|
+| **O1** | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
+| **O2** | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
+| **O3** | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
+| **O4** | Nazewnictwo wariantu | **Ręczne** (user wpisuje) |
+| **O5** | Nazewnictwo ścieżek | **Placeholder `{responsive}`** jako mnożnik |
 
-| # | Pytanie | Opcje |
-|---|---------|-------|
-| **O1** | Gdzie żyją definicje wariantów? | A) Globalnie (jak viewporty), B) Per folder |
-| **O2** | Czy "static" jest wbudowany? | A) Tak (zawsze istnieje), B) Nie (user tworzy) |
-| **O3** | Override columns – skąd opcje? | A) Stała lista, B) Z maxColumns, C) Input ręczny |
-| **O4** | Nazewnictwo samego wariantu | A) Ręczne, B) Auto, C) Ręczne z sugestią |
-| **O5** | Nazewnictwo pełnych ścieżek tokenów | Elastyczne placeholdery? Pozycja responsive w ścieżce? |
+### Kluczowe zasady
 
-### Szczegóły O5 – Elastyczne ścieżki
+1. **Globalna definicja, lokalne włączanie** — warianty definiujesz raz w Generators View, w folderze tylko checkbox włącza/wyłącza
+2. **User tworzy `static`** — brak wbudowanych wariantów, pełna kontrola
+3. **Placeholder `{responsive}`** — działa jak `{viewport}`, mnoży folder przez włączone warianty
+4. **Pozycja w ścieżce konfigurowalna** — user decyduje gdzie wstawić `{responsive}`
 
-Obecna struktura z R4-Grid:
+### Przykład pełnego flow
+
 ```
-photo/tablet/width/to-tab-6-col/w-col-6
-│     │      │     │            └── token
-│     │      │     └── responsive variant
-│     │      └── dimension
-│     └── viewport
-└── folder
-```
+GENERATORS VIEW:
+┌─────────────────────────────────────────────────────────────┐
+│ static         → All: Inherit                               │
+│ to-tab-6-col   → Desktop/Laptop: Inherit, Tablet/Mobile: →6 │
+└─────────────────────────────────────────────────────────────┘
 
-Pytania:
-- Czy `static` pojawia się w ścieżce, czy jest "domyślny" (bez subfolderu)?
-- Czy user może zmienić kolejność segmentów?
-- Czy pozycja responsive variant jest konfigurowalna?
+OUTPUT FOLDER:
+📁 photo-width
+   path: "photo/{viewport}/width/{responsive}"
+   ☑ static  ☑ to-tab-6-col
 
-Propozycja: **Path template z placeholderami**
-```
-{folder}/{viewport}/{dimension}/{responsive}/{token}
+WYNIK:
+photo/desktop/width/static/w-col-8         = 1000
+photo/desktop/width/to-tab-6-col/w-col-8   = 1000 (inherit)
+photo/tablet/width/static/w-col-8          = 428
+photo/tablet/width/to-tab-6-col/w-col-8    = 316  (collapsed!)
 ```
 
 ### Dowody z analizy JSON R4-Grid
@@ -443,14 +447,12 @@ Propozycja: **Path template z placeholderami**
 ```
 static/w-col-4  = 488     to-tab-6-col/w-col-4  = 488
 static/w-col-8  = 1000    to-tab-6-col/w-col-8  = 1000
-static/w-col-12 = 1512    to-tab-6-col/w-col-12 = 1512
 ```
-↑ Na desktop wariant dziedzczy normalne wartości (inherit)
+↑ Na desktop wariant dziedziczy normalne wartości (inherit)
 
 **Tablet – static vs to-tab-6-col (COLLAPSED!):**
 ```
 static/w-col-4  = 652     to-tab-6-col/w-col-4  = 316
 static/w-col-8  = 652     to-tab-6-col/w-col-8  = 316
-static/w-col-12 = 652     to-tab-6-col/w-col-12 = 316
 ```
 ↑ Na tablet WSZYSTKO = 316 (wartość dla 6 kolumn)

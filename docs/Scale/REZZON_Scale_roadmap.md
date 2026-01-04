@@ -101,53 +101,59 @@
 
 **Cel:** Implementacja mechanizmu "collapse to N columns" w generatorze.
 
-#### ⚠️ OTWARTE DECYZJE (wymagane przed implementacją)
+#### ✅ PODJĘTE DECYZJE (2025-01-03)
 
-| # | Pytanie | Rekomendacja |
-|---|---------|--------------|
-| **O1** | Gdzie żyją definicje wariantów? | A) Globalnie |
-| **O2** | Czy "static" jest wbudowany? | A) Tak |
-| **O3** | Override columns – skąd opcje? | B) Z maxColumns |
-| **O4** | Nazewnictwo wariantu | C) Ręczne z sugestią |
-| **O5** | Nazewnictwo pełnych ścieżek | Path template z placeholderami |
+| # | Pytanie | Decyzja |
+|---|---------|---------|
+| **O1** | Gdzie żyją definicje wariantów? | **Globalnie** (checkbox per folder) |
+| **O2** | Czy "static" wbudowany? | **Nie** (user tworzy sam) |
+| **O3** | Override columns – skąd opcje? | **Dynamicznie z maxColumns** |
+| **O4** | Nazewnictwo wariantu | **Ręczne** |
+| **O5** | Nazewnictwo ścieżek | **Placeholder `{responsive}`** jako mnożnik |
 
-**Szczegóły w:** `REZZON_Scale_decyzje.md` → sekcja "OTWARTE DECYZJE"
+**Szczegóły w:** `REZZON_Scale_decyzje.md` → sekcja "PODJĘTE DECYZJE"
 
 #### 4.1 Analiza (DONE)
 - [x] Zrozumienie struktury R4-Grid JSON
 - [x] Dokumentacja mechanizmu ViewportBehaviors
 - [x] Identyfikacja luk w generatorze
 - [x] Propozycja UI dla Responsive Variants Editor
+- [x] Podjęcie decyzji O1-O5
 
-#### 4.2 UI – Responsive Variants Editor (NEW)
+#### 4.2 UI – Responsive Variants Editor
 - [ ] Panel globalnych definicji wariantów
 - [ ] Tabela ViewportBehaviors per variant (Inherit/Override radio)
 - [ ] Dropdown columns (dynamicznie z maxColumns)
-- [ ] Nazwa wariantu z auto-sugestią
+- [ ] Nazwa wariantu (ręczna)
 - [ ] Checkbox włączania wariantów per folder
+- [ ] Obsługa placeholdera `{responsive}` w ścieżce
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ RESPONSIVE VARIANTS                                   [+ Add]│
 ├──────────────────────────────────────────────────────────────┤
 │ ┌──────────────────────────────────────────────────────────┐ │
+│ │ static                                          [✎] [🗑] │ │
+│ │  Desktop: Inherit  Laptop: Inherit                       │ │
+│ │  Tablet: Inherit   Mobile: Inherit                       │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────┐ │
 │ │ to-tab-6-col                                    [✎] [🗑] │ │
-│ ├──────────────────────────────────────────────────────────┤ │
-│ │  Viewport   │ Behavior    │ Columns                      │ │
-│ │ ────────────┼─────────────┼─────────                     │ │
-│ │  Desktop    │ ○ Inherit   │ (uses default: 12)           │ │
-│ │  Laptop     │ ○ Inherit   │ (uses default: 12)           │ │
-│ │  Tablet     │ ● Override  │ [6 ▾]                        │ │
-│ │  Mobile     │ ● Override  │ [6 ▾]                        │ │
+│ │  Desktop: Inherit  Laptop: Inherit                       │ │
+│ │  Tablet: Override→6  Mobile: Override→6                  │ │
 │ └──────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
+
+OUTPUT FOLDER:
+path: "photo/{viewport}/width/{responsive}"
+Responsive Variants: ☑ static ☑ to-tab-6-col ☐ heading
 ```
 
 #### 4.3 Implementacja generatora
 - [ ] Iteracja po `enabledResponsiveVariants` w folderze
 - [ ] Pobieranie `viewportBehaviors` dla każdego variant
 - [ ] Logika: `inherit` vs `override` columns
-- [ ] Generowanie ścieżek z responsive variant w nazwie
+- [ ] Generowanie ścieżek z responsive variant w nazwie (placeholder `{responsive}`)
 - [ ] Obliczanie wartości z `overrideColumns`
 
 #### 4.4 Logika collapse
