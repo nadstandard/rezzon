@@ -1,5 +1,24 @@
 # REZZON Scale — Changelog
 
+## [0.3.14] - 2025-01-05
+
+### Fixed
+- **Deprecated `substr` replaced with `substring`** — Fixed deprecated method usage in ID generation
+- **Empty styles array protection** — Added guards against `Math.max(...[])` returning `-Infinity` in:
+  - `calculateFolderTokenCount`
+  - `generateBaseTokens`
+  - `generateBaseTokensWithOverride`
+
+### Added
+- **ESLint 9 configuration** — Added `eslint.config.js` for ESLint flat config format
+- **ESLint rules configured**:
+  - Unused variables warning (with underscore prefix ignore pattern)
+  - No explicit any warning
+  - React hooks recommended rules
+  - React refresh rules
+
+---
+
 ## [0.3.9] - 2025-01-04
 
 ### Added

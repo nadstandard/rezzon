@@ -1,4 +1,5 @@
 import type { Library, Variable, VariableCollection, VariableValue, VariableType } from '../types';
+import { findVariableInLibrary } from './aliasUtils';
 
 /**
  * Format eksportu z Figma Variables (przez plugin)
@@ -32,7 +33,7 @@ interface FigmaExportVariable {
 
 interface FigmaExportValue {
   type: string;
-  value?: any;
+  value?: string | number | boolean;
   // Color fields
   hex?: string;
   rgba?: { r: number; g: number; b: number; a: number };
@@ -273,10 +274,11 @@ function convertValueToFigma(value: VariableValue, resolvedType: VariableType): 
     };
   }
   
-  // Dla pozostałych typów
+  // Dla pozostałych typów (STRING, FLOAT, BOOLEAN)
+  // W tym miejscu wiemy że to nie jest kolor bo obsłużyliśmy go wyżej
   return {
     type: resolvedType,
-    value: value.value,
+    value: value.value as string | number | boolean | undefined,
   };
 }
 
@@ -389,8 +391,8 @@ export function validateForExport(
       if (value.type === 'VARIABLE_ALIAS') {
         totalAliases++;
         
-        // Sprawdź czy alias jest valid
-        const isInternal = library.file.variables[value.variableId!];
+        // Sprawdź czy alias jest valid - użyj findVariableInLibrary które szuka po ID i nazwie
+        const isInternal = findVariableInLibrary(library, value.variableId!, value.variableName);
         
         if (isInternal) {
           internalAliases++;
@@ -399,7 +401,7 @@ export function validateForExport(
           let found = false;
           for (const otherLib of allLibraries) {
             if (otherLib.id === library.id) continue;
-            if (otherLib.file.variables[value.variableId!]) {
+            if (findVariableInLibrary(otherLib, value.variableId!, value.variableName)) {
               found = true;
               externalAliases++;
               break;

@@ -5,6 +5,15 @@ import { buildFolderTree } from '../../utils/folderTree';
 import type { FolderNode } from '../../utils/folderTree';
 import type { Variable } from '../../types';
 
+// Funkcja do zbierania ID zmiennych z folderu (poza komponentem, bo jest rekurencyjna)
+function collectFolderVariableIds(node: FolderNode): string[] {
+  const ids = node.variables.map((v) => v.id);
+  for (const child of node.children) {
+    ids.push(...collectFolderVariableIds(child));
+  }
+  return ids;
+}
+
 interface SidebarSectionProps {
   title: string;
   children: React.ReactNode;
@@ -119,39 +128,31 @@ export function VariablesSidebar() {
   
   // Zbuduj drzewo folderów dla wybranej kolekcji
   const selectedCollection = selectedLibrary?.file.variableCollections?.[selectedCollectionId || ''];
-  const allVariables = selectedLibrary?.file.variables || {};
   
   const folderTree = useMemo(() => {
-    if (!selectedCollection) return null;
-    const variables = selectedCollection.variableIds
+    if (!selectedCollection || !selectedLibrary) return null;
+    const allVariables = selectedLibrary.file.variables || {};
+    const collectionVariableIds = selectedCollection.variableIds;
+    const variables = collectionVariableIds
       .map((id) => allVariables[id])
       .filter(Boolean) as Variable[];
     return buildFolderTree(variables);
-  }, [selectedCollection, allVariables]);
-  
-  // Funkcja do zbierania ID zmiennych z folderu
-  const collectVariableIds = useCallback((node: FolderNode): string[] => {
-    const ids = node.variables.map((v) => v.id);
-    for (const child of node.children) {
-      ids.push(...collectVariableIds(child));
-    }
-    return ids;
-  }, []);
+  }, [selectedCollection, selectedLibrary]);
   
   // Sprawdź stan checkboxa folderu
   const getFolderCheckState = useCallback((folder: FolderNode): 'checked' | 'indeterminate' | 'unchecked' => {
-    const folderVariableIds = collectVariableIds(folder);
+    const folderVariableIds = collectFolderVariableIds(folder);
     if (folderVariableIds.length === 0) return 'unchecked';
     
     const selectedCount = folderVariableIds.filter((id) => selectedVariables.includes(id)).length;
     if (selectedCount === 0) return 'unchecked';
     if (selectedCount === folderVariableIds.length) return 'checked';
     return 'indeterminate';
-  }, [selectedVariables, collectVariableIds]);
+  }, [selectedVariables]);
   
   // Toggle select folderu
   const handleFolderSelect = useCallback((folder: FolderNode) => {
-    const folderVariableIds = collectVariableIds(folder);
+    const folderVariableIds = collectFolderVariableIds(folder);
     const allFolderSelected = folderVariableIds.every((id) => selectedVariables.includes(id));
     
     if (allFolderSelected) {
@@ -159,7 +160,7 @@ export function VariablesSidebar() {
     } else {
       selectVariables([...new Set([...selectedVariables, ...folderVariableIds])]);
     }
-  }, [selectedVariables, selectVariables, collectVariableIds]);
+  }, [selectedVariables, selectVariables]);
 
   return (
     <aside className="sidebar">

@@ -7,7 +7,7 @@ import type {
   VariableType,
   AliasType
 } from '../types';
-import { resolveAliasValue, getAliasType, findVariableInLibrary } from '../utils/aliasUtils';
+import { resolveAliasValue, getAliasType, findVariableInLibrary, clearNameIndexCache } from '../utils/aliasUtils';
 
 // Typ operacji do UNDO/REDO
 interface HistoryEntry {
@@ -417,7 +417,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     let regex: RegExp;
     try {
       regex = useRegex ? new RegExp(match, 'g') : new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-    } catch (e) {
+    } catch {
       return { success: false, renamed: 0, conflicts: ['Invalid regex pattern'] };
     }
     
@@ -870,6 +870,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
       
       libs[libIdx] = updatedLib;
       
+      // Wyczyść cache nazw dla zmodyfikowanej biblioteki
+      clearNameIndexCache(updatedLib);
+      
       // Dodaj do disconnected tylko jeśli faktycznie były aliasy
       if (previousAliases.length === 0) {
         console.warn(`No aliases found to disconnect for "${externalLibraryName}"`);
@@ -889,7 +892,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       });
       console.log('Variables with multiple modes (first 5):');
       Object.entries(aliasesPerVar)
-        .filter(([_, modes]) => modes.length > 1)
+        .filter(([, modes]) => modes.length > 1)
         .slice(0, 5)
         .forEach(([varId, modes]) => {
           console.log(`  ${varId}: [${modes.join(', ')}]`);
@@ -989,6 +992,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
                 });
               }
               
+              // Znajdź nazwę kolekcji dla target variable
+              let collectionName = '';
+              for (const [, collection] of Object.entries(externalLib.file.variableCollections)) {
+                if (collection.variableIds.includes(prevAlias.targetVar)) {
+                  collectionName = collection.name;
+                  break;
+                }
+              }
+              
               // Przywróć alias - modyfikujemy sklonowaną wersję
               // UWAGA: używamy prevAlias.targetVar jako variableId (to jest oryginalny ID)
               lib.file.variables[prevAlias.sourceVar] = {
@@ -999,6 +1011,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
                     type: 'VARIABLE_ALIAS',
                     variableId: prevAlias.targetVar,  // Używamy zapisanego ID, nie targetVar.id!
                     variableName: targetVar.name,
+                    collectionName,  // Dodajemy nazwę kolekcji!
                   },
                 },
               };
@@ -1020,7 +1033,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       console.log('Unique source variables:', uniqueSourceVars.size);
       console.log('Variables with multiple modes:');
       Object.entries(aliasesPerVar)
-        .filter(([_, count]) => count > 1)
+        .filter(([, count]) => count > 1)
         .slice(0, 5)
         .forEach(([varId, count]) => {
           console.log(`  ${varId}: ${count} modes`);
@@ -1037,6 +1050,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       for (const [idxStr, lib] of Object.entries(libClones)) {
         console.log(`Replacing library at index ${idxStr}`);
         libs[parseInt(idxStr)] = lib;
+        // Wyczyść cache nazw dla tej biblioteki żeby getAliasType widział nowe aliasy
+        clearNameIndexCache(lib);
       }
       
       return {

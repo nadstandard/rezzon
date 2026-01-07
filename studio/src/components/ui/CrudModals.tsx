@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { X, AlertTriangle, Copy, Trash2, Edit3, CheckCircle, XCircle, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { exportLibraryToFigma, validateForExport, downloadJson, type ExportValidationResult } from '../../utils/figmaParser';
@@ -19,7 +19,6 @@ export function BulkRenameModal({ isOpen, onClose, variableIds, libraryId }: Bul
   const [match, setMatch] = useState('');
   const [replace, setReplace] = useState('');
   const [useRegex, setUseRegex] = useState(false);
-  const [preview, setPreview] = useState<{ old: string; new: string; hasChange: boolean }[]>([]);
   const [result, setResult] = useState<{ success: boolean; renamed: number; conflicts: string[] } | null>(null);
   
   const libraries = useAppStore((state) => state.libraries);
@@ -31,11 +30,10 @@ export function BulkRenameModal({ isOpen, onClose, variableIds, libraryId }: Bul
     return variableIds.map((id) => library.file.variables[id]).filter(Boolean) as Variable[];
   }, [library, variableIds]);
   
-  // Aktualizuj preview
-  useEffect(() => {
+  // Oblicz preview bez setState w effect
+  const preview = useMemo(() => {
     if (!match || variables.length === 0) {
-      setPreview([]);
-      return;
+      return [];
     }
     
     try {
@@ -43,7 +41,7 @@ export function BulkRenameModal({ isOpen, onClose, variableIds, libraryId }: Bul
         ? new RegExp(match, 'g') 
         : new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
       
-      const newPreview = variables.map((v) => {
+      return variables.map((v) => {
         const newName = v.name.replace(regex, replace);
         return { 
           old: v.name, 
@@ -51,10 +49,8 @@ export function BulkRenameModal({ isOpen, onClose, variableIds, libraryId }: Bul
           hasChange: newName !== v.name 
         };
       }).filter((p) => p.hasChange).slice(0, 20); // Limit do 20 dla wydajności
-      
-      setPreview(newPreview);
-    } catch (e) {
-      setPreview([]);
+    } catch {
+      return [];
     }
   }, [match, replace, useRegex, variables]);
   
@@ -77,7 +73,6 @@ export function BulkRenameModal({ isOpen, onClose, variableIds, libraryId }: Bul
     setMatch('');
     setReplace('');
     setResult(null);
-    setPreview([]);
   };
   
   if (!isOpen) return null;
@@ -485,25 +480,31 @@ export function ExportModal({ isOpen, onClose, libraryId }: ExportModalProps) {
   const [validation, setValidation] = useState<ExportValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [exported, setExported] = useState(false);
+  const [lastValidatedLibraryId, setLastValidatedLibraryId] = useState<string | null>(null);
   
   const libraries = useAppStore((state) => state.libraries);
   const library = libraries.find((l) => l.id === libraryId);
   
-  // Uruchom walidację po otwarciu
-  useEffect(() => {
-    if (isOpen && library) {
-      setIsValidating(true);
-      setValidation(null);
-      setExported(false);
-      
-      // Symuluj małe opóźnienie dla UX
-      setTimeout(() => {
-        const result = validateForExport(library, libraries);
-        setValidation(result);
-        setIsValidating(false);
-      }, 300);
-    }
-  }, [isOpen, library, libraries]);
+  // Sprawdź czy potrzebujemy uruchomić walidację (pattern: derive state during render)
+  const needsValidation = isOpen && library && libraryId !== lastValidatedLibraryId;
+  
+  if (needsValidation && !isValidating) {
+    setIsValidating(true);
+    setValidation(null);
+    setExported(false);
+    setLastValidatedLibraryId(libraryId);
+    // Uruchom walidację z małym opóźnieniem dla UX
+    setTimeout(() => {
+      const result = validateForExport(library, libraries);
+      setValidation(result);
+      setIsValidating(false);
+    }, 300);
+  }
+  
+  // Reset stanu gdy modal się zamyka
+  if (!isOpen && lastValidatedLibraryId !== null) {
+    setLastValidatedLibraryId(null);
+  }
   
   const handleExport = () => {
     if (!library) return;

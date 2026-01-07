@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, Link2Off, RefreshCw, Check, ArrowRight, X, Folder, Box } from 'lucide-react';
 import type { Library, Variable, VariableCollection, DisconnectedLibrary } from '../../types';
 import { matchVariablesByName } from '../../utils/aliasUtils';
@@ -343,7 +343,8 @@ export function DisconnectModal({
   aliasCount,
   collections,
 }: DisconnectModalProps) {
-  // Inicjalizuj state z pierwszym mode dla każdej kolekcji
+  // Oblicz początkowe mody - ten stan resetuje się gdy collections się zmienią
+  // dzięki użyciu key w komponencie rodzica lub gdy modal zostanie zamknięty i otwarty
   const [selectedModes, setSelectedModes] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     collections.forEach(col => {
@@ -354,18 +355,21 @@ export function DisconnectModal({
     return initial;
   });
 
-  // Reset state gdy modal się otwiera z nowymi kolekcjami
-  useEffect(() => {
-    if (isOpen) {
-      const initial: Record<string, string> = {};
-      collections.forEach(col => {
-        if (col.modes.length > 0) {
-          initial[col.id] = col.modes[0].modeId;
-        }
-      });
-      setSelectedModes(initial);
-    }
-  }, [isOpen, collections]);
+  // Synchronizuj selectedModes z collections gdy się zmienią
+  // Używamy porównania ID kolekcji zamiast useEffect
+  const collectionsKey = collections.map(c => c.id).join(',');
+  const [lastCollectionsKey, setLastCollectionsKey] = useState(collectionsKey);
+  
+  if (collectionsKey !== lastCollectionsKey) {
+    const initial: Record<string, string> = {};
+    collections.forEach(col => {
+      if (col.modes.length > 0) {
+        initial[col.id] = col.modes[0].modeId;
+      }
+    });
+    setSelectedModes(initial);
+    setLastCollectionsKey(collectionsKey);
+  }
 
   if (!isOpen) return null;
 

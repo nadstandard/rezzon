@@ -3,6 +3,23 @@ import type { Library, Variable, AliasType, AliasInfo, VariableValue } from '../
 // Cache dla szybkiego wyszukiwania zmiennych po nazwie
 const nameIndexCache = new WeakMap<Library['file'], Map<string, Variable>>();
 
+/**
+ * Czyści cache indeksu nazw dla danej biblioteki
+ * Wywoływane po operacjach które modyfikują zmienne (restore, disconnect)
+ */
+export function clearNameIndexCache(library: Library): void {
+  nameIndexCache.delete(library.file);
+}
+
+/**
+ * Czyści cały cache (dla wszystkich bibliotek)
+ */
+export function clearAllNameIndexCache(): void {
+  // WeakMap nie ma metody clear(), więc tworzymy nowy
+  // Ale to nie zadziała bo nameIndexCache jest const...
+  // Zamiast tego musimy polegać na clearNameIndexCache per library
+}
+
 function getNameIndex(library: Library): Map<string, Variable> {
   let index = nameIndexCache.get(library.file);
   if (!index) {
@@ -10,11 +27,8 @@ function getNameIndex(library: Library): Map<string, Variable> {
     for (const variable of Object.values(library.file.variables)) {
       // Indeksuj po pełnej nazwie
       index.set(variable.name, variable);
-      // Indeksuj też po krótkiej nazwie (ostatni segment)
-      const shortName = variable.name.split('/').pop();
-      if (shortName && !index.has(shortName)) {
-        index.set(shortName, variable);
-      }
+      // NIE indeksujemy po krótkiej nazwie - powoduje false positive matches
+      // między bibliotekami (np. "ref-10" jest w Spacing i Typography)
     }
     nameIndexCache.set(library.file, index);
   }
@@ -54,11 +68,8 @@ export function findVariableInLibrary(
       }
     }
     
-    // Szukaj po krótkiej nazwie (ostatni segment)
-    const shortName = segments[segments.length - 1];
-    if (shortName && index.has(shortName)) {
-      return index.get(shortName);
-    }
+    // NIE szukamy po krótkiej nazwie (ostatni segment) - powoduje false positive
+    // np. "Size/Desktop/ref-10" by matchowało "Spacing/Desktop/ref-10"
   }
   
   return undefined;

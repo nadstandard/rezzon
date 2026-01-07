@@ -1,6 +1,6 @@
 import { X, Hash, Type, ToggleLeft, Palette, ArrowRight, ExternalLink } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
-import type { VariableType } from '../../types';
+import type { VariableType, VariableValue } from '../../types';
 
 function TypeIcon({ type }: { type: VariableType }) {
   switch (type) {
@@ -27,7 +27,7 @@ function getTypeName(type: VariableType): string {
   }
 }
 
-function formatValue(value: any, type: VariableType): string {
+function formatValue(value: VariableValue['value'], type: VariableType): string {
   if (value === undefined || value === null) return '-';
   
   if (type === 'COLOR' && typeof value === 'object' && 'r' in value) {

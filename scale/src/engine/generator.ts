@@ -1020,6 +1020,8 @@ function generateBaseTokens(
   folder: OutputFolder,
   ctx: FolderGeneratorContext
 ): FolderToken[] {
+  if (ctx.styles.length === 0) return [];
+  
   const tokens: FolderToken[] = [];
   const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
   const maxColumns = Math.max(...ctx.styles.map(s => s.columns));
@@ -1223,6 +1225,8 @@ function generateBaseTokensWithOverride(
   ctx: FolderGeneratorContext,
   columnsOverride?: number
 ): FolderToken[] {
+  if (ctx.styles.length === 0) return [];
+  
   const tokens: FolderToken[] = [];
   const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
   
@@ -1359,6 +1363,8 @@ export function calculateFolderTokenCount(
   folder: OutputFolder,
   ctx: FolderGeneratorContext
 ): number {
+  if (ctx.styles.length === 0) return 0;
+  
   const maxColumns = Math.max(...ctx.styles.map(s => s.columns));
   const enabledMods = ctx.modifiers.filter(m => folder.enabledModifiers.includes(m.id));
   const templateInfo = parsePathTemplate(folder.path);

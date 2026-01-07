@@ -2,6 +2,9 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ArrowRight, ExternalLink, Inbox } from 'lucide-react';
 import type { Variable, Library } from '../../types';
 
+// Rozszerzony typ dla zmiennych z zewnętrznych bibliotek
+type VariableWithLibrary = Variable & { _libraryName?: string };
+
 interface AliasPickerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -217,7 +220,7 @@ export function AliasPicker({
                 External
               </div>
               {filteredVariables.external.map((v) => {
-                const libName = (v as any)._libraryName || 'External';
+                const libName = (v as VariableWithLibrary)._libraryName || 'External';
                 return (
                   <div
                     key={v.id}

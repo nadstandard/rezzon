@@ -1,7 +1,7 @@
-# REZZON Studio – Roadmapa implementacji v2
+# REZZON Studio – Roadmapa implementacji v4
 
-**Status:** v0.7.4 (Faza 5 ZAKOŃCZONA, Faza 6 zakończona)
-**Data:** 2025-01-02
+**Status:** v0.8.5
+**Data:** 2025-01-05
 
 ---
 
@@ -46,20 +46,7 @@
 - [x] Duplicate folder
 - [x] Propagacja rename do aliasów
 
-### Faza 5 – Aliasy (DONE)
-- [x] 5.1 Alias Picker (single)
-  - [x] Kliknięcie na komórkę wartości → picker
-  - [x] Search w pickerze
-  - [x] Lista zmiennych tego samego typu
-  - [x] Podział: internal / external
-  - [x] Remove alias
-- [x] 5.2 Bulk Alias
-  - [x] Modal bulk alias
-  - [x] Wybór source folder
-  - [x] Wybór target library
-  - [x] Wybór modes (kolumn) do zastosowania
-  - [x] Matchowanie po nazwie
-  - [x] Lista niezmatchowanych po operacji
+### Faza 5 – Aliasy (CZĘŚCIOWO)
 - [x] 5.3 Alias Manager (widok Aliases)
   - [x] Lista wszystkich aliasów
   - [x] Tabs: All / Internal / External / Broken
@@ -68,95 +55,126 @@
   - [x] Statystyki (internal/external/broken count)
   - [x] Alias Details panel (fixed position)
 - [x] 5.4 Disconnect
-  - [x] Wybór biblioteki do odłączenia
-  - [x] Modal: "Z którego mode'a wziąć resolved values?"
-  - [x] Zamiana aliasów na wartości
+  - [x] Multi-collection mode selection
+  - [x] Zamiana aliasów na resolved values
   - [x] Zapis do `disconnectedLibraries`
+  - [x] Sekcja DISCONNECTED w sidebar
 - [x] 5.5 Restore
-  - [x] Lista odłączonych bibliotek w sidebar
   - [x] Modal restore z preview
-  - [x] "X aliasów zostanie przywróconych, Y będzie broken"
-  - [x] All-or-nothing per library
+  - [x] Przywracanie aliasów z previousAliases
+  - [x] Usuwanie z disconnectedLibraries
+  - 🐛 **BUG-CRIT-6:** FIXED w v0.8.2
 
 ### Faza 6 – UNDO/REDO (DONE)
 - [x] Stack past/future w store
 - [x] Limit 30 kroków
-- [x] Obsługiwane operacje: rename, delete, alias, bulkRename, duplicateFolder, removeAlias, bulkAlias
+- [x] Obsługiwane operacje: rename, delete, alias, bulkRename, duplicateFolder, removeAlias, disconnect, restore
 - [x] Przyciski Undo/Redo w toolbarze (aktywne/disabled)
 - [x] Dynamiczne tooltips z opisem operacji
 - [x] Skróty klawiszowe: ⌘Z / ⌘⇧Z / ⌘Y
 
+### Faza 8.2 – Eksport do Figmy (DONE)
+- [x] Format JSON zgodny z Figma Variables
+- [x] Walidacja przed eksportem (błędy/ostrzeżenia)
+- [x] Statystyki (variables, aliases)
+- [x] Zachowanie oryginalnych ID
+- [x] Metadane (data eksportu)
+- [x] Download pliku
+
 ---
 
-## 🔄 W KOLEJCE
+## 🔄 W TOKU / DO ZROBIENIA
 
-### Faza 7 – Snapshots (Est. 2-3 dni)
+### Faza 5 – Aliasy (pozostałe)
+- [ ] 5.1 Alias Picker (single) — trigger w Variables view
+- [ ] 5.2 Bulk Alias — trigger w UI
 
-#### 7.1 Tworzenie
-- [ ] Modal "Create Snapshot"
-- [ ] Nazwa + opis (opcjonalny)
-- [ ] Zapis pełnego stanu
+### Faza 7 – Snapshots
+- [ ] 7.1 Tworzenie (Modal, nazwa + opis)
+- [ ] 7.2 Lista i podgląd w sidebar
+- [ ] 7.3 Restore z potwierdzeniem
 
-#### 7.2 Lista i podgląd
-- [ ] Lista snapshotów w sidebar
-- [ ] Karta snapshotu: nazwa, data, typ, stats
-- [ ] Detail view
+### Faza 8 – Eksport (pozostałe)
+- [ ] 8.1 Walidacja przed eksportem (rozszerzona)
+- [ ] 8.3 Eksport sesji (pełny stan)
+- [ ] 8.4 Import sesji
 
-#### 7.3 Restore
-- [ ] Przycisk "Restore" → modal potwierdzenia
-- [ ] Hard restore
-
-### Faza 8 – Eksport (Est. 2-3 dni)
-
-#### 8.1 Walidacja przed eksportem
-- [ ] Sprawdzenie konfliktów nazw/ścieżek
-- [ ] Sprawdzenie zgodności typów
-- [ ] Wykrycie broken aliasów
-- [ ] Modal z wynikami walidacji
-
-#### 8.2 Eksport do Figmy
-- [ ] Format JSON zgodny z Figma Variables
-- [ ] Zachowanie oryginalnych ID
-- [ ] Metadane (data eksportu)
-- [ ] Download pliku
-
-#### 8.3 Eksport sesji
-- [ ] Pełny stan: biblioteki + UI + snapshots
-- [ ] Pole `disconnectedLibraries`
-- [ ] Format JSON
-- [ ] Download pliku
+### Faza 9 – Wirtualizacja
+- [ ] @tanstack/react-virtual
+- [ ] Wydajność przy 8.5k+ zmiennych
 
 ---
 
 ## 📋 CHANGELOG
 
+### v0.8.5 (2025-01-05)
+- **FIX:** CRITICAL - `findVariableInLibrary` false positive przez short name match
+  - `Size/Desktop/ref-10` matchowało `Spacing/Desktop/ref-10` przez `ref-10`
+  - Usunięto search by short name (ostatni segment ścieżki)
+  - Disconnect teraz rozłącza tylko aliasy do wybranej biblioteki
+
+### v0.8.4 (2025-01-05)
+- **FIX:** Restore nie zapisywał `collectionName` dla aliasów
+  - Po restore aliasy miały puste collectionName
+  - Teraz restore znajduje i zapisuje nazwę kolekcji
+- **FIX:** validateForExport pokazywał "0 external"
+  - Szukanie po variableId nie działa dla external (różne ID między plikami)
+  - Teraz używa `findVariableInLibrary` które szuka też po nazwie
+
+### v0.8.3 (2025-01-05)
+- **UX:** Export dropdown z listą wszystkich bibliotek
+  - Główna biblioteka (REZZON) zawsze pierwsza
+  - Pokazuje liczbę zmiennych przy każdej bibliotece
+  - Jasne wskazanie którą bibliotekę eksportujesz
+
+### v0.8.2 (2025-01-05)
+- **FIX:** BUG-CRIT-6 — WeakMap cache nie był invalidowany po restore
+  - Dodano `clearNameIndexCache()` w `aliasUtils.ts`
+  - Cache czyszczony po disconnect i restore
+  - External alias count teraz poprawny po restore
+
+### v0.8.1 (2025-01-05)
+- **REFACTOR:** Merge poprawek TypeScript z wersji no-context
+  - Lepsze typowanie (usunięcie `any`)
+  - React anti-patterns: `useEffect` → `useMemo` dla preview
+  - Funkcja `collectFolderVariableIds` poza komponentem
+  - Poprawki lint: unused variables, catch blocks
+
+### v0.8.0 (2025-01-05)
+- **FEAT:** Eksport do Figmy
+  - Modal z walidacją (błędy/ostrzeżenia)
+  - Statystyki (variables, aliases)
+  - Download JSON
+
+### v0.7.8 (2025-01-04)
+- **DEBUG:** Dodano logowanie do calculateAliasStats
+- **DEBUG:** Sample broken aliases w logach
+
+### v0.7.7 (2025-01-04)
+- **FIX:** externalLib pobierany wewnątrz set() w restoreLibrary
+- **DEBUG:** Dodano Source/Target vars not found tracking
+
+### v0.7.6 (2025-01-04)
+- **FIX:** BUG-CRIT-5 — Deep cloning z libClones cache w restoreLibrary
+- **DEBUG:** Dodano logi disconnect/restore z unique vars i modes per var
+
+### v0.7.5 (2025-01-04)
+- **FIX:** BUG-CRIT-4 — Spread operator dla resolved values w disconnect
+- **FIX:** Obsługa łańcuchów aliasów przy resolve
+
 ### v0.7.4 (2025-01-02)
-- **FIX:** CRITICAL - findVariableInLibrary nie rozpoznawał external aliasów bo nazwy mają prefix kolekcji
-  - Alias: `"Vertical/Spacing/Desktop/ref-2"` → zmienna: `"Spacing/Desktop/ref-2"`
-  - Teraz usuwamy prefix kolekcji przy szukaniu
-- **FIX:** disconnectLibrary używa findVariableInLibrary zamiast ręcznego szukania
+- **FEAT:** Multi-collection disconnect z mode selection per collection
 
 ### v0.7.3 (2025-01-02)
-- **FIX:** Disconnect modal — pokazuje modes z TARGET library zamiast z source (REZZON)
+- **FIX:** Disconnect/Restore dla multi-collection external libraries
 
-### v0.7.2 (2025-12-30)
-- **FIX:** Disconnect library — używa getAliasType do poprawnej identyfikacji external aliasów
-- **FIX:** Disconnect library — blokuje wielokrotne odłączanie tej samej biblioteki
-- **FIX:** Disconnect library — zapisuje ID zmiennych zamiast nazw (dla restore)
-- **FIX:** Restore library — poprawne przywracanie aliasów po ID
-- **FIX:** Usunięto niedziałającą ikonę Eye przy Connected External Libraries
+### v0.7.2 (2025-01-02)
+- **FIX:** External alias recognition z prefix stripping
 
-### v0.7.1 (2025-12-30)
-- **FIX:** BUG-5.12.5 — Remove alias teraz pokazuje resolved value zamiast "-"
-
-### v0.7.0 (2025-12-30)
-- **FEAT:** 5.1 AliasPicker zintegrowany z widokiem Variables
-  - Kliknięcie w komórkę wartości otwiera picker
-  - Wybór aliasu z Internal/External zmiennych
-  - Remove alias dla istniejących aliasów
-- **FEAT:** 5.2 BulkAliasModal zintegrowany z widokiem Variables
-  - Przycisk "Bulk Alias" w toolbarze aktywny
-  - Pełny flow: Configure → Preview → Apply
+### v0.7.0 (2025-01-02)
+- **FEAT:** Disconnect library implementation
+- **FEAT:** Restore library implementation
+- **FEAT:** DisconnectedLibraries w store
 
 ### v0.6.3 (2025-12-30)
 - **PERF:** Cache dla wyszukiwania zmiennych po nazwie (WeakMap + Map index)
@@ -179,8 +197,15 @@
 
 ---
 
+## 🐛 ZNANE BUGI
+
+### BUG-CRIT-6 (FIXED v0.8.2)
+**Problem:** External count po restore: 850 zamiast 947 (brakuje ~97 aliasów)
+**Przyczyna:** WeakMap cache w `aliasUtils.ts` nie był czyszczony po restore
+**Rozwiązanie:** Dodano `clearNameIndexCache()` wywoływane po disconnect/restore
+
+---
+
 ## 🎯 NASTĘPNY KROK
 
-**Faza 7: Snapshots** lub **Faza 8: Eksport**
-
-Rekomendacja: Faza 8 (Eksport) - żeby móc testować pełny flow z prawdziwymi danymi.
+**Eksport sesji (Faza 8.3)** — pozwoli zapisać/wczytać pełny stan workspace
