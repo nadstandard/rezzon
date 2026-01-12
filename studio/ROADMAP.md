@@ -1,9 +1,34 @@
 # REZZON Studio – Roadmapa implementacji v4
 
-**Status:** v0.8.5
-**Data:** 2025-01-05
+**Status:** v0.8.7
+**Data:** 2025-01-12
 
 ---
+
+## 📋 CHANGELOG
+
+### v0.8.8 (2025-01-12)
+**FIX: Restore zapisywał lokalne ID zamiast publicznych**
+- Disconnect zapisywał `targetVar.id` (lokalne ID z pliku) zamiast `value.variableId` (publiczne ID z Figmy)
+- Restore używał bezpośredniego lookup `file.variables[targetVar]` który nie działał dla publicznych ID
+- Teraz disconnect zapisuje oryginalne publiczne ID oraz `targetVarName`
+- Restore używa `findVariableInLibrary` z `targetVarName` i `targetCollectionName`
+- Typ DisconnectedLibrary rozszerzony o pole `targetVarName`
+
+### v0.8.7 (2025-01-12)
+**FIX: Disconnect/Restore dla bibliotek z duplikatami nazw zmiennych**
+- Problem: Biblioteki jak R4-Spacing-Scale mają kolekcje (Vertical, Horizontal) z identycznymi nazwami zmiennych
+- `findVariableInLibrary` fallback po nazwie znajdował ZŁĄ zmienną (z innej kolekcji)
+- Dodano nowy indeks `collectionNameIndex` który uwzględnia nazwę kolekcji
+- `findVariableInLibrary` teraz przyjmuje opcjonalny parametr `collectionName`
+- Disconnect zapisuje `targetCollectionName` w `previousAliases`
+- Typ `DisconnectedLibrary` rozszerzony o pole `targetCollectionName`
+
+**FIX: detectFileType nie rozpoznawał formatu REZZON Portal**
+- `detectFileType` sprawdzał tylko natywny format Figma (`variableCollections`)
+- Dodano obsługę formatu REZZON Portal (`collections` array)
+
+### v0.8.6 (2025-01-05)
 
 ## ✅ ZREALIZOWANE
 
@@ -96,8 +121,8 @@
 
 ### Faza 8 – Eksport (pozostałe)
 - [ ] 8.1 Walidacja przed eksportem (rozszerzona)
-- [ ] 8.3 Eksport sesji (pełny stan)
-- [ ] 8.4 Import sesji
+- [x] 8.3 Eksport sesji (pełny stan) ✅ v0.8.6
+- [x] 8.4 Import sesji ✅ v0.8.6
 
 ### Faza 9 – Wirtualizacja
 - [ ] @tanstack/react-virtual
@@ -106,6 +131,18 @@
 ---
 
 ## 📋 CHANGELOG
+
+### v0.8.6 (2025-01-05)
+- **NEW:** Eksport sesji (Export → Export Session)
+  - Zapisuje pełny stan: biblioteki, disconnected, UI
+  - Format `REZZON_session_YYYY-MM-DD.json`
+- **NEW:** Import sesji
+  - Import automatycznie rozpoznaje typ pliku (Figma vs Session)
+  - Session file ma badge "SESSION" w preview
+  - Przywraca pełny stan workspace
+- **IMPROVED:** Export dropdown z sekcjami
+  - "Export to Figma" - lista bibliotek
+  - "Export Session" - pełny stan
 
 ### v0.8.5 (2025-01-05)
 - **FIX:** CRITICAL - `findVariableInLibrary` false positive przez short name match

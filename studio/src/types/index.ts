@@ -74,7 +74,9 @@ export interface DisconnectedLibrary {
   previousAliases: {
     sourceVar: string;
     targetVar: string;
+    targetVarName?: string; // Nazwa target variable - potrzebna do wyszukiwania przy restore
     modeId: string;
+    targetCollectionName?: string; // Nazwa kolekcji target variable - potrzebna do prawidłowego restore
   }[];
   aliasCount?: number;
 }
@@ -105,4 +107,24 @@ export interface UIState {
     aliasTypes: AliasType[];
   };
   searchQuery: string;
+}
+
+// Eksport sesji
+export interface SessionExport {
+  version: string;
+  exportedAt: string;
+  type: 'rezzon-studio-session';
+  libraries: Library[];
+  disconnectedLibraries: DisconnectedLibrary[];
+  ui: {
+    selectedLibraryId: string | null;
+    selectedCollectionId: string | null;
+    expandedFolders: string[];
+    detailsPanelOpen: boolean;
+    filters: {
+      types: VariableType[];
+      aliasTypes: AliasType[];
+    };
+  };
+  // Przyszłościowo: snapshots
 }

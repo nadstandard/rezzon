@@ -2,6 +2,8 @@ import type { Library, Variable, AliasType, AliasInfo, VariableValue } from '../
 
 // Cache dla szybkiego wyszukiwania zmiennych po nazwie
 const nameIndexCache = new WeakMap<Library['file'], Map<string, Variable>>();
+// Cache dla wyszukiwania po CollectionName/VariableName (dla bibliotek z duplikatami nazw)
+const collectionNameIndexCache = new WeakMap<Library['file'], Map<string, Variable>>();
 
 /**
  * Czyści cache indeksu nazw dla danej biblioteki
@@ -9,6 +11,7 @@ const nameIndexCache = new WeakMap<Library['file'], Map<string, Variable>>();
  */
 export function clearNameIndexCache(library: Library): void {
   nameIndexCache.delete(library.file);
+  collectionNameIndexCache.delete(library.file);
 }
 
 /**
@@ -36,13 +39,43 @@ function getNameIndex(library: Library): Map<string, Variable> {
 }
 
 /**
+ * Buduje indeks CollectionName/VariableName -> Variable
+ * Używany gdy są zmienne o tych samych nazwach w różnych kolekcjach
+ */
+function getCollectionNameIndex(library: Library): Map<string, Variable> {
+  let index = collectionNameIndexCache.get(library.file);
+  if (!index) {
+    index = new Map();
+    // Najpierw budujemy mapę variableId -> collectionName
+    const varToCollection = new Map<string, string>();
+    for (const collection of Object.values(library.file.variableCollections)) {
+      for (const varId of collection.variableIds) {
+        varToCollection.set(varId, collection.name);
+      }
+    }
+    // Teraz indeksujemy zmienne
+    for (const [varId, variable] of Object.entries(library.file.variables)) {
+      const collectionName = varToCollection.get(varId);
+      if (collectionName) {
+        // Klucz: CollectionName/VariableName
+        const key = `${collectionName}/${variable.name}`;
+        index.set(key, variable);
+      }
+    }
+    collectionNameIndexCache.set(library.file, index);
+  }
+  return index;
+}
+
+/**
  * Znajduje zmienną w bibliotece po ID lub po nazwie
  * Eksportowane żeby można było użyć w innych modułach
  */
 export function findVariableInLibrary(
   library: Library,
   variableId: string,
-  variableName?: string
+  variableName?: string,
+  collectionName?: string
 ): Variable | undefined {
   // Najpierw szukaj po ID (O(1))
   if (library.file.variables[variableId]) {
@@ -51,6 +84,27 @@ export function findVariableInLibrary(
   
   // Jeśli nie znaleziono po ID, szukaj po nazwie używając indeksu (O(1))
   if (variableName) {
+    // Jeśli mamy collectionName, użyj bardziej precyzyjnego indeksu
+    if (collectionName) {
+      const collIndex = getCollectionNameIndex(library);
+      // Spróbuj dokładne dopasowanie: CollectionName/VariableName
+      const exactKey = `${collectionName}/${variableName}`;
+      if (collIndex.has(exactKey)) {
+        return collIndex.get(exactKey);
+      }
+      
+      // Aliasy zewnętrzne mają format "CollectionName/VariablePath" w variableName
+      // Spróbuj usunąć pierwszy segment (bo collectionName już mamy osobno)
+      const segments = variableName.split('/');
+      if (segments.length > 1) {
+        const withoutCollectionPrefix = segments.slice(1).join('/');
+        const key = `${collectionName}/${withoutCollectionPrefix}`;
+        if (collIndex.has(key)) {
+          return collIndex.get(key);
+        }
+      }
+    }
+    
     const index = getNameIndex(library);
     // Szukaj po pełnej nazwie
     if (index.has(variableName)) {

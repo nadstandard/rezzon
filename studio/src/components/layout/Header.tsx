@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2, X, ChevronDown } from 'lucide-react';
+import { Grid3X3, Link as LinkIcon, History, Download, Upload, Search, Trash2, X, ChevronDown, Save } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { ImportModal } from '../ui/ImportModal';
 import { ClearWorkspaceModal } from '../ui/ClearWorkspaceModal';
@@ -11,6 +11,7 @@ export function Header() {
   const searchQuery = useAppStore((state) => state.ui.searchQuery);
   const setSearchQuery = useAppStore((state) => state.setSearchQuery);
   const libraries = useAppStore((state) => state.libraries);
+  const exportSession = useAppStore((state) => state.exportSession);
   
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
@@ -157,11 +158,14 @@ export function Header() {
                 border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '4px 0',
-                minWidth: 200,
+                minWidth: 220,
                 zIndex: 1000,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
               }}
             >
+              <div style={{ padding: '4px 12px 8px', color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Export to Figma
+              </div>
               {sortedLibraries.map((lib) => (
                 <button
                   key={lib.id}
@@ -196,6 +200,43 @@ export function Header() {
                   </span>
                 </button>
               ))}
+              
+              {/* Separator */}
+              <div style={{ 
+                height: 1, 
+                background: 'var(--border)', 
+                margin: '4px 0' 
+              }} />
+              
+              {/* Export Session */}
+              <button
+                className="dropdown__item"
+                onClick={() => {
+                  setExportDropdownOpen(false);
+                  exportSession();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontSize: 13,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <Save className="icon sm" style={{ color: 'var(--accent)' }} />
+                <span style={{ flex: 1 }}>Export Session</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                  Full state
+                </span>
+              </button>
             </div>
           )}
         </div>

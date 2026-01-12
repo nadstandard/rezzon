@@ -8,6 +8,7 @@ import type {
   AliasType
 } from '../types';
 import { resolveAliasValue, getAliasType, findVariableInLibrary, clearNameIndexCache } from '../utils/aliasUtils';
+import { exportSession as exportSessionToFile } from '../utils/figmaParser';
 
 // Typ operacji do UNDO/REDO
 interface HistoryEntry {
@@ -89,6 +90,10 @@ interface AppState {
   canRedo: () => boolean;
   getUndoDescription: () => string | null;
   getRedoDescription: () => string | null;
+  
+  // Akcje - Sesja
+  exportSession: () => void;
+  importSession: (session: import('../types').SessionExport) => void;
 }
 
 const initialUIState: UIState = {
@@ -793,7 +798,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return null;
       };
       
-      const previousAliases: { sourceVarId: string; sourceVarName: string; targetVarId: string; targetVarName: string; modeId: string }[] = [];
+      const previousAliases: { sourceVarId: string; sourceVarName: string; targetVarId: string; targetVarName: string; targetCollectionName: string; modeId: string }[] = [];
       
       const updatedLib = { ...library };
       updatedLib.file = { ...updatedLib.file };
@@ -811,20 +816,30 @@ export const useAppStore = create<AppState>()((set, get) => ({
             
             if (aliasType === 'external') {
               // Znajdź target variable w external library używając findVariableInLibrary
-              const targetVar = findVariableInLibrary(externalLib, value.variableId, value.variableName);
+              // Przekaż collectionName żeby poprawnie rozróżnić zmienne o tych samych nazwach w różnych kolekcjach
+              const targetVar = findVariableInLibrary(externalLib, value.variableId, value.variableName, value.collectionName);
               
               if (targetVar) {
-                // Zapisz poprzedni alias z ID i nazwami
+                // Znajdź kolekcję target variable (potrzebne do prawidłowego restore)
+                const targetCollectionId = findCollectionId(targetVar.id);
+                let targetCollectionName = '';
+                if (targetCollectionId) {
+                  const collection = externalLib.file.variableCollections[targetCollectionId];
+                  if (collection) {
+                    targetCollectionName = collection.name;
+                  }
+                }
+                
+                // Zapisz poprzedni alias z ORYGINALNYM ID (value.variableId), nazwami i kolekcją
+                // WAŻNE: Używamy value.variableId (publiczne ID z Figmy), nie targetVar.id (lokalne ID z pliku)
                 previousAliases.push({
                   sourceVarId: varId,
                   sourceVarName: variable.name,
-                  targetVarId: targetVar.id,
-                  targetVarName: targetVar.name,
+                  targetVarId: value.variableId,  // Oryginalne publiczne ID
+                  targetVarName: value.variableName || targetVar.name,
+                  targetCollectionName,
                   modeId,
                 });
-                
-                // Znajdź kolekcję target variable
-                const targetCollectionId = findCollectionId(targetVar.id);
                 
                 // Pobierz wybrany mode dla tej kolekcji
                 let selectedModeId: string | null = null;
@@ -906,7 +921,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
         previousAliases: previousAliases.map(a => ({
           sourceVar: a.sourceVarId,
           targetVar: a.targetVarId,
+          targetVarName: a.targetVarName,
           modeId: a.modeId,
+          targetCollectionName: a.targetCollectionName,
         })),
         aliasCount: previousAliases.length,
       };
@@ -979,8 +996,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
           
           if (sourceVar) {
             sourceFound = true;
-            // Znajdź target variable po ID
-            const targetVar = externalLib.file.variables[prevAlias.targetVar];
+            // Znajdź target variable używając findVariableInLibrary
+            // WAŻNE: prevAlias.targetVar to teraz publiczne ID które nie zadziała jako klucz w file.variables
+            // Używamy targetVarName i targetCollectionName do znalezienia zmiennej
+            const targetVar = findVariableInLibrary(
+              externalLib, 
+              prevAlias.targetVar,  // publiczne ID (fallback)
+              prevAlias.targetVarName,  // nazwa zmiennej
+              prevAlias.targetCollectionName  // nazwa kolekcji - kluczowe dla rozróżnienia duplikatów!
+            );
             
             if (targetVar) {
               // Debug: sprawdź czy targetVar.id istnieje
@@ -992,24 +1016,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
                 });
               }
               
-              // Znajdź nazwę kolekcji dla target variable
-              let collectionName = '';
-              for (const [, collection] of Object.entries(externalLib.file.variableCollections)) {
-                if (collection.variableIds.includes(prevAlias.targetVar)) {
-                  collectionName = collection.name;
-                  break;
+              // Użyj zapisanej nazwy kolekcji, albo znajdź ją po ID targetVar
+              let collectionName = prevAlias.targetCollectionName || '';
+              if (!collectionName) {
+                for (const [, collection] of Object.entries(externalLib.file.variableCollections)) {
+                  if (collection.variableIds.includes(targetVar.id)) {
+                    collectionName = collection.name;
+                    break;
+                  }
                 }
               }
               
               // Przywróć alias - modyfikujemy sklonowaną wersję
-              // UWAGA: używamy prevAlias.targetVar jako variableId (to jest oryginalny ID)
+              // UWAGA: używamy ORYGINALNY prevAlias.targetVar jako variableId (publiczne ID z Figmy)
               lib.file.variables[prevAlias.sourceVar] = {
                 ...sourceVar,
                 valuesByMode: {
                   ...sourceVar.valuesByMode,
                   [prevAlias.modeId]: {
                     type: 'VARIABLE_ALIAS',
-                    variableId: prevAlias.targetVar,  // Używamy zapisanego ID, nie targetVar.id!
+                    variableId: prevAlias.targetVar,  // Oryginalne publiczne ID
                     variableName: targetVar.name,
                     collectionName,  // Dodajemy nazwę kolekcji!
                   },
@@ -1127,4 +1153,53 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const future = get().history.future;
     return future.length > 0 ? future[future.length - 1].description : null;
   },
+  
+  // EXPORT SESSION - eksportuje cały stan do pliku
+  exportSession: () => {
+    const state = get();
+    
+    exportSessionToFile(
+      state.libraries,
+      state.disconnectedLibraries,
+      {
+        selectedLibraryId: state.ui.selectedLibraryId,
+        selectedCollectionId: state.ui.selectedCollectionId,
+        expandedFolders: state.ui.expandedFolders,
+        detailsPanelOpen: state.ui.detailsPanelOpen,
+        filters: state.ui.filters,
+      }
+    );
+  },
+  
+  // IMPORT SESSION - wczytuje stan z pliku sesji
+  importSession: (session) => set((state) => {
+    // WeakMap cache automatycznie się wyczyści gdy stare biblioteki zostaną zastąpione
+    
+    // Znajdź główną bibliotekę lub pierwszą
+    const mainLib = session.libraries.find(lib => lib.isMain) || session.libraries[0];
+    const firstCollection = mainLib 
+      ? Object.keys(mainLib.file.variableCollections)[0] 
+      : null;
+    
+    return {
+      libraries: session.libraries,
+      disconnectedLibraries: session.disconnectedLibraries || [],
+      ui: {
+        ...state.ui,
+        activeView: 'variables',
+        selectedLibraryId: session.ui?.selectedLibraryId || mainLib?.id || null,
+        selectedCollectionId: session.ui?.selectedCollectionId || firstCollection,
+        expandedFolders: session.ui?.expandedFolders || [],
+        selectedVariables: [],
+        detailsPanelOpen: session.ui?.detailsPanelOpen ?? true,
+        filters: session.ui?.filters || { types: [], aliasTypes: [] },
+        searchQuery: '',
+      },
+      // Wyczyść historię po imporcie sesji
+      history: {
+        past: [],
+        future: [],
+      },
+    };
+  }),
 }));

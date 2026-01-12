@@ -1,4 +1,4 @@
-import type { Library, Variable, VariableCollection, VariableValue, VariableType } from '../types';
+import type { Library, Variable, VariableCollection, VariableValue, VariableType, SessionExport, DisconnectedLibrary, AliasType } from '../types';
 import { findVariableInLibrary } from './aliasUtils';
 
 /**
@@ -472,4 +472,137 @@ export function downloadJson(data: object, fileName: string): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// SESSION EXPORT / IMPORT
+// ============================================================
+
+/**
+ * Tworzy obiekt eksportu sesji
+ */
+export function createSessionExport(
+  libraries: Library[],
+  disconnectedLibraries: DisconnectedLibrary[],
+  ui: {
+    selectedLibraryId: string | null;
+    selectedCollectionId: string | null;
+    expandedFolders: string[];
+    detailsPanelOpen: boolean;
+    filters: {
+      types: VariableType[];
+      aliasTypes: AliasType[];
+    };
+  }
+): SessionExport {
+  return {
+    version: '1.0.0',
+    exportedAt: new Date().toISOString(),
+    type: 'rezzon-studio-session',
+    libraries,
+    disconnectedLibraries,
+    ui,
+  };
+}
+
+/**
+ * Waliduje plik sesji
+ */
+export function validateSessionFile(data: unknown): { valid: boolean; error?: string; session?: SessionExport } {
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Invalid file format' };
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  // Sprawdź typ pliku
+  if (obj.type !== 'rezzon-studio-session') {
+    return { valid: false, error: 'Not a REZZON Studio session file' };
+  }
+
+  // Sprawdź wersję
+  if (!obj.version || typeof obj.version !== 'string') {
+    return { valid: false, error: 'Missing version' };
+  }
+
+  // Sprawdź biblioteki
+  if (!Array.isArray(obj.libraries)) {
+    return { valid: false, error: 'Missing libraries array' };
+  }
+
+  // Walidacja każdej biblioteki
+  for (const lib of obj.libraries) {
+    if (!lib || typeof lib !== 'object') {
+      return { valid: false, error: 'Invalid library object' };
+    }
+    const libObj = lib as Record<string, unknown>;
+    if (!libObj.id || !libObj.name || !libObj.file) {
+      return { valid: false, error: `Invalid library: ${libObj.name || 'unknown'}` };
+    }
+  }
+
+  // Sprawdź disconnectedLibraries (opcjonalne, ale jeśli jest - musi być tablicą)
+  if (obj.disconnectedLibraries !== undefined && !Array.isArray(obj.disconnectedLibraries)) {
+    return { valid: false, error: 'Invalid disconnectedLibraries' };
+  }
+
+  return { 
+    valid: true, 
+    session: obj as unknown as SessionExport 
+  };
+}
+
+/**
+ * Sprawdza czy plik to sesja czy Figma JSON
+ */
+export function detectFileType(data: unknown): 'session' | 'figma' | 'unknown' {
+  if (!data || typeof data !== 'object') {
+    return 'unknown';
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  // Sesja REZZON Studio
+  if (obj.type === 'rezzon-studio-session') {
+    return 'session';
+  }
+
+  // Figma Variables JSON - natywny format Figma
+  if (obj.variableCollections && obj.variables) {
+    return 'figma';
+  }
+
+  // REZZON Portal format (collections array)
+  if (Array.isArray(obj.collections) && obj.collections.length > 0) {
+    // Sprawdź czy to wygląda jak Figma Variables
+    const firstCol = obj.collections[0] as Record<string, unknown>;
+    if (firstCol && firstCol.variables && Array.isArray(firstCol.variables)) {
+      return 'figma';
+    }
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Eksportuje sesję do pliku
+ */
+export function exportSession(
+  libraries: Library[],
+  disconnectedLibraries: DisconnectedLibrary[],
+  ui: {
+    selectedLibraryId: string | null;
+    selectedCollectionId: string | null;
+    expandedFolders: string[];
+    detailsPanelOpen: boolean;
+    filters: {
+      types: VariableType[];
+      aliasTypes: AliasType[];
+    };
+  }
+): void {
+  const session = createSessionExport(libraries, disconnectedLibraries, ui);
+  const date = new Date().toISOString().split('T')[0];
+  const fileName = `REZZON_session_${date}.json`;
+  downloadJson(session, fileName);
 }
